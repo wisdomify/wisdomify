@@ -5,7 +5,7 @@
       "data": "wisdom2def",
       "k": 11,
       "lr": 0.00001,
-      "max_epochs": 50,
+      "max_epochs": 20,
       "batch_size": 40,
       "repeat": 20,
       "num_workers": 4,
