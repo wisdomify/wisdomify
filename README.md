@@ -41,7 +41,7 @@ wisdomify_def_epoch=19_train_loss=0.00.ckpt
 - 훈련셋에서 로스가 0에 수렴할 때 까지 훈련을 진행함. 가능한 빠른 시일 내에 프로토타입을 만들어보는것이 목표였으므로, 일단 validation/test 셋 구축을 스킵,
 오버피팅이 되더라도 훈련 셋에만 핏을 함.
 - 모델 다운로드는 여기에서 (1.31GB): ...
-- 사이즈가 상당히 크므로, 나중에 knowledge distilation [(Hiton, 2015)](https://arxiv.org/abs/1503.02531)으로 경량화하는 것도 고려해볼만하다.
+- 사이즈가 상당히 크므로, 나중에 knowledge distilation [(Hinton, 2015)](https://arxiv.org/abs/1503.02531)으로 경량화하는 것도 고려해볼만하다.
 
 
 dataset:
@@ -243,4 +243,4 @@ Description이 아닌 용례를 입력으로 주어도 용례에 맞는 속담�
 ```
 
 ## Future Work
-
+... 내일 정리하기.
