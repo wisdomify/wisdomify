@@ -9,7 +9,7 @@
 > Figure 2: The model structure for the monolingual and cross-lingual reverse dictionary (Yan et al., 2020). 여기에서 MLM이 예측하는 토큰을 단어가 아니라 속담으로 
 > 변경하면 wisdomify가 되는 것. 
 
-
+참고한 논문들:
 - 기반이 되는 모델은 사전훈련된 **BERT** - *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding* [(Devlin et al., 2018)](https://arxiv.org/abs/1810.04805)
 - 정확히는 한국어 구어체를 사전학습한 **KcBERT**를 사용함 [(Junbum, 2020)](https://github.com/Beomi/KcBERT)
 - 사전훈련된 BERT의 MLM task를 **reverse-dictionary** task에 맞게 변형 -  *BERT for Monolingual and Cross-Lingual Reverse Dictionary* [(Yan et al., 2020)](https://arxiv.org/abs/2009.14790) 
@@ -17,7 +17,8 @@
 BERT를 이해하기 위해 정리한 자료들
 - Transformer의 Q, K, V가 의미하는 것이 무엇인가? - [What is Q, K, V? - Information Retrieval analogy](https://github.com/eubinecto/k4ji_ai/issues/40#issuecomment-699203963)
 - BERT란 어떤 모델인가? - [집현전 중급 2조 BERT 논문리뷰](https://youtu.be/moCNw4j2Fkw)
-- BERT를 Reverse-dictionary를 구현하기 위해서 어떤식으로 활용할 수 있을까? - *BERT [for Monolingual and Cross-Lingual Reverse Dictionary* 리뷰](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414)
+- Contextual embedding은 무엇이며, 어떤식으로 사용할 수 있는가? - [*Vokenization: Improving Language Understanding with Contextualized, Visual-Grounded Supervision* 리뷰](https://www.notion.so/Vokenization-Improving-Language-Understanding-with-Contextualized-Visual-Grounded-Supervision-9abf06931d474dba89c181d5d1299dba)
+- BERT를 Reverse-dictionary를 구현하기 위해서 어떤식으로 활용할 수 있을까? - [*BERT for Monolingual and Cross-Lingual Reverse Dictionary* 리뷰](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414)
 
 ## Methods
 hyperparamters:
