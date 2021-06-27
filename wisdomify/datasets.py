@@ -1,15 +1,14 @@
 from typing import List, Tuple
 from torch.utils.data import Dataset
-from transformers import BertTokenizer
+from transformers import BertTokenizerFast
 import torch
 from wisdomify.builders import build_X, build_y
-from wisdomify.vocab import VOCAB
 
 
 class WisdomDataset(Dataset):
     def __init__(self,
                  wisdom2sent: List[Tuple[str, str]],
-                 tokenizer: BertTokenizer,
+                 tokenizer: BertTokenizerFast,
                  k: int,
                  vocab: List[str]):
         # (N, 3, L)
@@ -40,5 +39,4 @@ class WisdomDataset(Dataset):
         :return:
         """
         return self.X[idx], self.y[idx]
-
 
