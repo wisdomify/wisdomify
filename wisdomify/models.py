@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 import torch
 from torch import Tensor
 from torch.optim import Optimizer
-from transformers import BertTokenizer
+from transformers import BertTokenizerFast
 from transformers.models.bert.modeling_bert import BertForMaskedLM
 from torch.nn import functional as F
 from wisdomify.builders import build_X
@@ -83,7 +83,7 @@ class RD(pl.LightningModule):
 
 class Wisdomifier:
 
-    def __init__(self, rd: RD, tokenizer: BertTokenizer):
+    def __init__(self, rd: RD, tokenizer: BertTokenizerFast):
         self.rd = rd  # a trained reverse dictionary
         self.tokenizer = tokenizer
 

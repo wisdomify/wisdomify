@@ -3,10 +3,10 @@ all the functions for building tensors are defined here.
 """
 from typing import List, Tuple
 import torch
-from transformers import BertTokenizer
+from transformers import BertTokenizerFast
 
 
-def build_X(wisdom2sent: List[Tuple[str, str]], tokenizer: BertTokenizer, k: int) -> torch.Tensor:
+def build_X(wisdom2sent: List[Tuple[str, str]], tokenizer: BertTokenizerFast, k: int) -> torch.Tensor:
     """
     :param wisdom2sent:
     :param tokenizer:
@@ -30,19 +30,19 @@ def build_X(wisdom2sent: List[Tuple[str, str]], tokenizer: BertTokenizer, k: int
                         encodings['attention_mask']], dim=1)
 
 
-def build_y(wisdom2sent: List[Tuple[str, str]], classes: List[str]) -> torch.LongTensor:
+def build_y(wisdom2sent: List[Tuple[str, str]], vocab: List[str]) -> torch.LongTensor:
     """
     :param wisdom2sent:
-    :param classes:
+    :param vocab:
     :return: (N, )
     """
     return torch.LongTensor([
-        classes.index(wisdom)
+        vocab.index(wisdom)
         for wisdom in [wisdom for wisdom, _ in wisdom2sent]
     ])
 
 
-def build_vocab2subwords(tokenizer: BertTokenizer, k: int, vocab: List[str], ) -> torch.Tensor:
+def build_vocab2subwords(tokenizer: BertTokenizerFast, k: int, vocab: List[str]) -> torch.Tensor:
     """
     [ ...,
       ...,

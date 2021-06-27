@@ -14,7 +14,7 @@ class TestRD(unittest.TestCase):
     X: torch.Tensor
     y: torch.Tensor
     S: int  # the number of possible subwords in total
-    V: int  # the number of classes (wisdom)
+    V: int  # the number of vocab (wisdom)
 
     @classmethod
     def setUpClass(cls) -> None:
