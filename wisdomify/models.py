@@ -16,7 +16,7 @@ from wisdomify.vocab import VOCAB
 
 class RD(pl.LightningModule):
     """
-    A reverse-dictionary.
+    A reverse-dictionary. The model is based on
     """
     # fruitify into these!
     def __init__(self, bert_mlm: BertForMaskedLM, vocab2subwords: Tensor, k: int, lr: float):

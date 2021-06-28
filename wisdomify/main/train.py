@@ -1,3 +1,6 @@
+import pytorch_lightning as pl
+import torch
+import argparse
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader
 from transformers import AutoModelForMaskedLM, AutoTokenizer
@@ -6,9 +9,6 @@ from wisdomify.loaders import load_wisdom2def, load_conf, load_wisdom2eg
 from wisdomify.models import RD
 from wisdomify.builders import build_vocab2subwords
 from wisdomify.paths import DATA_DIR
-import pytorch_lightning as pl
-import torch
-import argparse
 from wisdomify.vocab import VOCAB
 
 
@@ -18,20 +18,20 @@ def main():
 
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
-    parser.add_argument("--exp", type=str,
-                        default="a")
+    parser.add_argument("--ver", type=str,
+                        default="version_0")
     args = parser.parse_args()
-    exp: str = args.exp
+    ver: str = args.ver
     conf = load_conf()
     bert_model: str = conf['bert_model']
-    data: str = conf['exps'][exp]['data']
-    k: int = conf['exps'][exp]['k']
-    lr: float = conf['exps'][exp]['lr']
-    max_epochs: int = conf['exps'][exp]['max_epochs']
-    batch_size: int = conf['exps'][exp]['batch_size']
-    repeat: int = conf['exps'][exp]['repeat']
-    num_workers: int = conf['exps'][exp]['num_workers']
-    shuffle: bool = conf['exps'][exp]['shuffle']
+    data: str = conf['versions'][ver]['data']
+    k: int = conf['versions'][ver]['k']
+    lr: float = conf['versions'][ver]['lr']
+    max_epochs: int = conf['versions'][ver]['max_epochs']
+    batch_size: int = conf['versions'][ver]['batch_size']
+    repeat: int = conf['versions'][ver]['repeat']
+    num_workers: int = conf['versions'][ver]['num_workers']
+    shuffle: bool = conf['versions'][ver]['shuffle']
 
     # --- the type of wisdomifier --- #
     if data == "wisdom2def":
@@ -41,7 +41,7 @@ def main():
         wisdom2sent = load_wisdom2eg()
         model_name = "wisdomify_eg_{epoch:02d}_{train_loss:.2f}"
     else:
-        raise NotImplementedError
+        raise NotImplementedError("Invalid data provided")
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
