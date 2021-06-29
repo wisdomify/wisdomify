@@ -322,9 +322,9 @@ wisdomify_def_epoch=19_train_loss=0.00.ckpt
 ```
 
 ## Future Work
-- wisdomify task에 적합한 BERT 모델 선정하기
-- 10개의 속담에서 현용되는 모든 우리말 속담으로 search space를 확장하기
-- 우리말 속담의 용례를 각 속담 별로 적어도 30개는 수집하기  
+- wisdomify task에 적합한 BERT 모델 선정하기 https://github.com/eubinecto/wisdomify/issues/1#issue-930238726
+- 10개의 속담에서 현용되는 모든 우리말 속담으로 search space를 확장하기 https://github.com/eubinecto/wisdomify/issues/7#issue-931145700
+- 우리말 속담의 용례를 각 속담 별로 적어도 30개는 수집하기  https://github.com/eubinecto/wisdomify/issues/4#issue-930691961
 - 우리말 속담 용례 말뭉치로 domain adoption 진행하기 (Gururangan et al., 2020)
 - feature engineering: `[ClS]`의 hidden representation에 sentiment classifier를 달아서 로스함수에 활용하기
 - 모델의 접근성을 높이기 위해 웹에 모델을 deploy하기. back-end로는 django (유빈), front-end로는 vue.js (종윤)를 사용하자
