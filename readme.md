@@ -1,29 +1,111 @@
 # Wisdomify
 
-문장이 입력으로 주어지면,그 문장에 가장 적합한 우리말 속담을 찾아주는 BERT-based 검색엔진. 우리조상의 지혜를 찾아주는 검색엔진. 
+A BERT-based reverse-dictionary of Korean proverbs.
+
+contributors:
+- 김유빈 : 모델링 / 데이터 수집 / 프로젝트 설계 / back-end
+- 김종윤 : 데이터 수집 / 프로젝트 설계 / front-end
+
+dependencies:
+```text
+pytorch-lightning==1.3.7.post0
+transformers==4.8.1
+```
+
+## Quick Start
+
+Setup the project and a virtualenv:
+```bash
+git clone https://github.com/eubinecto/wisdomify.git
+virtualenv wisdomifyenv
+source wisdomify/bin/activate
+pip3 install -r ./requirements.txt  # install the dependancies
+```
+Download a pre-trained wisdomify:
+
+link | description 
+--- | --- 
+[version_0.zip](BERT-based reverse-dictionary of Korean proverbs) (1.5GB) | the first minimal-viable-product of Wisdomify 
+version_1.zip | to be added...
+
+Unzip the model package under `wisdomify/data/lightning_logs`:
+```bash
+cd data/lightning_logs
+unzip version_0.zip
+```
+Make sure you have a directory structure like the following:
+```text
+data
+├── lightning_logs
+│   ├── readme.md
+│   └── version_0
+│       ├── checkpoints
+│       │   └── wisdomify_def_epoch=19_train_loss=0.00.ckpt
+│       ├── events.out.tfevents.1624691069.eubinCloud.57195.0
+│       └── hparams.yaml
+├── wisdom2def.tsv
+└── wisdom2eg.tsv
+```
+wisdomify a sentence:
+```text
+python3 -m wisdomify.main.infer --ver="version_0" --desc="까불지말고 침착하여라"
+```
+```text
+### desc: 까불지말고 침착하여라 ###
+0: (원숭이도 나무에서 떨어진다, 0.3917)
+1: (산넘어 산, 0.2828)
+2: (등잔 밑이 어둡다, 0.2192)
+3: (가는 날이 장날, 0.0351)
+4: (고래 싸움에 새우 등 터진다, 0.0264)
+5: (꿩 대신 닭, 0.0241)
+6: (갈수록 태산, 0.0197)
+7: (핑계 없는 무덤 없다, 0.0009)
+8: (서당개 삼 년이면 풍월을 읊는다, 0.0001)
+9: (소문난 잔치에 먹을 것 없다, 0.0000)
+```
+
+
 
 ## Related Work
+- 기반이 되는 모델은 사전훈련된 **BERT** (Devlin et al., 2018)
+- 정확히는 한국어 구어체를 사전학습한 **KcBERT**를 사용함 (Junbum, 2020)
+- 사전훈련된 KcBERT를 **reverse-dictionary** task에 맞게 fine-tune함 (Yan et al., 2020)
 
-> <img width="661" alt="image" src="https://user-images.githubusercontent.com/56193069/123514534-73d6dc00-d6ce-11eb-9702-12a3e0783999.png">
-> 
-> Figure 2: The model structure for the monolingual and cross-lingual reverse dictionary (Yan et al., 2020). 여기에서 MLM이 예측하는 토큰을 단어가 아니라 속담으로 
-> 변경하면 wisdomify가 되는 것. 
 
-참고한 논문들:
-- 기반이 되는 모델은 사전훈련된 **BERT** - *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding* [(Devlin et al., 2018)](https://arxiv.org/abs/1810.04805)
-- 정확히는 한국어 구어체를 사전학습한 **KcBERT**를 사용함 [(Junbum, 2020)](https://github.com/Beomi/KcBERT)
-- 사전훈련된 BERT의 MLM task를 **reverse-dictionary** task에 맞게 변형 -  *BERT for Monolingual and Cross-Lingual Reverse Dictionary* [(Yan et al., 2020)](https://arxiv.org/abs/2009.14790) 
-
-BERT를 이해하기 위해 정리한 자료들:
-- Transformer의 Q, K, V가 의미하는 것이 무엇인가? - [What is Q, K, V? - Information Retrieval analogy](https://github.com/eubinecto/k4ji_ai/issues/40#issuecomment-699203963)
-- BERT란 어떤 모델인가? - [집현전 중급 2조 BERT 논문리뷰](https://youtu.be/moCNw4j2Fkw)
-- Contextual embedding은 무엇이며, 어떤식으로 사용할 수 있는가? - [*Vokenization: Improving Language Understanding with Contextualized, Visual-Grounded Supervision* 리뷰](https://www.notion.so/Vokenization-Improving-Language-Understanding-with-Contextualized-Visual-Grounded-Supervision-9abf06931d474dba89c181d5d1299dba)
-- BERT를 Reverse-dictionary를 구현하기 위해서 어떤식으로 활용할 수 있을까? - [*BERT for Monolingual and Cross-Lingual Reverse Dictionary* 리뷰](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414)
+How did I end up with Wisdomify?:
+1. Word2Vec: `King = Queen - woman`, 이런게 된다는게 너무 재미있고 신기하다. 이걸로 게임을 만들어볼 수 있지 않을까? - [Toy 프로젝트: *word-chemist*](https://github.com/eubinecto/word-chemist)
+2. 생각보다 잘 되는데? 그럼 Word2Vec로 reverse-dictionary도 구현할 수 있지 않을까? - [학사 졸업 프로젝트 - Idiomify](https://github.com/eubinecto/idiomify)
+3. Sum of Word2Vectors로 reverse-dictionary를 구현하기에는 분명한 한계가 보인다. 문장의 맥락을 이해하는 Language Model은 없는가? - [논문 리뷰: *Attention is All you Need*](https://www.notion.so/Attention-is-All-you-Need-25bb9df8717940f899c1c6eb2a87aa43)    
+4. Attention의 목적이 Contextualised embedding을 얻기 위함임은 알겠다. 그런데 왜 각 파라미터를 Q, K, V라고 이름지었는가? 무엇에 비유를 하는 것인가?- [What is Q, K, V? - Information Retrieval analogy](https://github.com/eubinecto/k4ji_ai/issues/40#issuecomment-699203963)
+5. Contextualised embedding을 활용한 사례에는 무엇이 있는가? - [논문 리뷰: *Vokenization: Improving Language Understanding with Contextualized, Visual-Grounded Supervision*](https://www.notion.so/Vokenization-Improving-Language-Understanding-with-Contextualized-Visual-Grounded-Supervision-9abf06931d474dba89c181d5d1299dba)
+6. Vokenisation 논문을 보니 BERT를 적극 활용하더라. BERT란 어떤 모델인가? - [집현전 중급 2조 BERT 논문리뷰](https://youtu.be/moCNw4j2Fkw)
+7. 아, 혹시 사전훈련된 BERT를 활용한다면 적은 데이터를 가지고도 reverse-dictionary task를 구현할 수 있지 않을까? 누군가 이미 시도를 해보았을 것 같은데? - [논문리뷰: *BERT for Monolingual and Cross-Lingual Reverse Dictionary*](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414)
+8. 로스함수를 이해했다. 한번 BERT로 간단한 reverse-dictionary를 구현해보자 - [Toy 프로젝트: fruitify - a reverse-dictionary of fruits!](https://github.com/eubinecto/fruitify) 
+9. fruitify: [성공적인 첫 데모!](https://github.com/eubinecto/fruitify/issues/7#issuecomment-867341908)
+10.  BERT로 reverse-dictionary를 구현하는 방법을 이해했고, 실재로 구현도 해보았다. 이제 생각해보아야 하는 것은 reverse-dictionary로 풀만한 가치가 있는 문제를
+찾는 것 - Wisdomify: 자기주도적으로 우리말 속담을 학습하는 것을 도와주는 reverse-dictionary.
+     
 
 ## Methods
-hyperparamters:
+
+### The loss function
+
+앞서 언급한 논문 (Yan et al., 2020)에서 언급한
+
+[BERT for monolingual reverse-dictionary](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414#fdc245ac3f9b44bfa7fd1a506ae7dde2)|
+--- |
+![](.readme_images/3e2407f9.png) |
+![](.readme_images/fd7e409b.png) |
+
+
+### Hyper parameters
+The hyper parameters used for `version_0`:
 ```json
-"a": {
+{
+  "bert_model": "beomi/kcbert-base",
+  "versions": {
+    "version_0": {
+      "desc": "The first minimal-viable-product of wisdomify",
       "data": "wisdom2def",
       "k": 11,
       "lr": 0.00001,
@@ -33,22 +115,20 @@ hyperparamters:
       "num_workers": 4,
       "shuffle": true
     }
+  }
+}
 ```
-
-wisdomifier(prototype):
-```
+### Training
+```text
 wisdomify_def_epoch=19_train_loss=0.00.ckpt
 ```
-- 훈련셋에서 로스가 0에 수렴할 때 까지 훈련을 진행함. 가능한 빠른 시일 내에 프로토타입을 만들어보는것이 목표였으므로, 일단 validation/test 셋 구축을 스킵,
+- 훈련셋에서 로스가 0에 수렴할 때 까지 훈련을 진행함. 가능한 빠른 시일 내에 프로토타입을 만들어보는것이 목표였으므로, 일단 validation/test set 구축을 스킵,
 오버피팅이 되더라도 훈련 셋에만 핏을 함.
-- 모델 다운로드는 여기에서 (1.31GB): ...
-- 사이즈가 상당히 크므로, 나중에 knowledge distilation [(Hinton, 2015)](https://arxiv.org/abs/1503.02531)으로 경량화하는 것도 고려해볼만하다.
+- 사이즈가 상당히 크므로, 나중에 knowledge distilation (Hinton, 2015)으로 경량화하는 것도 고려해봐야할 것.
 
-
-dataset:
-- 사이즈가 작으므로 그냥 repo에 업로드 한 상태 - [wisdom2def](https://github.com/eubinecto/wisdomify/blob/main/data/wisdom2def.tsv) - 추후 데이터 셋을 늘리게 되면
-kaggle업로드 해서 접근하는 편이 나을 것. 
-- 10개의 속담 별로 5개의 정의를 구글링으로 손수 수집
+### Dataset
+- 10개의 속담 별로 5개의 서로다른 정의를 구글링으로 손수 수집. 사이즈가 작으므로 그냥 repo에 업로드 함: [wisdom2def](https://github.com/eubinecto/wisdomify/blob/main/data/wisdom2def.tsv)
+- 추후 데이터를 더 수집하게 되면 kaggle이나 dropbox에 업로드 해서 접근하는 편이 나을 것.
 
 ## Examples
 
@@ -117,7 +197,7 @@ kaggle업로드 해서 접근하는 편이 나을 것.
 9: ('서당개 삼 년이면 풍월을 읊는다', 3.986170074576911e-11)
 ```
 
-Description이 아닌 용례를 입력으로 주어도 용례에 맞는 속담을 예측할 수 있을까? 각 속담의 사전적 정의만 훈련에 사용되었다는 것을 고려해보았을 때,
+속담의 용례를 입력으로 주어도 용례에 맞는 속담을 예측할 수 있을까? 각 속담의 사전적 정의만 훈련에 사용되었다는 것을 고려해보았을 때,
 만약 이것이 가능하다면 사전학습된 weight를 십분활용하고 있다는 것의 방증이 될 것. 
 
 - *커피가 없으니 홍차라도 마시자*
@@ -244,4 +324,20 @@ Description이 아닌 용례를 입력으로 주어도 용례에 맞는 속담�
 ```
 
 ## Future Work
-... 내일 정리하기.
+- wisdomify task에 적합한 BERT 모델 선정하기
+- 10개의 속담에서 현용되는 모든 우리말 속담으로 search space를 확장하기
+- 우리말 속담의 용례를 각 속담 별로 적어도 30개는 수집하기  
+- 우리말 속담 용례 말뭉치로 domain adoption 진행하기 (Gururangan et al., 2020)
+- feature engineering: `[ClS]`의 hidden representation에 sentiment classifier를 달아서 로스함수에 활용하기
+- 모델의 접근성을 높이기 위해 웹에 모델을 deploy하기. back-end로는 django (유빈), front-end로는 vue.js (종윤)를 사용하자.
+
+## References
+- Devlin et al., 2018
+- Junbum, 2020 
+- Yan et al. 2020
+- Hinton et al., ...
+- Gururangan, 2020   
+- BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding* [](https://arxiv.org/abs/1810.04805)
+- [(Junbum, 2020)](https://github.com/Beomi/KcBERT)
+- *BERT for Monolingual and Cross-Lingual Reverse Dictionary* [(Yan et al., 2020)](https://arxiv.org/abs/2009.14790)
+- (Hinton et al., ...) (https://arxiv.org/abs/1503.02531)
