@@ -1,31 +1,31 @@
 # Wisdomify
 
 A BERT-based reverse-dictionary of Korean proverbs.
-
-contributors:
 - 김유빈 : 모델링 / 데이터 수집 / 프로젝트 설계 / back-end
 - 김종윤 : 데이터 수집 / 프로젝트 설계 / front-end
 
-dependencies:
+
+## Quick Start
+
+Check the dependencies:
 ```text
 pytorch-lightning==1.3.7.post0
 transformers==4.8.1
 ```
 
-## Quick Start
-
-Setup the project and a virtualenv:
+Clone the project and set up a virtualenv for the project:
 ```bash
 git clone https://github.com/eubinecto/wisdomify.git
 virtualenv wisdomifyenv
-source wisdomify/bin/activate
-pip3 install -r ./requirements.txt  # install the dependancies
+source wisdomify/bin/activate  # activate the virtualenv
+pip3 install -r ./requirements.txt  # install the required libraries onto the virtualenv
 ```
+
 Download a pre-trained wisdomify:
 
 link | description 
 --- | --- 
-[version_0.zip](BERT-based reverse-dictionary of Korean proverbs) (1.5GB) | the first minimal-viable-product of Wisdomify 
+[version_0.zip](https://www.dropbox.com/s/tw491n5dnk8195c/version_0.zip?dl=0) (1.5GB) | the first minimal-viable-product of Wisdomify 
 version_1.zip | to be added...
 
 Unzip the model package under `wisdomify/data/lightning_logs`:
@@ -90,7 +90,7 @@ How did I end up with Wisdomify?:
 
 ### The loss function
 
-앞서 언급한 논문 (Yan et al., 2020)에서 언급한
+앞서 언급한 논문 (Yan et al., 2020)에서 제시한 reverse-dictionary task를 위한 loss:
 
 [BERT for monolingual reverse-dictionary](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414#fdc245ac3f9b44bfa7fd1a506ae7dde2)|
 --- |
@@ -332,12 +332,8 @@ wisdomify_def_epoch=19_train_loss=0.00.ckpt
 - 모델의 접근성을 높이기 위해 웹에 모델을 deploy하기. back-end로는 django (유빈), front-end로는 vue.js (종윤)를 사용하자.
 
 ## References
-- Devlin et al., 2018
-- Junbum, 2020 
-- Yan et al. 2020
-- Hinton et al., ...
-- Gururangan, 2020   
-- BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding* [](https://arxiv.org/abs/1810.04805)
-- [(Junbum, 2020)](https://github.com/Beomi/KcBERT)
-- *BERT for Monolingual and Cross-Lingual Reverse Dictionary* [(Yan et al., 2020)](https://arxiv.org/abs/2009.14790)
-- (Hinton et al., ...) (https://arxiv.org/abs/1503.02531)
+- Devlin,  J. Cheng, M. Lee, K. Toutanova, K. (2018). *: Pre-training of Deep Bidirectional Transformers for Language Understanding*. 
+- Gururangan, S. Marasović, A. Swayamdipta, S. Lo, K. Beltagy, I. Downey, D. Smith, N. (2020). *Don't Stop Pretraining: Adapt Language Models to Domains and Tasks*
+- Hinton, G. Vinyals, O. Dean, J. (2015). *Distilling the Knowledge in a Neural Network*
+- Junbum, L. (2020). *KcBERT: Korean Comments BERT*
+- Yan, H. Li, X. Qiu, X. Deng, B. (2020). *BERT for Monolingual and Cross-Lingual Reverse Dictionary*
