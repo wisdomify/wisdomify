@@ -46,7 +46,8 @@ data
 ├── wisdom2def.tsv
 └── wisdom2eg.tsv
 ```
-wisdomify a sentence:
+
+Wisdomify a sentence:
 ```text
 python3 -m wisdomify.main.infer --ver="version_0" --desc="까불지말고 침착하여라"
 ```
@@ -63,7 +64,6 @@ python3 -m wisdomify.main.infer --ver="version_0" --desc="까불지말고 침착
 8: (서당개 삼 년이면 풍월을 읊는다, 0.0001)
 9: (소문난 잔치에 먹을 것 없다, 0.0000)
 ```
-
 
 
 ## Related Work
@@ -179,8 +179,6 @@ wisdomify_def_epoch=19_train_loss=0.00.ckpt
 8: ('꿩 대신 닭', 0.00044754118425771594)
 9: ('서당개 삼 년이면 풍월을 읊는다', 6.364324889318596e-08)
 ```
-
-
 
 - *쓸데없는 변명은 그만 둬*
 ```
@@ -329,7 +327,7 @@ wisdomify_def_epoch=19_train_loss=0.00.ckpt
 - 우리말 속담의 용례를 각 속담 별로 적어도 30개는 수집하기  
 - 우리말 속담 용례 말뭉치로 domain adoption 진행하기 (Gururangan et al., 2020)
 - feature engineering: `[ClS]`의 hidden representation에 sentiment classifier를 달아서 로스함수에 활용하기
-- 모델의 접근성을 높이기 위해 웹에 모델을 deploy하기. back-end로는 django (유빈), front-end로는 vue.js (종윤)를 사용하자.
+- 모델의 접근성을 높이기 위해 웹에 모델을 deploy하기. back-end로는 django (유빈), front-end로는 vue.js (종윤)를 사용하자
 
 ## References
 - Devlin,  J. Cheng, M. Lee, K. Toutanova, K. (2018). *: Pre-training of Deep Bidirectional Transformers for Language Understanding*. 
