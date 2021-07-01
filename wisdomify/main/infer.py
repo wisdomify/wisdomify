@@ -37,7 +37,7 @@ def main():
 
     bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
-    vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB)
+    vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
     rd.eval()  # otherwise, the model will output different results with the same inputs
     rd = rd.to(device)  # otherwise, you can not run the inference process on GPUs.
