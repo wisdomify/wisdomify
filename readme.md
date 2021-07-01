@@ -21,18 +21,21 @@ source wisdomify/bin/activate  # activate the virtualenv
 pip3 install -r ./requirements.txt  # install the required libraries onto the virtualenv
 ```
 
-Download a pre-trained wisdomify:
+Download a pre-trained wisdomify and unzip the model package under `wisdomify/data/lightning_logs`:
 
-link | description 
+version | description 
 --- | --- 
-[version_0.zip](https://www.dropbox.com/s/tw491n5dnk8195c/version_0.zip?dl=0) (1.5GB) | the first minimal-viable-product of Wisdomify 
-version_1.zip | to be added...
+version_0.zip (1.5GB) | the first minimal-viable-product of Wisdomify 
+version_1.zip (...) | to be added...
 
-Unzip the model package under `wisdomify/data/lightning_logs`:
 ```bash
 cd data/lightning_logs
+VER="version_0"  # choose the version here
+wget "$VER.zip" "https://www.dropbox.com/s/tw491n5dnk8195c/$VER.zip?dl=1"
 unzip version_0.zip
+rm version_0.zip
 ```
+
 Make sure you have a directory structure like the following:
 ```text
 data
