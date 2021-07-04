@@ -16,8 +16,9 @@ transformers==4.8.1
 Clone the project and set up a virtualenv for the project:
 ```bash
 git clone https://github.com/eubinecto/wisdomify.git
+cd wisdomify
 virtualenv wisdomifyenv
-source wisdomify/bin/activate  # activate the virtualenv
+source wisdomifyenv/bin/activate  # activate the virtualenv
 pip3 install -r ./requirements.txt  # install the required libraries onto the virtualenv
 ```
 
@@ -31,9 +32,10 @@ version_1.zip (...) | to be added...
 ```bash
 cd data/lightning_logs
 VER="version_0"  # choose the version here
-wget "$VER.zip" "https://www.dropbox.com/s/tw491n5dnk8195c/$VER.zip?dl=1"
-unzip version_0.zip
-rm version_0.zip
+wget -O "$VER.zip" "https://www.dropbox.com/s/tw491n5dnk8195c/$VER.zip?dl=1"
+unzip $VER.zip
+rm $VER.zip
+cd ../../  # go back to the project root
 ```
 
 Make sure you have a directory structure like the following:
