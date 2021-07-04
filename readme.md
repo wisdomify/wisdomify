@@ -1,4 +1,6 @@
 # Wisdomify
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1WH-ukPOV69lL41wkSPH8mi33AzCa3vQd?usp=sharing)
+
 
 A BERT-based reverse-dictionary of Korean proverbs.
 - 김유빈 : 모델링 / 데이터 수집 / 프로젝트 설계 / back-end
