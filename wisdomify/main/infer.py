@@ -4,7 +4,7 @@ load a pre-trained wisdomify, and play with it.
 import argparse
 import torch
 import yaml
-from transformers import AutoTokenizer, AutoModelForMaskedLM
+from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoConfig
 from wisdomify.loaders import load_conf
 from wisdomify.models import RD, Wisdomifier
 from wisdomify.paths import WISDOMIFIER_V_0_CKPT, WISDOMIFIER_V_0_HPARAMS_YAML
@@ -35,7 +35,7 @@ def main():
         # this version is not supported yet.
         raise NotImplementedError("Invalid version provided".format(ver))
 
-    bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
+    bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
