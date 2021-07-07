@@ -16,7 +16,7 @@ def main():
         preds = torch.randn(10, 5).softmax(dim=-1)
         target = torch.randint(5, (10,))
         # metric on current batch
-        acc = metric(preds, target)  # this will accumulate the pairs.
+        acc = metric(preds, target)  # this will get use of metric.compute() function.
         print(f"Accuracy on batch {i}: {acc}")
 
     # metric on all batches using custom accumulation
