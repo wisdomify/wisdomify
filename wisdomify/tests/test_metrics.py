@@ -16,8 +16,8 @@ class TestRDMetric(unittest.TestCase):
         cls.preds = torch.Tensor([[0.6, 0.3, 0.1],
                                   [0.3, 0.1, 0.6],
                                   [0.1, 0.6, 0.3]])  # should be normalised
-        cls.targets = torch.LongTensor([1, 1, 1])  # should be a long tensor
-        cls.ranks = [1, 2, 0]
+        cls.targets = torch.LongTensor([0, 1, 2])  # should be a long tensor
+        cls.ranks = [0, 2, 1]
 
     def test_update(self):
         rd_metric = RDMetric()
@@ -26,7 +26,7 @@ class TestRDMetric(unittest.TestCase):
         self.assertEqual(1, rd_metric.correct_top1)
         self.assertEqual(3, rd_metric.correct_top10)
         self.assertEqual(3, rd_metric.correct_top100)
-        self.assertEqual(self.targets.numel(), rd_metric.total)
+        self.assertEqual(self.preds.shape[0], rd_metric.total)
 
     def test_compute(self):
         rd_metric = RDMetric()

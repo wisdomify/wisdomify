@@ -23,13 +23,14 @@ class RDMetric(Metric):
     def update(self, preds: torch.Tensor, targets: torch.Tensor) -> None:  # noqa
         # so, how do I get the ranks?
         argsorted = torch.argsort(preds, dim=1, descending=True)
-        self.ranks = (argsorted == targets).nonzero(as_tuple=True)[1].tolist()  # noqa, see examples/explore_nonzero
-        self.correct_top1 = torch.eq(argsorted[:, :1], targets[:1]).sum()  # noqa
-        self.correct_top10 = torch.eq(argsorted[:, :10], targets[:10]).sum()  # noqa
-        self.correct_top100 = torch.eq(argsorted[:, :100], targets[:100]).sum()  # noqa
-        self.total += targets.numel()
+        targets = targets.repeat(argsorted.shape[1], 1).T
+        self.ranks += torch.eq(argsorted, targets).nonzero(as_tuple=True)[1].tolist()  # noqa, see examples/explore_nonzero
+        self.correct_top1 += torch.eq(argsorted[:, :1], targets[:, :1]).sum()  # noqa
+        self.correct_top10 += torch.eq(argsorted[:, :10], targets[:, :10]).sum()  # noqa
+        self.correct_top100 += torch.eq(argsorted[:, :100], targets[:, :100]).sum()  # noqa
+        self.total += preds.shape[0]
 
-    def compute(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def compute(self) -> Tuple[float, float, float, float, float]:
         """
         returns: median, var, top1 acc, top10 acc, top10 acc.
         """
@@ -38,4 +39,4 @@ class RDMetric(Metric):
         top1_acc = self.correct_top1.float() / self.total
         top10_acc = self.correct_top10.float() / self.total
         top100_acc = self.correct_top100.float() / self.total
-        return median, var, top1_acc, top10_acc, top100_acc
+        return median, var, top1_acc.item(), top10_acc.item(), top100_acc.item()
