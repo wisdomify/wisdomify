@@ -44,10 +44,8 @@ class TestRD(unittest.TestCase):
         self.assertEqual(S_subword.shape[2], self.S)
 
     def test_S_word_dim(self):
-        # (N, 3, L) -> (N, K, |S|)
-        S_subword = self.rd.forward(self.X)
-        # (N, K, |S|) -> (N, |V|)
-        S_word = self.rd.S_word(S_subword)
+        # (N, 3, L) -> (N, |V|)
+        S_word = self.rd.S_word(self.X)
         self.assertEqual(S_word.shape[0], self.X.shape[0])
         self.assertEqual(S_word.shape[1], self.V)
 
