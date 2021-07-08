@@ -43,17 +43,23 @@ class RD(pl.LightningModule):
         S_subword = self.bert_mlm.cls(H_k)  # (N, K, 768) ->  (N, K, |S|)
         return S_subword
 
-    def S_word(self, S_subword: Tensor) -> Tensor:
+    def S_word(self, X: Tensor) -> Tensor:
         # pineapple -> pine, ###apple, mask, mask, mask, mask, mask
         # [ ...,
         #   ...,
         #   ...
         #   [98, 122, 103, 103]]
         # [
+        S_subword = self.forward(X)
         word2subs = self.vocab2subwords.T.repeat(S_subword.shape[0], 1, 1)  # (|V|, K) -> (N, K, |V|)
         S_word = S_subword.gather(dim=-1, index=word2subs)  # (N, K, |S|) -> (N, K, |V|)
         S_word = S_word.sum(dim=1)  # (N, K, |V|) -> (N, |V|)
         return S_word
+
+    def S_word_probs(self, X: Tensor) -> Tensor:
+        S_word = self.S_word(X)  # logits
+        S_word_probs = F.softmax(S_word, dim=1)  # (N, |V|) -> (N, |V|) softmax along |V|
+        return S_word_probs
 
     def training_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int) -> Tensor:
         """
@@ -65,8 +71,7 @@ class RD(pl.LightningModule):
         # load the batches on the device.
         X = X.to(self.device)
         y = y.to(self.device)
-        S_subword = self.forward(X)  # (N, 3, L) -> (N, K, |S|)
-        S_word = self.S_word(S_subword)  # (N, K, |S|) -> (N, |V|)
+        S_word = self.S_word(X)
         loss = F.cross_entropy(S_word, y)  # (N, |V|) -> (N,)
         loss = loss.sum()  # (N,) -> scalar
         self.log('train_loss', loss.item())  # monitor this, while training.
@@ -92,9 +97,7 @@ class Wisdomifier:
         wisdom2sent = [("", desc) for desc in sents]
         X = build_X(wisdom2sent, tokenizer=self.tokenizer, k=self.rd.hparams['k']).to(self.rd.device)
         # get S_subword for this.
-        S_subword = self.rd.forward(X)
-        S_word_logits = self.rd.S_word(S_subword)  # (N, |V|).
-        S_word_probs = F.softmax(S_word_logits, dim=1)  # (N, |V|) -> (N, |V|) softmax along |V|
+        S_word_probs = self.rd.S_word_probs(X)
         results = list()
         for S_word_prob in S_word_probs.tolist():
             wisdom2prob = [
