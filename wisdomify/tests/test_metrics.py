@@ -34,4 +34,6 @@ class TestRDMetric(unittest.TestCase):
         median, var, top1, top10, top100 = rd_metric.compute()
         self.assertEqual(np.median(self.ranks), median)
         self.assertEqual(np.var(self.ranks), var)
-
+        self.assertEqual(1 / 3, top1)
+        self.assertEqual(3 / 3, top10)
+        self.assertEqual(3 / 3, top100)
