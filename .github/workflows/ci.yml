@@ -1,7 +1,7 @@
 name: Python application
 on:
-   push:
-     branches: [ feature_20 ]
+  push:
+    branches: [ feature_20 ]
   pull_request:
     branches: [ main ]
 
