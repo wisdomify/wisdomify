@@ -1,7 +1,5 @@
-name: Python application
+name: wisdomify pytest on pull_request
 on:
-  push:
-    branches: [ feature_20 ]
   pull_request:
     branches: [ main ]
 
