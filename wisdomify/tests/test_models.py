@@ -52,4 +52,4 @@ class TestRD(unittest.TestCase):
     def test_training_step_dim(self):
         # (N, 3, L) -> scalar
         loss = self.rd.training_step((self.X, self.y), 0)
-        self.assertEqual(len(loss.shape), 0)  # should be a scalar
+        self.assertEqual(len(loss.shape), 2)  # should be a scalar
