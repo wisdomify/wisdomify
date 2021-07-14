@@ -7,14 +7,12 @@ from wisdomify.builders import build_X, build_y
 
 class WisdomDataset(Dataset):
     def __init__(self,
-                 wisdom2sent: List[Tuple[str, str]],
-                 tokenizer: BertTokenizerFast,
-                 k: int,
-                 vocab: List[str]):
+                 X: torch.Tensor,
+                 y: torch.Tensor):
         # (N, 3, L)
-        self.X = build_X(wisdom2sent, tokenizer, k)
+        self.X = X
         # (N,)
-        self.y = build_y(wisdom2sent, vocab)
+        self.y = y
 
     def __len__(self) -> int:
         """

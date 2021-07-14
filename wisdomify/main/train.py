@@ -7,7 +7,7 @@ from transformers import AutoModelForMaskedLM, AutoTokenizer
 from wisdomify.datasets import WisdomDataset
 from wisdomify.loaders import load_wisdom2def, load_conf, load_wisdom2eg
 from wisdomify.models import RD
-from wisdomify.builders import build_vocab2subwords
+from wisdomify.builders import build_vocab2subwords, build_X, build_y
 from wisdomify.paths import DATA_DIR
 from wisdomify.vocab import VOCAB
 
@@ -45,7 +45,9 @@ def main():
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
-    dataset = WisdomDataset(wisdom2sent, tokenizer, k, VOCAB)
+    X = build_X(wisdom2sent, tokenizer, k).to(device)
+    y = build_y(wisdom2sent, VOCAB).to(device)
+    dataset = WisdomDataset(X, y)
     dataset.upsample(repeat)  # just populate the batch
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd

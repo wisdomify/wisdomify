@@ -1,5 +1,4 @@
 from typing import Tuple
-
 import numpy as np
 from torchmetrics import Metric
 import torch
