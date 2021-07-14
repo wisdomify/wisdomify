@@ -21,7 +21,8 @@ def build_X(wisdom2sent: List[Tuple[str, str]], tokenizer: BertTokenizerFast, k:
                           return_tensors="pt",
                           add_special_tokens=True,
                           truncation=True,
-                          padding=True)
+                          padding=True,
+                          verbose=True)
     return torch.stack([encodings['input_ids'],
                         # token type for the padded tokens? -> they are masked with the
                         # attention mask anyways

@@ -2,7 +2,7 @@ import unittest
 import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForMaskedLM
-from wisdomify.builders import build_vocab2subwords
+from wisdomify.builders import build_vocab2subwords, build_X, build_y
 from wisdomify.models import RD
 from wisdomify.loaders import load_conf, load_wisdom2def
 from wisdomify.vocab import VOCAB
@@ -25,11 +25,14 @@ class TestRD(unittest.TestCase):
         bert_model = load_conf()['bert_model']
         bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        wisdom2sent = load_wisdom2def()
         vocab2subwords = build_vocab2subwords(tokenizer, k=k, vocab=VOCAB)
+        X = build_X(wisdom2sent, tokenizer, k)
+        y = build_y(wisdom2sent, VOCAB)
         cls.rd = RD(bert_mlm, vocab2subwords, k=k, lr=lr)
         cls.S = tokenizer.vocab_size
         # load a single batch
-        dataset = WisdomDataset(load_wisdom2def(), tokenizer, k=k, vocab=VOCAB)
+        dataset = WisdomDataset(X, y)
         loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
         X, y = next(iter(loader))  # just get the first batch.
         cls.X = X
