@@ -55,12 +55,14 @@ def main():
     wisdomifier = Wisdomifier(rd, tokenizer)
     print('wisdomifier load', time.time() - start)
 
-    print("### desc: {} ###".format(desc))
-    for results in wisdomifier.wisdomify(sents=[desc]):
-        for idx, res in enumerate(results):
-            print("{}: ({}, {:.4f})".format(idx, res[0], res[1]))
+    for desc in ["왜 하필이면 오늘이야", "까불지말고 침착하여라", "근처에 있을 것이라고는 전혀 예상하지 못했다", "쓸데없는 변명은 그만 둬", "커피가 없으니 홍차라도 마시자",
+                 "결과가 좋아서 기쁘다", "실제로는 별거없네", "코카콜라?? 펩시 마시자"]:
+        print("### desc: {} ###".format(desc))
+        for results in wisdomifier.wisdomify(sents=[desc]):
+            for idx, res in enumerate(results):
+                print("{}: ({}, {:.4f})".format(idx, res[0], res[1]))
 
-    print('wisdomify infer time', time.time() - start)
+        print('wisdomify infer time', time.time() - start)
 
 
 if __name__ == '__main__':
