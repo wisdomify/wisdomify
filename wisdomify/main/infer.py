@@ -11,8 +11,11 @@ from wisdomify.paths import WISDOMIFIER_V_0_CKPT, WISDOMIFIER_V_0_HPARAMS_YAML
 from wisdomify.vocab import VOCAB
 from wisdomify.builders import build_vocab2subwords
 
+import time
+
 
 def main():
+    start = time.time()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     parser = argparse.ArgumentParser()
@@ -25,6 +28,7 @@ def main():
     desc: str = args.desc
     conf = load_conf()
     bert_model: str = conf['bert_model']
+    print('parser variable load', time.time() - start)
 
     if ver == "version_0":
         wisdomifier_path = WISDOMIFIER_V_0_CKPT
@@ -34,19 +38,29 @@ def main():
     else:
         # this version is not supported yet.
         raise NotImplementedError("Invalid version provided".format(ver))
+    print('hparams load', time.time() - start)
 
     bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
+    print('bert mlm config load', time.time() - start)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
+    print('tokenizer instance load', time.time() - start)
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
+    print('vocab2subwords instance load', time.time() - start)
     rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
+    print('rd(load from checkpoint) instance load', time.time() - start)
     rd.eval()  # otherwise, the model will output different results with the same inputs
+    print('rd instance evaluation', time.time() - start)
     rd = rd.to(device)  # otherwise, you can not run the inference process on GPUs.
+    print('rd device setting', time.time() - start)
     wisdomifier = Wisdomifier(rd, tokenizer)
+    print('wisdomifier load', time.time() - start)
 
     print("### desc: {} ###".format(desc))
     for results in wisdomifier.wisdomify(sents=[desc]):
         for idx, res in enumerate(results):
             print("{}: ({}, {:.4f})".format(idx, res[0], res[1]))
+
+    print('wisdomify infer time', time.time() - start)
 
 
 if __name__ == '__main__':
