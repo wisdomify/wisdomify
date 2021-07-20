@@ -1,5 +1,5 @@
 # Base python image Build
-FROM python:3.8-buster AS builder
+FROM python:3.8-buster
 
 WORKDIR /wisdomify
 COPY requirements.txt /wisdomify/
@@ -10,12 +10,9 @@ RUN pip install -r requirements.txt
 RUN VER="version_0"  # choose the version here \
     wget -O "data/lightning_logs/$VER.zip" "https://www.dropbox.com/s/tw491n5dnk8195c/$VER.zip?dl=1" \
     unzip data/lightning_logs/$VER.zip \
-    rm data/lightning_logs/$VER.zip \
+    rm data/lightning_logs/$VER.zip
 
-# Django application image build
-FROM builder AS deployer
-WORKDIR /wisdomify
-COPY --from=builder /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
 
 COPY . .
 
