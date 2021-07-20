@@ -11,6 +11,8 @@ from wisdomify.builders import build_vocab2subwords
 from wisdomify.paths import DATA_DIR
 from wisdomify.vocab import VOCAB
 
+from pytorch_lightning.loggers import TensorBoardLogger
+
 
 def main():
     # --- setup the device --- #
@@ -59,10 +61,12 @@ def main():
         filename=model_name
     )
     # --- instantiate the trainer --- #
+    logger = TensorBoardLogger(save_dir="../../data/lightning_logs/version_0/tb_logs", name="wisdomify", version=0)
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          max_epochs=max_epochs,
                          callbacks=[checkpoint_callback],
-                         default_root_dir=DATA_DIR)
+                         default_root_dir=DATA_DIR,
+                         logger=logger)
     # --- start training --- #
     trainer.fit(model=rd,
                 train_dataloader=dataloader)
