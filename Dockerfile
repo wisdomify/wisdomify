@@ -2,16 +2,15 @@
 FROM python:3.8-buster
 
 WORKDIR /wisdomify
+COPY . .
 COPY requirements.txt /wisdomify/
 
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-RUN pwd
-
-ADD https://www.dropbox.com/s/tw491n5dnk8195c/version_0.zip?dl=1/ ./data/lightning_logs/
-
-COPY . .
+RUN curl -L https://www.dropbox.com/s/dl/tw491n5dnk8195c/version_0.zip > ./data/lightning_logs/version_0.zip
+RUN unzip ./data/lightning_logs/version_0.zip -d ./data/lightning_logs/
+RUN rm ./data/lightning_logs/version_0.zip
 
 # Deploy
 EXPOSE 5000
