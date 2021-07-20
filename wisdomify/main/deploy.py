@@ -134,7 +134,7 @@ def wisdomifySearch():
             desc_result=desc_result
         )
     return render_template_string(
-            """
+        """
             <html>
             <head>
                 <title>
@@ -157,7 +157,7 @@ def wisdomifySearch():
             </body>
             </html>
             """
-        )
+    )
 
 
 @app.route('/api', methods=['GET'])
@@ -174,6 +174,11 @@ def wisdomifyAPI():
         )))
 
     return jsonify(None)
+
+
+@app.route('/healthz', methods=['GET'])
+def checkHealth():
+    return "Alive", 200
 
 
 if __name__ == '__main__':
