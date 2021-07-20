@@ -12,8 +12,6 @@ RUN VER="version_0"  # choose the version here \
     unzip data/lightning_logs/$VER.zip \
     rm data/lightning_logs/$VER.zip
 
-COPY /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
-
 COPY . .
 
 # Deploy
