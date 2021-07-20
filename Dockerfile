@@ -1,5 +1,8 @@
 # Base python image Build
-FROM python:3.8-buster
+FROM ubuntu:14.04
+
+RUN  apt-get update \
+  && apt-get install -y wget \
 
 WORKDIR /wisdomify
 COPY requirements.txt /wisdomify/
@@ -7,9 +10,11 @@ COPY requirements.txt /wisdomify/
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-RUN wget -O "data/lightning_logs/version_0.zip" "https://www.dropbox.com/s/tw491n5dnk8195c/version_0.zip?dl=1"
-RUN unzip data/lightning_logs/version_0.zip -d data/lightning_logs/
-RUN rm data/lightning_logs/version_0.zip
+RUN pwd
+
+RUN wget -O "./data/lightning_logs/version_0.zip" "https://www.dropbox.com/s/tw491n5dnk8195c/version_0.zip?dl=1"
+RUN unzip ./data/lightning_logs/version_0.zip -d ./data/lightning_logs/
+RUN rm ./data/lightning_logs/version_0.zip
 
 COPY . .
 
