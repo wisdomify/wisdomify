@@ -1,8 +1,5 @@
 # Base python image Build
-FROM ubuntu:14.04
-
-RUN  apt-get update \
-  && apt-get install -y wget \
+FROM python:3.8-buster
 
 WORKDIR /wisdomify
 COPY requirements.txt /wisdomify/
