@@ -9,9 +9,7 @@ RUN pip install -r requirements.txt
 
 RUN pwd
 
-RUN wget -O "./data/lightning_logs/version_0.zip" "https://www.dropbox.com/s/tw491n5dnk8195c/version_0.zip?dl=1"
-RUN unzip ./data/lightning_logs/version_0.zip -d ./data/lightning_logs/
-RUN rm ./data/lightning_logs/version_0.zip
+ADD https://www.dropbox.com/s/tw491n5dnk8195c/version_0.zip?dl=1/ ./data/lightning_logs/
 
 COPY . .
 
