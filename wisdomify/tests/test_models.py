@@ -47,12 +47,13 @@ class TestRD(unittest.TestCase):
         self.assertEqual(S_subword.shape[2], self.S)
 
     def test_S_word_dim(self):
+        S_subword = self.rd.forward(self.X)
         # (N, 3, L) -> (N, |V|)
-        S_word = self.rd.S_word(self.X)
+        S_word = self.rd.S_word(S_subword)
         self.assertEqual(S_word.shape[0], self.X.shape[0])
         self.assertEqual(S_word.shape[1], self.V)
 
     def test_training_step_dim(self):
         # (N, 3, L) -> scalar
-        loss = self.rd.training_step((self.X, self.y), 0)
+        loss = self.rd.training_step((self.X, self.y), 0)['loss']
         self.assertEqual(len(loss.shape), 0)  # should be a scalar

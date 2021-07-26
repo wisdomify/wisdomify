@@ -17,7 +17,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
-                        default="version_0")
+                        default="0")
     parser.add_argument("--desc", type=str,
                         default="왜 하필이면 오늘이야")
     args = parser.parse_args()

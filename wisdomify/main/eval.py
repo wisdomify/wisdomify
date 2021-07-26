@@ -17,7 +17,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
-                        default="version_0")
+                        default="0")
 
     args = parser.parse_args()
     ver: str = args.ver
