@@ -1,7 +1,7 @@
 {
   "bert_model": "beomi/kcbert-base",
   "versions": {
-    "version_0": {
+    "0": {
       "desc": "The first minimal-viable-product of wisdomify",
       "data": "wisdom2def",
       "k": 11,

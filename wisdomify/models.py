@@ -11,6 +11,7 @@ from transformers import BertTokenizerFast
 from transformers.models.bert.modeling_bert import BertForMaskedLM
 from torch.nn import functional as F
 from wisdomify.builders import build_X
+from wisdomify.metrics import RDMetric
 from wisdomify.vocab import VOCAB
 
 
@@ -25,6 +26,8 @@ class RD(pl.LightningModule):
         self.bert_mlm = bert_mlm
         # -- to be used to compute S_word -- #
         self.vocab2subwords = vocab2subwords
+        # -- to be used to evaluate the model -- #
+        self.rd_metric = RDMetric()
         # -- hyper params --- #
         # should be saved to self.hparams
         # https://github.com/PyTorchLightning/pytorch-lightning/issues/4390#issue-730493746
@@ -55,11 +58,11 @@ class RD(pl.LightningModule):
         S_word = S_word.sum(dim=1)  # (N, K, |V|) -> (N, |V|)
         return S_word
 
-    def training_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int) -> Tensor:
+    def training_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int) -> dict:
         """
         :param batch: A tuple of X, y, subword_ids; ((N, 3, L), (N,),
         :param batch_idx: the index of the batch
-        :return: (1,); the loss for this batch
+        :return: (1,); the train_loss for this batch
         """
         X, y = batch
         # load the batches on the device.
@@ -67,10 +70,44 @@ class RD(pl.LightningModule):
         y = y.to(self.device)
         S_subword = self.forward(X)
         S_word = self.S_word(S_subword)
-        loss = F.cross_entropy(S_word, y)  # (N, |V|) -> (N,)
-        loss = loss.sum()  # (N,) -> scalar
-        self.log('train_loss', loss.item())  # monitor this, while training.
-        return loss
+        # compute the loss
+        train_loss = F.cross_entropy(S_word, y).sum()  # (N, |V|) -> (N,) -> scalar
+        S_word_probs = F.softmax(S_word, dim=1)
+        self.rd_metric.update(preds=S_word_probs, targets=y)
+        median, var, top1, top10, top100 = self.rd_metric.compute()
+        # evaluate the model on the batch.
+        # we need this to check if the model is overfitting.
+        # return a batch dict.
+        #
+        return {
+            'loss': train_loss,
+            'median': median,
+            'var': var,
+            'top1': top1,
+            'top10': top10,
+            'top100': top100
+        }
+
+    def training_epoch_end(self, outputs: List[dict]) -> None:
+        # reset the metric every epoch
+        self.rd_metric.reset()
+        avg_train_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        avg_median = sum([x['median'] for x in outputs]) / len(outputs)
+        avg_var = sum([x['var'] for x in outputs]) / len(outputs)
+        avg_top1 = sum([x['top1'] for x in outputs]) / len(outputs)
+        avg_top10 = sum([x['top10'] for x in outputs]) / len(outputs)
+        avg_top100 = sum([x['top100'] for x in outputs]) / len(outputs)
+        # logging using tensorboard logger
+        self.logger.experiment.add_scalar("Train/Average Loss",
+                                          # y - coord
+                                          avg_train_loss,
+                                          # x - coord; you can choose th
+                                          self.current_epoch)
+        self.logger.experiment.add_scalar("Train/Average Median", avg_median, self.current_epoch)
+        self.logger.experiment.add_scalar("Train/Average Variance", avg_var, self.current_epoch)
+        self.logger.experiment.add_scalar("Train/Average Top 1 Acc", avg_top1, self.current_epoch)
+        self.logger.experiment.add_scalar("Train/Average Top 10 Acc", avg_top10, self.current_epoch)
+        self.logger.experiment.add_scalar("Train/Average Top 100 Acc", avg_top100, self.current_epoch)
 
     def configure_optimizers(self) -> Optimizer:
         """

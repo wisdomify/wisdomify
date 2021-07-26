@@ -10,7 +10,6 @@ from wisdomify.models import RD
 from wisdomify.builders import build_vocab2subwords
 from wisdomify.paths import DATA_DIR
 from wisdomify.vocab import VOCAB
-
 from pytorch_lightning.loggers import TensorBoardLogger
 
 
@@ -21,7 +20,7 @@ def main():
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
-                        default="version_0")
+                        default="0")
     args = parser.parse_args()
     ver: str = args.ver
     conf = load_conf()
@@ -60,8 +59,11 @@ def main():
         monitor='train_loss',
         filename=model_name
     )
+    # --- instantiate the logger --- #
+    logger = TensorBoardLogger(save_dir=DATA_DIR,
+                               name="lightning_logs")
+
     # --- instantiate the trainer --- #
-    logger = TensorBoardLogger(save_dir="../../data/lightning_logs/version_0/tb_logs", name="wisdomify", version=0)
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          max_epochs=max_epochs,
                          callbacks=[checkpoint_callback],
