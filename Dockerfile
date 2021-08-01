@@ -17,12 +17,11 @@
 #CMD ["python", "-m", "wisdomify.main.deploy"]
 
 
-FROM pytorch/torchserve:latest-gpu
-#RUN pip install --upgrade pip
-#RUN pip install -r requirements.txt
+FROM pytorch/torchserve:latest-gpu as back_server
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
 RUN mkdir ./model_storage
 
-EXPOSE 8080 8081
-
-CMD ["torchserve" , "--start", "--model-store", "./model_storage"]
+EXPOSE 8080 8081 8082
+CMD ["torchserve" , "--start", "--model-store", "./model_storage", "--ts-config", "./ts_config.properties"]
