@@ -17,7 +17,7 @@
 #CMD ["python", "-m", "wisdomify.main.deploy"]
 
 
-FROM pytorch/torchserve:latest-cpu
+FROM pytorch/torchserve:latest-gpu
 #RUN pip install --upgrade pip
 #RUN pip install -r requirements.txt
 
