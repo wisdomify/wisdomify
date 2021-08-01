@@ -132,3 +132,4 @@ dmypy.json
 wisdomifyenv
 data/lightning_logs
 .idea
+data/torchServeModels
