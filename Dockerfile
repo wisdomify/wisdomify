@@ -19,6 +19,7 @@
 
 FROM pytorch/torchserve:latest-gpu as back_server
 RUN pip install --upgrade pip
+COPY . .
 RUN pip install -r requirements.txt
 
 RUN mkdir ./model_storage
