@@ -17,12 +17,36 @@
 #CMD ["python", "-m", "wisdomify.main.deploy"]
 
 
-FROM pytorch/torchserve:latest-gpu as back_server
-RUN pip install --upgrade pip
-COPY . .
-RUN pip install -r requirements.txt
+#FROM nginx as deployer
 
+
+#FROM pytorch/torchserve:latest-cpu
+FROM ubuntu:latest
+
+RUN apt-get update \
+    && apt-get install -y nginx \
+    && apt-get install -y git \
+    && apt-get install -y python3-pip \
+    && apt-get install -y python3-dev \
+    && apt-get install -y python3-distutils \
+    && apt-get install -y python3-venv \
+    && apt-get install -y openjdk-11-jre-headless \
+    && apt-get install -y apt-utils
+
+RUN git clone https://github.com/pytorch/serve.git
+RUN cd ./serve && python3 ./ts_scripts/install_dependencies.py
+RUN pip install --upgrade pip
+RUN pip install torchserve torch-model-archiver torch-workflow-archiver transformers
+
+#RUN pip install --upgrade pip
+#RUN pip install -r requirements.txt
 RUN mkdir ./model_storage
 
-EXPOSE 8080 8081 8082
-CMD ["torchserve" , "--start", "--model-store", "./model_storage", "--ts-config", "./ts_config.properties"]
+COPY ./nginx.conf /etc/nginx/nginx.conf
+RUN nginx -g daemon off &
+
+EXPOSE 80
+CMD ["torchserve" , "--start", "--model-store", "./model_storage"]
+#CMD ["./serviceStart.sh"]
+
+
