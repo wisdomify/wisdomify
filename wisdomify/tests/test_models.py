@@ -16,6 +16,10 @@ class TestRD(unittest.TestCase):
     S: int  # the number of possible subwords in total
     V: int  # the number of vocab (wisdom)
 
+    @staticmethod
+    def get_base_data_set():
+        return [('가는 날이 장날', '어떤 일을 하려고 하는데 뜻하지 않은 일을 공교롭게 당함')]
+
     @classmethod
     def setUpClass(cls) -> None:
         # set up the mono rd
@@ -25,7 +29,7 @@ class TestRD(unittest.TestCase):
         bert_model = load_conf()['bert_model']
         bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
-        wisdom2sent = load_wisdom2def()
+        wisdom2sent = cls.get_base_data_set()
         vocab2subwords = build_vocab2subwords(tokenizer, k=k, vocab=VOCAB)
         X = build_X(wisdom2sent, tokenizer, k)
         y = build_y(wisdom2sent, VOCAB)
