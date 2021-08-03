@@ -6,6 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: docker://dvcorg/cml:0-dvc2-base1
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.8
@@ -18,6 +19,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Install DVC
+        - run: |
+              dvc pull
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
