@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import csv
 import json
-from wisdomify.paths import WISDOM2DEF_TSV, CONF_JSON
+from wisdomify.paths import WISDOM2DEF_TSV, WISDOM2EG_TSV, CONF_JSON
 
 
 def load_wisdom2def() -> List[Tuple[str, str]]:
@@ -25,11 +25,15 @@ def load_wisdom2eg() -> List[Tuple[str, str]]:
     e.g.
     가는 날이 장날 -> 한 달 전부터 기대하던 소풍날 아침에 굵은 빗방울이 떨어지기 시작했다.
     """
-    raise NotImplementedError
+    with open(WISDOM2EG_TSV, 'r') as fh:
+        tsv_reader = csv.reader(fh, delimiter=',')
+        next(tsv_reader)
+        return [
+            (row[1], row[2])
+            for row in tsv_reader
+        ]
 
 
 def load_conf() -> dict:
     with open(CONF_JSON, 'r') as fh:
         return json.loads(fh.read())
-
-
