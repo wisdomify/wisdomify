@@ -1,15 +1,17 @@
+import sys
+sys.path.append('../..')
 import pytorch_lightning as pl
 import torch
 import argparse
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader
 from transformers import AutoModelForMaskedLM, AutoTokenizer
-from wisdomify.datasets import WisdomDataset
 from wisdomify.loaders import load_wisdom2def, load_conf, load_wisdom2eg
 from wisdomify.models import RD
 from wisdomify.builders import build_vocab2subwords, build_X, build_y
 from wisdomify.paths import DATA_DIR
 from wisdomify.vocab import VOCAB
+from wisdomify.datasets import Wisdom2EgDataModule
 from pytorch_lightning.loggers import TensorBoardLogger
 
 
@@ -36,26 +38,35 @@ def main():
 
     # --- the type of wisdomifier --- #
     if data == "wisdom2def":
-        wisdom2sent = load_wisdom2def()
+        # wisdom2sent = load_wisdom2def()
         model_name = "wisdomify_def_{epoch:02d}_{train_loss:.2f}"
     elif data == "wisdom2eg":
-        wisdom2sent = load_wisdom2eg()
+        # wisdom2sent = load_wisdom2eg()
         model_name = "wisdomify_eg_{epoch:02d}_{train_loss:.2f}"
     else:
         raise NotImplementedError("Invalid data provided")
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
-    X = build_X(wisdom2sent, tokenizer, k).to(device)
-    y = build_y(wisdom2sent, VOCAB).to(device)
-    dataset = WisdomDataset(X, y)
-    dataset.upsample(repeat)  # just populate the batch
+
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd
     rd.to(device)
     # --- setup a dataloader --- #
-    dataloader = DataLoader(dataset, batch_size,
-                            shuffle, num_workers=num_workers)
+    wisdom2eg_data_module = Wisdom2EgDataModule(k = k,
+                                                device=device,
+                                                VOCAB=VOCAB,
+                                                tokenizer=tokenizer,
+                                                batch_size=batch_size,
+                                                num_workers=num_workers)
+
+    wisdom2eg_data_module.prepare_data()
+    wisdom2eg_data_module.setup()
+
+    train_loader = wisdom2eg_data_module.train_dataloader()
+    valid_loader = wisdom2eg_data_module.valid_dataloader()
+    test_loader = wisdom2eg_data_module.test_dataloader()
+
     # --- init callbacks --- #
     checkpoint_callback = ModelCheckpoint(
         monitor='train_loss',
@@ -73,8 +84,16 @@ def main():
                          logger=logger)
     # --- start training --- #
     trainer.fit(model=rd,
-                train_dataloader=dataloader)
+                train_dataloader=train_loader)
 
+    # TODO: validate every epoch and test model after training
+    '''
+    trainer.validate(model=rd,
+                     valid_loader=valid_loader)
+
+    trainer.test(model=rd,
+                 test_loader=test_loader)
+    '''
 
 if __name__ == '__main__':
     main()

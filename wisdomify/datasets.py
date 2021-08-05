@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../..')
 from typing import List, Tuple
 from pytorch_lightning.core.lightning import LightningModule
 from pytorch_lightning import LightningDataModule
@@ -41,7 +43,7 @@ class WisdomDataset(Dataset):
         return self.X[idx], self.y[idx]
 
 
-class WisdomDataModule(LightningDataModule):
+class Wisdom2EgDataModule(LightningDataModule):
     def __init__(self, 
                  k: int, 
                  device,
