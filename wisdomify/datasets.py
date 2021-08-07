@@ -45,16 +45,16 @@ class WisdomDataset(Dataset):
 class WisdomDataModule(LightningDataModule):
     def __init__(self,
                  data_version: str,
-                 k: int = None,
-                 device = None,
-                 vocab = None,
-                 tokenizer = None,
-                 batch_size: int = None,
-                 num_workers: int = None,
-                 train_ratio: float = None,
-                 test_ratio: float = None,
-                 shuffle: bool = None,
-                 repeat: bool = None):
+                 k: int,
+                 device,
+                 vocab,
+                 tokenizer,
+                 batch_size: int,
+                 num_workers: int,
+                 train_ratio: float,
+                 test_ratio: float,
+                 shuffle: bool,
+                 repeat: bool):
         super().__init__()
         self.data_version = data_version
         self.k = k
