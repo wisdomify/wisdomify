@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from transformers import AutoModelForMaskedLM, AutoConfig, AutoTokenizer
 from wisdomify.builders import build_vocab2subwords, build_X, build_y
 from wisdomify.datasets import WisdomDataset
-from wisdomify.loaders import load_conf, load_wisdom2def, load_wisdom2eg
+from wisdomify.loaders import load_conf, WisdomDataLoader
 from wisdomify.metrics import RDMetric
 from wisdomify.models import RD
 from wisdomify.paths import WISDOMIFIER_V_0_CKPT, WISDOMIFIER_V_0_HPARAMS_YAML
@@ -22,13 +22,13 @@ def main():
     args = parser.parse_args()
     ver: str = args.ver
     conf = load_conf()
-    bert_model: str = conf['bert_model']
-    data: str = conf['versions'][ver]['data']
+    bert_model: str = conf['versions'][ver]['bert_model']
+    data_version: str = conf['versions'][ver]['data_version']
     batch_size: int = conf['versions'][ver]['batch_size']
     shuffle: bool = conf['versions'][ver]['shuffle']
     num_workers: int = conf['versions'][ver]['num_workers']
 
-    if ver == "version_0":
+    if ver == "0":
         wisdomifier_path = WISDOMIFIER_V_0_CKPT
         with open(WISDOMIFIER_V_0_HPARAMS_YAML, 'r') as fh:
             wisdomifier_hparams = yaml.safe_load(fh)
@@ -37,13 +37,11 @@ def main():
         # this version is not supported yet.
         raise NotImplementedError("Invalid version provided".format(ver))
 
-    # --- the type of wisdomifier --- #
-    if data == "wisdom2def":
-        wisdom2sent = load_wisdom2def()
-    elif data == "wisdom2eg":
-        wisdom2sent = load_wisdom2eg()
+    wisdomdata = WisdomDataLoader(data_version).__call__()
+    if ver == "0":
+        wisdom2sent = wisdomdata.wisdom2def
     else:
-        raise NotImplementedError("Invalid data provided")
+        raise NotImplementedError
 
     bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
@@ -67,7 +65,7 @@ def main():
         # top1 , top10, top100 -- should be 1.0?
     median, var, top1, top10, top100 = rd_metric.compute()
     print("### final ###")
-    print("data:", data)
+    print("data_version:", data_version)
     print("median:", median)
     print("var:", var)
     print("top1:", top1)
