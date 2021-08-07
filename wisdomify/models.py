@@ -117,6 +117,27 @@ class RD(pl.LightningModule):
         # The authors used Adam, so we might as well use it
         return torch.optim.AdamW(self.parameters(), lr=self.hparams['lr'])
 
+    def test_step(self, batch, batch_idx, *args, **kwargs):
+        self.rd_metric.reset()
+
+        X, y = batch
+
+        S_subword = self.forward(X)
+        S_word = self.S_word(S_subword)
+        S_word_probs = F.softmax(S_word, dim=1)
+
+        self.rd_metric.update(preds=S_word_probs, targets=y)
+        print("\nbatch:{}".format(batch_idx), self.rd_metric.compute())
+
+    def on_test_end(self):
+        median, var, top1, top10, top100 = self.rd_metric.compute()
+        print("### final ###")
+        print("median:", median)
+        print("var:", var)
+        print("top1:", top1)
+        print("top10:", top10)
+        print("top100:", top100)
+
 
 class Wisdomifier:
     def __init__(self, rd: RD, tokenizer: BertTokenizerFast):

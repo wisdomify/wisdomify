@@ -46,9 +46,9 @@ class WisdomDataModule(LightningDataModule):
     def __init__(self,
                  data_version: str,
                  k: int = None,
-                 device = None,
-                 vocab = None,
-                 tokenizer = None,
+                 device=None,
+                 vocab=None,
+                 tokenizer=None,
                  batch_size: int = None,
                  num_workers: int = None,
                  train_ratio: float = None,
@@ -71,6 +71,7 @@ class WisdomDataModule(LightningDataModule):
         self.dataset_train: Optional[WisdomDataset] = None
         self.dataset_val: Optional[WisdomDataset] = None
         self.dataset_test: Optional[WisdomDataset] = None
+        self.seed = 42
 
     def prepare_data(self):
         """
@@ -96,7 +97,9 @@ class WisdomDataModule(LightningDataModule):
         n_test = int(n_total_data * self.test_ratio)
         n_val = n_total_data - (n_train + n_test)
         self.dataset_train, self.dataset_val, self.dataset_test = random_split(self.dataset_all,
-                                                                               [n_train, n_val, n_test])
+                                                                               [n_train, n_val, n_test],
+                                                                               generator=torch.Generator() \
+                                                                               .manual_seed(self.seed))
 
     def train_dataloader(self):
         return DataLoader(self.dataset_train, batch_size=self.batch_size,
