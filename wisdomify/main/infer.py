@@ -7,7 +7,7 @@ import yaml
 from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoConfig
 from wisdomify.loaders import load_conf
 from wisdomify.models import RD, Wisdomifier
-from wisdomify.paths import WISDOMIFIER_V_0_CKPT, WISDOMIFIER_V_0_HPARAMS_YAML
+from wisdomify.paths import WISDOMIFIER_CKPT, WISDOMIFIER_HPARAMS_YAML
 from wisdomify.vocab import VOCAB
 from wisdomify.builders import build_vocab2subwords
 
@@ -23,17 +23,19 @@ def main():
     args = parser.parse_args()
     ver: str = args.ver
     desc: str = args.desc
-    conf = load_conf()
-    bert_model: str = conf['bert_model']
 
-    if ver == "version_0":
-        wisdomifier_path = WISDOMIFIER_V_0_CKPT
-        with open(WISDOMIFIER_V_0_HPARAMS_YAML, 'r') as fh:
-            wisdomifier_hparams = yaml.safe_load(fh)
-        k = wisdomifier_hparams['k']
-    else:
-        # this version is not supported yet.
+    conf = load_conf()
+    vers = conf['versions']
+    if ver not in vers.keys():
         raise NotImplementedError("Invalid version provided".format(ver))
+
+    selected_ver = vers[ver]
+    bert_model: str = selected_ver['bert_model']
+
+    wisdomifier_path = WISDOMIFIER_CKPT
+    with open(WISDOMIFIER_HPARAMS_YAML, 'r') as fh:
+        wisdomifier_hparams = yaml.safe_load(fh)
+    k = wisdomifier_hparams['k']
 
     bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
