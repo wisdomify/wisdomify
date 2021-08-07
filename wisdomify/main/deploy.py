@@ -1,10 +1,8 @@
 import argparse
-
 import torch
 import yaml
 from flask import Flask, jsonify, request, render_template_string
 from transformers import AutoModelForMaskedLM, AutoConfig, AutoTokenizer
-
 from wisdomify.builders import build_vocab2subwords
 from wisdomify.loaders import load_conf
 from wisdomify.models import RD, Wisdomifier

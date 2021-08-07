@@ -1,16 +1,18 @@
 {
-  "bert_model": "beomi/kcbert-base",
   "versions": {
     "0": {
+      "bert_model": "beomi/kcbert-base",
       "desc": "The first minimal-viable-product of wisdomify",
-      "data": "wisdom2def",
+      "data_version": "0",
       "k": 11,
       "lr": 0.00001,
       "max_epochs": 20,
       "batch_size": 40,
       "repeat": 20,
       "num_workers": 4,
-      "shuffle": true
+      "shuffle": true,
+      "train_ratio": 0.8,
+      "test_ratio": 0.2
     }
   }
 }
