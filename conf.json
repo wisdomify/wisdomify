@@ -14,7 +14,7 @@
       "num_workers": "(Int)워커 개수 (해당 컴퓨터 사양에 맞춰 작성하세요. CPU의 경우 코어 개수이하여야합니다.)",
       "shuffle": "(Bool)셔플여부",
       "train_ratio": "(Float, 0~1)트레이닝에 사용될 데이터 비율",
-      "val_ratio": "(Float, 0~1)validation에 사용될 데이터 비율",에
+      "val_ratio": "(Float, 0~1)validation에 사용될 데이터 비율",
       "test_ratio": "(Float, 0~1)테스트에 사용될 데이터 비율"
     },
     "0": {
