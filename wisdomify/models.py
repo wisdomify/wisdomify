@@ -135,6 +135,7 @@ class Wisdomifier:
             tokenizer = AutoTokenizer.from_pretrained(bert_model)
             vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
             rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
+            rd.to(device)
             rd.eval()
             wisdomifier = Wisdomifier(rd, tokenizer)
         else:
