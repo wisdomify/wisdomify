@@ -1,18 +1,14 @@
-import sys
-sys.path.append('../..')
 import pytorch_lightning as pl
 import torch
 import argparse
 from pytorch_lightning.callbacks import ModelCheckpoint
-from torch.utils.data import DataLoader
 from transformers import AutoModelForMaskedLM, AutoTokenizer
-from wisdomify.datasets import WisdomDataset
-from wisdomify.loaders import load_conf, WisdomDataLoader
+from wisdomify.loaders import load_conf
 from wisdomify.models import RD
-from wisdomify.builders import build_vocab2subwords, build_X, build_y
+from wisdomify.builders import build_vocab2subwords
 from wisdomify.paths import DATA_DIR
 from wisdomify.vocab import VOCAB
-from wisdomify.datasets import Wisdom2EgDataModule
+from wisdomify.datasets import WisdomDataModule
 from pytorch_lightning.loggers import TensorBoardLogger
 
 
@@ -33,14 +29,14 @@ def main():
     lr: float = conf['versions'][ver]['lr']
     max_epochs: int = conf['versions'][ver]['max_epochs']
     batch_size: int = conf['versions'][ver]['batch_size']
-    repeat: int = conf['versions'][ver]['repeat']
-    num_workers: int = conf['versions'][ver]['num_workers']
+    repeat: bool = conf['versions'][ver]['repeat']
     shuffle: bool = conf['versions'][ver]['shuffle']
+    num_workers: int = conf['versions'][ver]['num_workers']
     data_version: str = conf['versions'][ver]['data_version']
-    wisdomdata = WisdomDataLoader(data_version).__call__()
+    train_ratio: float = conf['versions'][ver]['train_ratio']
+    test_ratio: float = conf['versions'][ver]['test_ratio']
 
     if ver == "0":
-        wisdom2sent = wisdomdata.wisdom2def
         model_name = "wisdomify_def_{epoch:02d}_{train_loss:.2f}"
     else:
         raise NotImplementedError
@@ -53,19 +49,17 @@ def main():
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd
     rd.to(device)
     # --- setup a dataloader --- #
-    wisdom2eg_data_module = Wisdom2EgDataModule(k = k,
-                                                device=device,
-                                                VOCAB=VOCAB,
-                                                tokenizer=tokenizer,
-                                                batch_size=batch_size,
-                                                num_workers=num_workers)
-
-    wisdom2eg_data_module.prepare_data()
-    wisdom2eg_data_module.setup()
-
-    train_loader = wisdom2eg_data_module.train_dataloader()
-    valid_loader = wisdom2eg_data_module.valid_dataloader()
-    test_loader = wisdom2eg_data_module.test_dataloader()
+    data_module = WisdomDataModule(data_version=data_version,
+                                   k=k,
+                                   device=device,
+                                   vocab=VOCAB,
+                                   tokenizer=tokenizer,
+                                   batch_size=batch_size,
+                                   num_workers=num_workers,
+                                   train_ratio=train_ratio,
+                                   test_ratio=test_ratio,
+                                   shuffle=shuffle,
+                                   repeat=repeat)
 
     # --- init callbacks --- #
     checkpoint_callback = ModelCheckpoint(
@@ -83,8 +77,11 @@ def main():
                          default_root_dir=DATA_DIR,
                          logger=logger)
     # --- start training --- #
-    trainer.fit(model=rd,
-                train_dataloader=train_loader)
+
+    # data_module.prepare_data()
+    # data_module.setup(stage='fit')
+
+    trainer.fit(model=rd, datamodule=data_module)
 
     # TODO: validate every epoch and test model after training
     '''
@@ -94,6 +91,7 @@ def main():
     trainer.test(model=rd,
                  test_loader=test_loader)
     '''
+
 
 if __name__ == '__main__':
     main()

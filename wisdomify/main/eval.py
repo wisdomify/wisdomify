@@ -1,11 +1,10 @@
 import torch
 import argparse
 import yaml
-from torch.utils.data import DataLoader
 from transformers import AutoModelForMaskedLM, AutoConfig, AutoTokenizer
-from wisdomify.builders import build_vocab2subwords, build_X, build_y
-from wisdomify.datasets import WisdomDataset
-from wisdomify.loaders import load_conf, WisdomDataLoader
+from wisdomify.builders import build_vocab2subwords
+from wisdomify.datasets import WisdomDataModule
+from wisdomify.loaders import load_conf
 from wisdomify.metrics import RDMetric
 from wisdomify.models import RD
 from wisdomify.paths import WISDOMIFIER_V_0_CKPT, WISDOMIFIER_V_0_HPARAMS_YAML
@@ -37,27 +36,24 @@ def main():
         # this version is not supported yet.
         raise NotImplementedError("Invalid version provided".format(ver))
 
-    wisdomdata = WisdomDataLoader(data_version).__call__()
-    if ver == "0":
-        wisdom2sent = wisdomdata.wisdom2def
-    else:
-        raise NotImplementedError
+    data_module = WisdomDataModule(data_version=data_version,
+                                   batch_size=batch_size,
+                                   shuffle=shuffle,
+                                   num_workers=num_workers)
+    data_module.prepare_data()
+    data_module.setup()
 
     bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
-    X = build_X(wisdom2sent, tokenizer, k).to(device)
-    y = build_y(wisdom2sent, VOCAB).to(device)
     rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
     rd.eval()  # otherwise, the model will output different results with the same inputs
     rd = rd.to(device)  # otherwise, you can not run the inference process on GPUs.
-    dataset = WisdomDataset(X, y)
-    dataloader = DataLoader(dataset, batch_size, shuffle, num_workers=num_workers)
+    test_loader = data_module.test_dataloader()
 
     # the metric
     rd_metric = RDMetric()
-
-    for idx, batch in enumerate(dataloader):
+    for idx, batch in enumerate(test_loader):
         X, y = batch
         S_word_probs = rd.S_word_probs(X)
         rd_metric.update(preds=S_word_probs, targets=y)

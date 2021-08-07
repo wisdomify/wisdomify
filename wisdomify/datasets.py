@@ -1,13 +1,12 @@
-import sys
-sys.path.append('../..')
-from typing import List, Tuple
-from pytorch_lightning.core.lightning import LightningModule
+from typing import List, Tuple, Optional
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import Dataset, DataLoader, random_split
-from transformers import BertTokenizerFast, AutoTokenizer
-import torch
 from wisdomify.builders import build_X, build_y
-from wisdomify.loaders import load_wisdom2eg
+from torch.utils.data import Dataset, DataLoader, random_split
+import csv
+import torch
+from os import path
+from wisdomify.paths import WISDOMDATA_VER_0_DIR
+
 
 class WisdomDataset(Dataset):
     def __init__(self,
@@ -43,46 +42,84 @@ class WisdomDataset(Dataset):
         return self.X[idx], self.y[idx]
 
 
-class Wisdom2EgDataModule(LightningDataModule):
-    def __init__(self, 
-                 k: int, 
-                 device,
-                 VOCAB,
-                 tokenizer, 
-                 batch_size: int,
-                 num_workers: int):
+class WisdomDataModule(LightningDataModule):
+    def __init__(self,
+                 data_version: str,
+                 k: int = None,
+                 device = None,
+                 vocab = None,
+                 tokenizer = None,
+                 batch_size: int = None,
+                 num_workers: int = None,
+                 train_ratio: float = None,
+                 test_ratio: float = None,
+                 shuffle: bool = None,
+                 repeat: bool = None):
         super().__init__()
+        self.data_version = data_version
         self.k = k
         self.device = device
-        self.VOCAB = VOCAB
+        self.vocab = vocab
         self.tokenizer = tokenizer
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.wisdom_data = load_wisdom2eg()
-        self.dataset = None
+        self.train_ratio = train_ratio
+        self.test_ratio = test_ratio
+        self.shuffle = shuffle
+        self.repeat = repeat
+        self.dataset_all: Optional[WisdomDataset] = None
+        self.dataset_train: Optional[WisdomDataset] = None
+        self.dataset_val: Optional[WisdomDataset] = None
+        self.dataset_test: Optional[WisdomDataset] = None
 
     def prepare_data(self):
-        X = build_X(self.wisdom_data, self.tokenizer, self.k).to(self.device)
-        y = build_y(self.wisdom_data, self.VOCAB).to(self.device)
+        """
+        prepare the data needed.
+        """
+        if self.data_version == "0":
+            version_dir = WISDOMDATA_VER_0_DIR
+            wisdom2def_tsv_path = path.join(version_dir, "wisdom2def.tsv")
+            wisdom2sent = self.load_wisdom2sent(wisdom2def_tsv_path)
+        else:
+            raise NotImplementedError
+        X = build_X(wisdom2sent, self.tokenizer, self.k).to(self.device)
+        y = build_y(wisdom2sent, self.vocab).to(self.device)
+        self.dataset_all = WisdomDataset(X, y)
+        self.dataset_all.upsample(self.repeat)
 
-        self.dataset = WisdomDataset(X, y)
-
-    def setup(self):
-        n_total_data = len(self.dataset)
-        n_train = int(n_total_data * 0.8)
-        n_val = int(n_total_data * 0.1)
-        n_test = n_total_data - n_train - n_val
-
-        self.wisdom_train, self.wisdom_val, self.wisdom_test = random_split(self.dataset, [n_train, n_val, n_test])
+    def setup(self, stage: Optional[str] = None) -> None:
+        """
+        역할?
+        """
+        n_total_data = len(self.dataset_all)
+        n_train = int(n_total_data * self.train_ratio)
+        n_test = int(n_total_data * self.test_ratio)
+        n_val = n_total_data - (n_train + n_test)
+        self.dataset_train, self.dataset_val, self.dataset_test = random_split(self.dataset_all,
+                                                                               [n_train, n_val, n_test])
 
     def train_dataloader(self):
-        return DataLoader(self.wisdom_train, batch_size=self.batch_size,
-                          shuffle=True, num_workers=self.num_workers)
+        return DataLoader(self.dataset_train, batch_size=self.batch_size,
+                          shuffle=self.shuffle, num_workers=self.num_workers)
 
-    def valid_dataloader(self):
-        return DataLoader(self.wisdom_val, batch_size=self.batch_size,
-                          shuffle=False, num_workers=self.num_workers)
+    def val_dataloader(self):
+        return DataLoader(self.dataset_val, batch_size=self.batch_size,
+                          shuffle=self.shuffle, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.wisdom_test, batch_size=self.batch_size,
-                          shuffle=False, num_workers=self.num_workers)
+        return DataLoader(self.dataset_test, batch_size=self.batch_size,
+                          shuffle=self.shuffle, num_workers=self.num_workers)
+
+    @staticmethod
+    def load_wisdom2sent(tsv_path: str) -> List[Tuple[str, str]]:
+        """
+        wisdom2def인 경우: 가는 날이 장날 -> 어떤 일을 하려고 하는데 뜻하지 않은 일을 공교롭게 당함.
+        wisdom2eg인 경우: 가는 날이 장날 -> 한 달 전부터 기대하던 소풍날 아침에 굵은 빗방울이 떨어지기 시작했다.
+        """
+        with open(tsv_path, 'r') as fh:
+            tsv_reader = csv.reader(fh, delimiter="\t")
+            next(tsv_reader)
+            return [
+                (row[0], row[1])  # wisdom, sent pair
+                for row in tsv_reader
+            ]
