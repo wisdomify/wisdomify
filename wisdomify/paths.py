@@ -5,6 +5,8 @@ from pathlib import Path
 from os import path
 
 # The directories
+from wisdomify.config import RUN_VER
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.__str__()
 DATA_DIR = path.join(PROJECT_ROOT, "data")
 # path를 지정하는 것은? 일단, tsv 한 이유? -> 단순하게.
@@ -16,14 +18,9 @@ LIGHTNING_LOGS_DIR = path.join(DATA_DIR, "lightning_logs")
 CONF_JSON = path.join(PROJECT_ROOT, "conf.json")
 
 # data - files
-# .env (conf.json), secrets.py
-WISDOMDATA_VER_0_DIR = path.join(WISDOMDATA_DIR, "version_0")
-WISDOMDATA_VER_1_DIR = path.join(WISDOMDATA_DIR, "version_1")
-# 요기는 이제 필요 없을 것.
-# WISDOM2DEF_TSV = path.join(DATA_DIR, "wisdom2def.tsv")
-# WISDOM2EG_TSV = path.join(DATA_DIR, "wisdom2eg.tsv")
+WISDOMDATA_VER_DIR = path.join(WISDOMDATA_DIR, f"version_{RUN_VER}")
 
 # the directories in which each version is stored
-WISDOMIFIER_V_0 = path.join(LIGHTNING_LOGS_DIR, "version_0")  # the first prototype.
-WISDOMIFIER_V_0_CKPT = path.join(WISDOMIFIER_V_0, "checkpoints", "wisdomify_def_epoch=19_train_loss=0.00.ckpt")
-WISDOMIFIER_V_0_HPARAMS_YAML = path.join(WISDOMIFIER_V_0, "hparams.yaml")
+WISDOMIFIER = path.join(LIGHTNING_LOGS_DIR, f"version_{RUN_VER}")
+WISDOMIFIER_CKPT = path.join(WISDOMIFIER, "checkpoints", "wisdomify.ckpt")
+WISDOMIFIER_HPARAMS_YAML = path.join(WISDOMIFIER, "hparams.yaml")
