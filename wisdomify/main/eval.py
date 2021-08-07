@@ -7,7 +7,7 @@ from wisdomify.datasets import WisdomDataModule
 from wisdomify.loaders import load_conf
 from wisdomify.metrics import RDMetric
 from wisdomify.models import RD
-from wisdomify.paths import WISDOMIFIER_V_0_CKPT, WISDOMIFIER_V_0_HPARAMS_YAML
+from wisdomify.paths import WISDOMIFIER_CKPT, WISDOMIFIER_HPARAMS_YAML
 from wisdomify.vocab import VOCAB
 
 
@@ -20,21 +20,23 @@ def main():
 
     args = parser.parse_args()
     ver: str = args.ver
-    conf = load_conf()
-    bert_model: str = conf['versions'][ver]['bert_model']
-    data_version: str = conf['versions'][ver]['data_version']
-    batch_size: int = conf['versions'][ver]['batch_size']
-    shuffle: bool = conf['versions'][ver]['shuffle']
-    num_workers: int = conf['versions'][ver]['num_workers']
 
-    if ver == "0":
-        wisdomifier_path = WISDOMIFIER_V_0_CKPT
-        with open(WISDOMIFIER_V_0_HPARAMS_YAML, 'r') as fh:
-            wisdomifier_hparams = yaml.safe_load(fh)
-        k = wisdomifier_hparams['k']
-    else:
-        # this version is not supported yet.
+    conf = load_conf()
+    vers = conf['versions']
+    if ver not in vers.keys():
         raise NotImplementedError("Invalid version provided".format(ver))
+
+    selected_ver = vers[ver]
+    bert_model: str = selected_ver['bert_model']
+    data_version: str = selected_ver['data_version']
+    batch_size: int = selected_ver['batch_size']
+    shuffle: bool = selected_ver['shuffle']
+    num_workers: int = selected_ver['num_workers']
+
+    wisdomifier_path = WISDOMIFIER_CKPT
+    with open(WISDOMIFIER_HPARAMS_YAML, 'r') as fh:
+        wisdomifier_hparams = yaml.safe_load(fh)
+    k = wisdomifier_hparams['k']
 
     data_module = WisdomDataModule(data_version=data_version,
                                    batch_size=batch_size,
