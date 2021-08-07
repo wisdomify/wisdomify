@@ -5,7 +5,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import DataLoader
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 from wisdomify.datasets import WisdomDataset
-from wisdomify.loaders import load_wisdom2def, load_conf, load_wisdom2eg
+from wisdomify.loaders import load_conf, WisdomDataLoader
 from wisdomify.models import RD
 from wisdomify.builders import build_vocab2subwords, build_X, build_y
 from wisdomify.paths import DATA_DIR
@@ -23,9 +23,9 @@ def main():
                         default="0")
     args = parser.parse_args()
     ver: str = args.ver
+    # parameters from conf
     conf = load_conf()
-    bert_model: str = conf['bert_model']
-    data: str = conf['versions'][ver]['data']
+    bert_model: str = conf['versions'][ver]['bert_model']
     k: int = conf['versions'][ver]['k']
     lr: float = conf['versions'][ver]['lr']
     max_epochs: int = conf['versions'][ver]['max_epochs']
@@ -33,16 +33,15 @@ def main():
     repeat: int = conf['versions'][ver]['repeat']
     num_workers: int = conf['versions'][ver]['num_workers']
     shuffle: bool = conf['versions'][ver]['shuffle']
+    data_version: str = conf['versions'][ver]['data_version']
+    wisdomdata = WisdomDataLoader(data_version).__call__()
 
-    # --- the type of wisdomifier --- #
-    if data == "wisdom2def":
-        wisdom2sent = load_wisdom2def()
+    if ver == "0":
+        wisdom2sent = wisdomdata.wisdom2def
         model_name = "wisdomify_def_{epoch:02d}_{train_loss:.2f}"
-    elif data == "wisdom2eg":
-        wisdom2sent = load_wisdom2eg()
-        model_name = "wisdomify_eg_{epoch:02d}_{train_loss:.2f}"
     else:
-        raise NotImplementedError("Invalid data provided")
+        raise NotImplementedError
+
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)

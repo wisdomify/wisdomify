@@ -2,7 +2,7 @@ import unittest
 from typing import Tuple, List
 from transformers import BertTokenizerFast
 from wisdomify.builders import build_X, build_y, build_vocab2subwords
-from wisdomify.loaders import load_conf, load_wisdom2def
+from wisdomify.loaders import load_conf
 from wisdomify.vocab import VOCAB
 
 
@@ -17,7 +17,7 @@ class TestBuilders(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        bert_model = load_conf()['bert_model']
+        bert_model = load_conf()['versions']['0']['bert_model']
         cls.wisdom2sent = cls.get_base_data_set()
         cls.tokenizer = BertTokenizerFast.from_pretrained(bert_model)
         cls.k = 11

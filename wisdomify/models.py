@@ -119,7 +119,6 @@ class RD(pl.LightningModule):
 
 
 class Wisdomifier:
-
     def __init__(self, rd: RD, tokenizer: BertTokenizerFast):
         self.rd = rd  # a trained reverse dictionary
         self.tokenizer = tokenizer
