@@ -33,8 +33,8 @@ def main():
     shuffle: bool = selected_ver['shuffle']
     num_workers: int = selected_ver['num_workers']
 
-    wisdomifier_path = WISDOMIFIER_CKPT
-    with open(WISDOMIFIER_HPARAMS_YAML, 'r') as fh:
+    wisdomifier_path = WISDOMIFIER_CKPT.format(ver=ver)
+    with open(WISDOMIFIER_HPARAMS_YAML.format(ver=ver), 'r') as fh:
         wisdomifier_hparams = yaml.safe_load(fh)
     k = wisdomifier_hparams['k']
 

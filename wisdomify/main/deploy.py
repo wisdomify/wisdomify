@@ -1,4 +1,3 @@
-import argparse
 import torch
 import yaml
 from flask import Flask, jsonify, request, render_template_string
@@ -6,33 +5,26 @@ from transformers import AutoModelForMaskedLM, AutoConfig, AutoTokenizer
 from wisdomify.builders import build_vocab2subwords
 from wisdomify.loaders import load_conf
 from wisdomify.models import RD, Wisdomifier
-from wisdomify.paths import WISDOMIFIER_V_0_CKPT, WISDOMIFIER_V_0_HPARAMS_YAML
+from wisdomify.paths import WISDOMIFIER_HPARAMS_YAML, WISDOMIFIER_CKPT
 from wisdomify.vocab import VOCAB
 
 
 class WisdomifierAPI:
-    def __init__(self):
+    def __init__(self, ver: int):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--ver", type=str,
-                            default="version_0")
-        parser.add_argument("--desc", type=str,
-                            default="왜 하필이면 오늘이야")
-        args = parser.parse_args()
-        ver: str = args.ver
-        desc: str = args.desc
         conf = load_conf()
-        bert_model: str = conf['bert_model']
-
-        if ver == "version_0":
-            wisdomifier_path = WISDOMIFIER_V_0_CKPT
-            with open(WISDOMIFIER_V_0_HPARAMS_YAML, 'r') as fh:
-                wisdomifier_hparams = yaml.safe_load(fh)
-            k = wisdomifier_hparams['k']
-        else:
-            # this version is not supported yet.
+        vers = conf['versions']
+        if ver not in vers.keys():
             raise NotImplementedError("Invalid version provided".format(ver))
+
+        selected_ver = vers[ver]
+        bert_model: str = selected_ver['bert_model']
+
+        wisdomifier_path = WISDOMIFIER_CKPT.format(ver=ver)
+        with open(WISDOMIFIER_HPARAMS_YAML.format(ver=ver), 'r') as fh:
+            wisdomifier_hparams = yaml.safe_load(fh)
+        k = wisdomifier_hparams['k']
 
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
@@ -48,7 +40,7 @@ class WisdomifierAPI:
 
 
 app = Flask(__name__)
-wisdomifierAPI = WisdomifierAPI()
+wisdomifierAPI = WisdomifierAPI(ver=0)
 
 
 @app.route('/', methods=['GET'])

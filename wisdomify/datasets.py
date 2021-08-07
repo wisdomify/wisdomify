@@ -80,7 +80,7 @@ class WisdomDataModule(LightningDataModule):
         if not path.isdir(path.join(WISDOMDATA_DIR, f'version_{self.data_version}')):
             raise NotImplementedError(f"The version {self.data_version}'s data is not prepared.")
 
-        version_dir = WISDOMDATA_VER_DIR
+        version_dir = WISDOMDATA_VER_DIR.format(ver=self.data_version)
         wisdom2def_tsv_path = path.join(version_dir, "wisdom2def.tsv")
         wisdom2sent = self.load_wisdom2sent(wisdom2def_tsv_path)
 
