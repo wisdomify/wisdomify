@@ -5,7 +5,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 import csv
 import torch
 from os import path
-from wisdomify.paths import WISDOMDATA_VER_DIR
+from wisdomify.paths import WISDOMDATA_VER_DIR, WISDOMDATA_DIR
 
 
 class WisdomDataset(Dataset):
@@ -76,12 +76,14 @@ class WisdomDataModule(LightningDataModule):
         """
         prepare the data needed.
         """
-        if self.data_version == "0":
-            version_dir = WISDOMDATA_VER_DIR
-            wisdom2def_tsv_path = path.join(version_dir, "wisdom2def.tsv")
-            wisdom2sent = self.load_wisdom2sent(wisdom2def_tsv_path)
-        else:
-            raise NotImplementedError
+
+        if not path.isdir(path.join(WISDOMDATA_DIR, f'version_{self.data_version}')):
+            raise NotImplementedError(f"The version {self.data_version}'s data is not prepared.")
+
+        version_dir = WISDOMDATA_VER_DIR
+        wisdom2def_tsv_path = path.join(version_dir, "wisdom2def.tsv")
+        wisdom2sent = self.load_wisdom2sent(wisdom2def_tsv_path)
+
         X = build_X(wisdom2sent, self.tokenizer, self.k).to(self.device)
         y = build_y(wisdom2sent, self.vocab).to(self.device)
         self.dataset_all = WisdomDataset(X, y)

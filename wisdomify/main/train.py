@@ -20,26 +20,30 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
                         default="0")
+
     args = parser.parse_args()
     ver: str = args.ver
     # parameters from conf
-    conf = load_conf()
-    bert_model: str = conf['versions'][ver]['bert_model']
-    k: int = conf['versions'][ver]['k']
-    lr: float = conf['versions'][ver]['lr']
-    max_epochs: int = conf['versions'][ver]['max_epochs']
-    batch_size: int = conf['versions'][ver]['batch_size']
-    repeat: bool = conf['versions'][ver]['repeat']
-    shuffle: bool = conf['versions'][ver]['shuffle']
-    num_workers: int = conf['versions'][ver]['num_workers']
-    data_version: str = conf['versions'][ver]['data_version']
-    train_ratio: float = conf['versions'][ver]['train_ratio']
-    test_ratio: float = conf['versions'][ver]['test_ratio']
 
-    if ver == "0":
-        model_name = "wisdomify_def_{epoch:02d}_{train_loss:.2f}"
-    else:
-        raise NotImplementedError
+    conf = load_conf()
+    vers = conf['versions']
+    if ver not in vers.keys():
+        raise NotImplementedError(f"Cannot find version {ver}.\nWrite your setting and version properly on conf.json")
+
+    selected_ver = vers[ver]
+    bert_model: str = selected_ver['bert_model']
+    k: int = selected_ver['k']
+    lr: float = selected_ver['lr']
+    max_epochs: int = selected_ver['max_epochs']
+    batch_size: int = selected_ver['batch_size']
+    repeat: bool = selected_ver['repeat']
+    shuffle: bool = selected_ver['shuffle']
+    num_workers: int = selected_ver['num_workers']
+    data_version: str = selected_ver['data_version']
+    train_ratio: float = selected_ver['train_ratio']
+    test_ratio: float = selected_ver['test_ratio']
+
+    model_name = "wisdomify_def_{epoch:02d}_{train_loss:.2f}"
 
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
