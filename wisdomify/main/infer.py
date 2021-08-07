@@ -24,13 +24,11 @@ def main():
     ver: str = args.ver
     desc: str = args.desc
     conf = load_conf()
-    bert_model: str = conf['bert_model']
 
-    if ver == "version_0":
+    if ver == "0":
         wisdomifier_path = WISDOMIFIER_V_0_CKPT
-        with open(WISDOMIFIER_V_0_HPARAMS_YAML, 'r') as fh:
-            wisdomifier_hparams = yaml.safe_load(fh)
-        k = wisdomifier_hparams['k']
+        k: int = conf['versions'][ver]['k']
+        bert_model: str = conf['versions'][ver]['bert_model']
     else:
         # this version is not supported yet.
         raise NotImplementedError("Invalid version provided".format(ver))
