@@ -25,20 +25,23 @@ source wisdomifyenv/bin/activate  # activate the virtualenv
 pip3 install -r ./requirements.txt  # install the required libraries onto the virtualenv
 ```
 
-Download a pre-trained wisdomify and unzip the model package under `wisdomify/data/lightning_logs`:
+Download a pre-trained wisdomify and its related dataset with DVC.
 
 version | description 
 --- | --- 
 version_0.zip (1.5GB) | the first minimal-viable-product of Wisdomify 
 version_1.zip (...) | to be added...
 
+Before downloading the model data and dataset, you must [install DVC](https://dvc.org/doc/install) depending on your OS.
+After installing the DVC, you can download data with following command.
+
+If your system is docker-like light OS, you can also install with pip.
+`pip install 'dvc[gdrive]'`
+
+
 ```bash
-cd data/lightning_logs
-VER="version_0"  # choose the version here
-wget -O "$VER.zip" "https://www.dropbox.com/s/tw491n5dnk8195c/$VER.zip?dl=1"
-unzip $VER.zip
-rm $VER.zip
-cd ../../  # go back to the project root
+dvc pull
+# follow the instruction from dvc after this command.
 ```
 
 Make sure you have a directory structure like the following:
@@ -51,8 +54,11 @@ data
 │       │   └── wisdomify_def_epoch=19_train_loss=0.00.ckpt
 │       ├── events.out.tfevents.1624691069.eubinCloud.57195.0
 │       └── hparams.yaml
-├── wisdom2def.tsv
-└── wisdom2eg.tsv
+├── wisdomdata
+│   └── version_0
+|       ├── wisdom2eg.tsv
+|       └── wisdom2def.tsv
+└── torchServeModel
 ```
 
 Wisdomify a sentence:
