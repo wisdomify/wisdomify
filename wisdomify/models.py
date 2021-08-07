@@ -7,11 +7,13 @@ import pytorch_lightning as pl
 import torch
 from torch import Tensor
 from torch.optim import Optimizer
-from transformers import BertTokenizerFast
+from transformers import BertTokenizerFast, AutoModelForMaskedLM, AutoConfig, AutoTokenizer
 from transformers.models.bert.modeling_bert import BertForMaskedLM
 from torch.nn import functional as F
-from wisdomify.builders import build_X
+from wisdomify.builders import build_X, build_vocab2subwords
+from wisdomify.loaders import load_conf
 from wisdomify.metrics import RDMetric
+from wisdomify.paths import WISDOMIFIER_V_0_CKPT
 from wisdomify.vocab import VOCAB
 
 
@@ -19,7 +21,6 @@ class RD(pl.LightningModule):
     """
     A reverse-dictionary. The model is based on
     """
-    # fruitify into these!
     def __init__(self, bert_mlm: BertForMaskedLM, vocab2subwords: Tensor, k: int, lr: float):
         super().__init__()
         # -- the only network we need -- #
@@ -122,6 +123,23 @@ class Wisdomifier:
     def __init__(self, rd: RD, tokenizer: BertTokenizerFast):
         self.rd = rd  # a trained reverse dictionary
         self.tokenizer = tokenizer
+
+    @staticmethod
+    def from_pretrained(ver: str, device) -> 'Wisdomifier':
+        if ver == "0":
+            conf = load_conf()
+            wisdomifier_path = WISDOMIFIER_V_0_CKPT
+            k: int = conf['versions'][ver]['k']
+            bert_model: str = conf['versions'][ver]['bert_model']
+            bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
+            tokenizer = AutoTokenizer.from_pretrained(bert_model)
+            vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
+            rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
+            rd.eval()
+            wisdomifier = Wisdomifier(rd, tokenizer)
+        else:
+            raise NotImplementedError
+        return wisdomifier
 
     def wisdomify(self, sents: List[str]) -> List[List[Tuple[str, float]]]:
         # get the X
