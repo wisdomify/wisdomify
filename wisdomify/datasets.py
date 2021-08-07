@@ -5,7 +5,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 import csv
 import torch
 from os import path
-from wisdomify.paths import WISDOMDATA_VER_0_DIR
+from wisdomify.paths import WISDOMDATA_VER_DIR
 
 
 class WisdomDataset(Dataset):
@@ -77,7 +77,7 @@ class WisdomDataModule(LightningDataModule):
         prepare the data needed.
         """
         if self.data_version == "0":
-            version_dir = WISDOMDATA_VER_0_DIR
+            version_dir = WISDOMDATA_VER_DIR
             wisdom2def_tsv_path = path.join(version_dir, "wisdom2def.tsv")
             wisdom2sent = self.load_wisdom2sent(wisdom2def_tsv_path)
         else:
