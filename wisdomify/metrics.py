@@ -39,3 +39,4 @@ class RDMetric(Metric):
         top10_acc = self.correct_top10.float() / self.total
         top100_acc = self.correct_top100.float() / self.total
         return median, var, top1_acc.item(), top10_acc.item(), top100_acc.item()
+
