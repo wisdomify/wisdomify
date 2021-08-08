@@ -5,7 +5,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 import csv
 import torch
 from os import path
-from wisdomify.paths import WISDOMDATA_VER_0_DIR
+from wisdomify.paths import WISDOMDATA_VER_0_DIR, WISDOMDATA_VER_1_DIR
 
 
 class WisdomDataset(Dataset):
@@ -79,6 +79,11 @@ class WisdomDataModule(LightningDataModule):
         if self.data_version == "0":
             version_dir = WISDOMDATA_VER_0_DIR
             wisdom2def_tsv_path = path.join(version_dir, "wisdom2def.tsv")
+            wisdom2sent = self.load_wisdom2sent(wisdom2def_tsv_path)
+        elif self.data_version == "1":
+            version_dir = WISDOMDATA_VER_1_DIR
+            # we only use examples for version 1
+            wisdom2def_tsv_path = path.join(version_dir, "wisdom2eg.tsv")
             wisdom2sent = self.load_wisdom2sent(wisdom2def_tsv_path)
         else:
             raise NotImplementedError
