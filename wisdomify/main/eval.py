@@ -29,6 +29,8 @@ def main():
     selected_ver = vers[ver]
     bert_model: str = selected_ver['bert_model']
     data_version: str = selected_ver['data_version']
+    # TODO: should enable to load both example and definition on one dataset
+    data_name: str = selected_ver['data_name'][0]
     batch_size: int = selected_ver['batch_size']
     repeat: bool = selected_ver['repeat']
     num_workers: int = selected_ver['num_workers']
@@ -48,6 +50,7 @@ def main():
     rd = rd.to(device)  # otherwise, you can not run the inference process on GPUs.
 
     data_module = WisdomDataModule(data_version=data_version,
+                                   data_name=data_name,
                                    k=k,
                                    device=device,
                                    vocab=VOCAB,

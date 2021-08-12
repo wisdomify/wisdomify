@@ -1,11 +1,15 @@
+import csv
+
+import torch
+
+from datasets import load_dataset
+from datasets.dataset_dict import DatasetDict
+from datasets.dataset_dict import Dataset as hg_dataset
+from torch.utils.data import Dataset, DataLoader
 from typing import List, Tuple, Optional
 from pytorch_lightning import LightningDataModule
+
 from wisdomify.builders import build_X, build_y
-from torch.utils.data import Dataset, DataLoader, random_split
-import csv
-import torch
-from os import path
-from wisdomify.paths import WISDOMDATA_VER_0_DIR
 
 
 class WisdomDataset(Dataset):
@@ -45,6 +49,7 @@ class WisdomDataset(Dataset):
 class WisdomDataModule(LightningDataModule):
     def __init__(self,
                  data_version: str,
+                 data_name: str,
                  k: int = None,
                  device=None,
                  vocab=None,
@@ -57,6 +62,7 @@ class WisdomDataModule(LightningDataModule):
                  repeat: bool = None):
         super().__init__()
         self.data_version = data_version
+        self.data_name = data_name
         self.k = k
         self.device = device
         self.vocab = vocab
@@ -67,7 +73,7 @@ class WisdomDataModule(LightningDataModule):
         self.test_ratio = test_ratio
         self.shuffle = shuffle
         self.repeat = repeat
-        self.dataset_all: Optional[WisdomDataset] = None
+        self.dataset_raw: Optional[DatasetDict] = None
         self.dataset_train: Optional[WisdomDataset] = None
         self.dataset_val: Optional[WisdomDataset] = None
         self.dataset_test: Optional[WisdomDataset] = None
@@ -75,31 +81,49 @@ class WisdomDataModule(LightningDataModule):
 
     def prepare_data(self):
         """
-        prepare the data needed.
+        prepare the data needed. (eg. downloading)
         """
-        if self.data_version == "0":
-            version_dir = WISDOMDATA_VER_0_DIR
-            wisdom2def_tsv_path = path.join(version_dir, "wisdom2def.tsv")
-            wisdom2sent = self.load_wisdom2sent(wisdom2def_tsv_path)
-        else:
-            raise NotImplementedError
-        X = build_X(wisdom2sent, self.tokenizer, self.k).to(self.device)
-        y = build_y(wisdom2sent, self.vocab).to(self.device)
-        self.dataset_all = WisdomDataset(X, y)
-        self.dataset_all.upsample(self.repeat)
+        self.dataset_raw = load_dataset(path="DicoTiar/story",
+                                        name=self.data_name,
+                                        script_version=f"version_{self.data_version}")
+
+        if self.dataset_raw['train'].version.version_str != self.data_version:
+            raise NotImplementedError(f"This version is not valid: {self.data_version}")
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
-        역할?
+        convert dataset to desired form. (eg. pre-process)
         """
-        n_total_data = len(self.dataset_all)
-        n_train = int(n_total_data * self.train_ratio)
-        n_test = int(n_total_data * self.test_ratio)
-        n_val = n_total_data - (n_train + n_test)
-        self.dataset_train, self.dataset_val, self.dataset_test = random_split(self.dataset_all,
-                                                                               [n_train, n_val, n_test],
-                                                                               generator=torch.Generator() \
-                                                                               .manual_seed(self.seed))
+        def _convert_raw_to_embed(raw_data: hg_dataset, x_col: str, y_col: str) -> WisdomDataset:
+            """
+            This function convert
+            raw data from huggingface api (which has form of DatasetDict)
+            to WisdomDataset.
+
+            :param raw_data: raw dataset from huggingface api
+            :param x_col: name of x column
+            :param y_col: name of y column
+            :return:
+            """
+            wisdom2sent = list(map(lambda row: (row[x_col], row[y_col]), raw_data))
+
+            X = build_X(wisdom2sent, self.tokenizer, self.k).to(self.device)
+            y = build_y(wisdom2sent, self.vocab).to(self.device)
+
+            data = WisdomDataset(X, y)
+            data.upsample(self.repeat)
+
+            return data
+
+        x_col = 'wisdom'
+        y_col = 'def' if self.data_name == 'definition' else 'eg' if self.data_name == 'example' else None
+
+        if y_col is None:
+            raise ValueError("Wrong data name")
+
+        self.dataset_train = _convert_raw_to_embed(self.dataset_raw['train'], x_col, y_col)
+        self.dataset_train = _convert_raw_to_embed(self.dataset_raw['validation'], x_col, y_col)
+        self.dataset_train = _convert_raw_to_embed(self.dataset_raw['test'], x_col, y_col)
 
     def train_dataloader(self):
         return DataLoader(self.dataset_train, batch_size=self.batch_size,
