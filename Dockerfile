@@ -8,6 +8,9 @@ COPY requirements.txt /wisdomify/
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
+RUN mkdir ./data
+RUN mkdir ./data/lightning_logs
+
 RUN curl -L -sS https://www.dropbox.com/s/cbc29zvghiwf1z3/version_0.zip?dl=1 > ./version_0.zip
 RUN unzip ./version_0.zip -d ./data/lightning_logs/
 RUN rm ./version_0.zip
