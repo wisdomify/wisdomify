@@ -70,13 +70,10 @@ class WisdomDataModule(LightningDataModule):
         self.tokenizer = tokenizer
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.train_ratio = train_ratio
-        self.test_ratio = test_ratio
         self.shuffle = shuffle
         self.repeat = repeat
-        self.dataset_raw: Optional[DatasetDict] = None
+        self.story: Optional[DatasetDict] = None
         self.dataset_train: Optional[WisdomDataset] = None
-        self.dataset_val: Optional[WisdomDataset] = None
         self.dataset_test: Optional[WisdomDataset] = None
         self.seed = 42
 
@@ -85,11 +82,11 @@ class WisdomDataModule(LightningDataModule):
         prepare the data needed. (eg. downloading)
         """
 
-        self.dataset_raw = load_dataset(path="DicoTiar/story",
-                                        name=self.data_name,
-                                        script_version=f"version_{self.data_version}")
+        self.story = load_dataset(path="DicoTiar/story",
+                                  name=self.data_name,
+                                  script_version=f"version_{self.data_version}")
 
-        if self.dataset_raw['train'].version.version_str != self.data_version:
+        if self.story['train'].version.version_str != self.data_version:
             raise NotImplementedError(f"This version is not valid: {self.data_version}")
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -123,17 +120,19 @@ class WisdomDataModule(LightningDataModule):
         if y_col is None:
             raise ValueError("Wrong data name")
 
-        self.dataset_train = _convert_raw_to_embed(self.dataset_raw['train'], x_col, y_col)
-        self.dataset_train = _convert_raw_to_embed(self.dataset_raw['validation'], x_col, y_col)
-        self.dataset_train = _convert_raw_to_embed(self.dataset_raw['test'], x_col, y_col)
+        self.dataset_train = _convert_raw_to_embed(self.story['train'], x_col, y_col)
+        self.dataset_train = _convert_raw_to_embed(self.story['validation'], x_col, y_col)
+        self.dataset_train = _convert_raw_to_embed(self.story['test'], x_col, y_col)
 
     def train_dataloader(self):
         return DataLoader(self.dataset_train, batch_size=self.batch_size,
                           shuffle=self.shuffle, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.dataset_val, batch_size=self.batch_size,
-                          shuffle=self.shuffle, num_workers=self.num_workers)
+        """
+        implement this later.
+        """
+        raise NotImplementedError
 
     def test_dataloader(self):
         return DataLoader(self.dataset_test, batch_size=self.batch_size,
@@ -147,7 +146,7 @@ class WisdomDataModule(LightningDataModule):
         """
         with open(tsv_path, 'r') as fh:
             tsv_reader = csv.reader(fh, delimiter="\t")
-            next(tsv_reader)
+            next(tsv_reader)  # skip the header
             return [
                 (row[0], row[1])  # wisdom, sent pair
                 for row in tsv_reader

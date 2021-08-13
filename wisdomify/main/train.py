@@ -19,14 +19,13 @@ def main():
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
-                        default="0")
+                        default="1")
 
     args = parser.parse_args()
     ver: str = args.ver
     # parameters from conf
 
     conf = load_conf()
-
     vers = conf['versions']
     if ver not in vers.keys():
         raise NotImplementedError(f"Cannot find version {ver}.\nWrite your setting and version properly on conf.json")
@@ -51,7 +50,6 @@ def main():
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
-
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd
     rd.to(device)
@@ -64,8 +62,6 @@ def main():
                                    tokenizer=tokenizer,
                                    batch_size=batch_size,
                                    num_workers=num_workers,
-                                   train_ratio=train_ratio,
-                                   test_ratio=test_ratio,
                                    shuffle=shuffle,
                                    repeat=repeat)
 
