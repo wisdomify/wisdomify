@@ -41,6 +41,7 @@ def main():
     shuffle: bool = selected_ver['shuffle']
     num_workers: int = selected_ver['num_workers']
     # TODO: should enable to load both example and definition on one dataset
+    data_name: str = selected_ver['data_name']
     data_version: str = selected_ver['data_version']
     train_ratio: float = selected_ver['train_ratio']
     test_ratio: float = selected_ver['test_ratio']

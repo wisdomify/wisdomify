@@ -13,7 +13,7 @@ from torch.nn import functional as F
 from wisdomify.builders import build_X, build_vocab2subwords
 from wisdomify.loaders import load_conf
 from wisdomify.metrics import RDMetric
-from wisdomify.paths import WISDOMIFIER_V_0_CKPT
+from wisdomify.paths import WISDOMIFIER_CKPT
 from wisdomify.vocab import VOCAB
 
 
@@ -21,6 +21,7 @@ class RD(pl.LightningModule):
     """
     A reverse-dictionary. The model is based on
     """
+
     def __init__(self, bert_mlm: BertForMaskedLM, vocab2subwords: Tensor, k: int, lr: float):
         super().__init__()
         # -- the only network we need -- #
@@ -146,22 +147,23 @@ class Wisdomifier:
         self.tokenizer = tokenizer
 
     def from_pretrained(self, ver: str, device) -> 'Wisdomifier':
-        if ver == "0":
-            conf = load_conf()
-            wisdomifier_path = WISDOMIFIER_V_0_CKPT
-            k: int = conf['versions'][ver]['k']
-            bert_model: str = conf['versions'][ver]['bert_model']
-            bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
-            self.tokenizer = AutoTokenizer.from_pretrained(bert_model)
-            vocab2subwords = build_vocab2subwords(self.tokenizer, k, VOCAB).to(device)
+        conf = load_conf()
+        vers = conf['versions']
+        if ver not in vers.keys():
+            raise NotImplementedError(
+                f"Cannot find version {ver}.\nWrite your setting and version properly on conf.json")
 
-            self.rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
-            self.rd.to(device)
-            self.rd.eval()
-            wisdomifier = Wisdomifier(self.rd, self.tokenizer)
+        wisdomifier_path = WISDOMIFIER_CKPT
+        k: int = conf['versions'][ver]['k']
+        bert_model: str = conf['versions'][ver]['bert_model']
+        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
+        self.tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        vocab2subwords = build_vocab2subwords(self.tokenizer, k, VOCAB).to(device)
 
-        else:
-            raise NotImplementedError
+        self.rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
+        self.rd.to(device)
+        self.rd.eval()
+        wisdomifier = Wisdomifier(self.rd, self.tokenizer)
 
         return wisdomifier
 
