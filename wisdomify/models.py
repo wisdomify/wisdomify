@@ -152,13 +152,14 @@ class Wisdomifier:
             k: int = conf['versions'][ver]['k']
             bert_model: str = conf['versions'][ver]['bert_model']
             bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
-            tokenizer = AutoTokenizer.from_pretrained(bert_model)
-            vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
+            self.tokenizer = AutoTokenizer.from_pretrained(bert_model)
+            vocab2subwords = build_vocab2subwords(self.tokenizer, k, VOCAB).to(device)
 
             self.rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
             self.rd.to(device)
             self.rd.eval()
-            wisdomifier = Wisdomifier(self.rd, tokenizer)
+            wisdomifier = Wisdomifier(self.rd, self.tokenizer)
+
         else:
             raise NotImplementedError
 

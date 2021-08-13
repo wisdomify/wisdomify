@@ -36,21 +36,21 @@ def main():
     wisdomifier = Wisdomifier.from_pretrained(ver, device)
 
     data_module = WisdomDataModule(data_version=data_version,
-                                       data_name=data_name,
-                                       k=k,
-                                       device=device,
-                                       vocab=VOCAB,
-                                       tokenizer=tokenizer,
-                                       batch_size=batch_size,
-                                       num_workers=num_workers,
-                                       train_ratio=train_ratio,
-                                       test_ratio=test_ratio,
-                                       shuffle=False,
-                                       repeat=repeat)
+                                   data_name=data_name,
+                                   k=k,
+                                   device=device,
+                                   vocab=VOCAB,
+                                   tokenizer=wisdomifier.tokenizer,
+                                   batch_size=batch_size,
+                                   num_workers=num_workers,
+                                   train_ratio=train_ratio,
+                                   test_ratio=test_ratio,
+                                   shuffle=False,
+                                   repeat=repeat)
 
     trainer = pl.Trainer(gpus=torch.cuda.device_count())
 
-    trainer.test(model=Wisdomifier.rd, datamodule=data_module, verbose=False)
+    trainer.test(model=wisdomifier.rd, datamodule=data_module, verbose=False)
 
 
 if __name__ == '__main__':
