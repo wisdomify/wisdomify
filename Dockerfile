@@ -1,10 +1,11 @@
 # Base python image Build
 FROM python:3.8-buster
 
-#WORKDIR /wisdomify
-COPY . .
-COPY requirements.txt /wisdomify/
 
+RUN git clone https://github.com/eubinecto/wisdomify
+RUN git checkout feature_52
+
+WORKDIR /wisdomify
 RUN pip install --upgrade pip
 #RUN pip install -r requirements.txt
 
