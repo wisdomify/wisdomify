@@ -118,28 +118,51 @@ class RD(pl.LightningModule):
         # The authors used Adam, so we might as well use it
         return torch.optim.AdamW(self.parameters(), lr=self.hparams['lr'])
 
+    def test_step(self, batch, batch_idx, *args, **kwargs):
+        self.rd_metric.reset()
+
+        X, y = batch
+
+        S_subword = self.forward(X)
+        S_word = self.S_word(S_subword)
+        S_word_probs = F.softmax(S_word, dim=1)
+
+        self.rd_metric.update(preds=S_word_probs, targets=y)
+        print("\nbatch:{}".format(batch_idx), self.rd_metric.compute())
+
+    def on_test_end(self):
+        median, var, top1, top10, top100 = self.rd_metric.compute()
+        print("### final ###")
+        print("median:", median)
+        print("var:", var)
+        print("top1:", top1)
+        print("top10:", top10)
+        print("top100:", top100)
+
 
 class Wisdomifier:
     def __init__(self, rd: RD, tokenizer: BertTokenizerFast):
         self.rd = rd  # a trained reverse dictionary
         self.tokenizer = tokenizer
 
-    @staticmethod
-    def from_pretrained(ver: str, device) -> 'Wisdomifier':
+    def from_pretrained(self, ver: str, device) -> 'Wisdomifier':
         if ver == "0":
             conf = load_conf()
             wisdomifier_path = WISDOMIFIER_V_0_CKPT
             k: int = conf['versions'][ver]['k']
             bert_model: str = conf['versions'][ver]['bert_model']
             bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
-            tokenizer = AutoTokenizer.from_pretrained(bert_model)
-            vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
-            rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
-            rd.to(device)
-            rd.eval()
-            wisdomifier = Wisdomifier(rd, tokenizer)
+            self.tokenizer = AutoTokenizer.from_pretrained(bert_model)
+            vocab2subwords = build_vocab2subwords(self.tokenizer, k, VOCAB).to(device)
+
+            self.rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
+            self.rd.to(device)
+            self.rd.eval()
+            wisdomifier = Wisdomifier(self.rd, self.tokenizer)
+
         else:
             raise NotImplementedError
+
         return wisdomifier
 
     def wisdomify(self, sents: List[str]) -> List[List[Tuple[str, float]]]:

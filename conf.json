@@ -3,7 +3,8 @@
     "0": {
       "bert_model": "beomi/kcbert-base",
       "desc": "The first minimal-viable-product of wisdomify",
-      "data_version": "0",
+      "data_version": "0.0.0",
+      "data_name": ["example"],
       "k": 11,
       "lr": 0.00001,
       "max_epochs": 20,

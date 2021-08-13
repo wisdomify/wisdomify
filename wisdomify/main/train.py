@@ -33,6 +33,8 @@ def main():
     shuffle: bool = conf['versions'][ver]['shuffle']
     num_workers: int = conf['versions'][ver]['num_workers']
     data_version: str = conf['versions'][ver]['data_version']
+    # TODO: should enable to load both example and definition on one dataset
+    data_name: str = conf['versions'][ver]['data_name'][0]
     train_ratio: float = conf['versions'][ver]['train_ratio']
     test_ratio: float = conf['versions'][ver]['test_ratio']
 
@@ -50,6 +52,7 @@ def main():
     rd.to(device)
     # --- setup a dataloader --- #
     data_module = WisdomDataModule(data_version=data_version,
+                                   data_name=data_name,
                                    k=k,
                                    device=device,
                                    vocab=VOCAB,
