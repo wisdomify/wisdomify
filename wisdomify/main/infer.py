@@ -19,8 +19,8 @@ def main():
     args = parser.parse_args()
     ver: str = args.ver
     desc: str = args.desc
+
     conf = load_conf()
-    # a one-liner for loading a pre-trained wisdomifier
     wisdomifier = Wisdomifier.from_pretrained(ver, device)
 
     print("### desc: {} ###".format(desc))

@@ -3,6 +3,7 @@ import torch
 import argparse
 from wisdomify.datasets import WisdomDataModule
 from wisdomify.loaders import load_conf
+
 from wisdomify.vocab import VOCAB
 from wisdomify.models import Wisdomifier
 
@@ -16,6 +17,7 @@ def main():
 
     args = parser.parse_args()
     ver: str = args.ver
+
     conf = load_conf()
     vers = conf['versions']
     if ver not in vers.keys():
@@ -24,6 +26,7 @@ def main():
     selected_ver = vers[ver]
     bert_model: str = selected_ver['bert_model']
     data_version: str = selected_ver['data_version']
+
     # TODO: should enable to load both example and definition on one dataset
     data_name: str = selected_ver['data_name'][0]
     batch_size: int = selected_ver['batch_size']
