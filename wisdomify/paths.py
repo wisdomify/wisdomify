@@ -25,5 +25,5 @@ CONF_JSON = path.join(PROJECT_ROOT, "conf.json")
 # use WISDOMIFIER_CKPT.format(ver=SOME_NUMBER) to set version num.
 # use WISDOMIFIER_HPARAMS_YAML.format(ver=SOME_NUMBER) to set version num.
 WISDOMIFIER = path.join(LIGHTNING_LOGS_DIR, "version_{ver}")
-WISDOMIFIER_CKPT = path.join(WISDOMIFIER, "checkpoints", "wisdomify.ckpt")
+WISDOMIFIER_CKPT = path.join(WISDOMIFIER, "checkpoints", "wisdomifier.ckpt")
 WISDOMIFIER_HPARAMS_YAML = path.join(WISDOMIFIER, "hparams.yaml")

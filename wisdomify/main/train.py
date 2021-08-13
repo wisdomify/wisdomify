@@ -42,7 +42,7 @@ def main():
     # TODO: should enable to load both example and definition on one dataset
     data_name: str = selected_ver['data_name'][0]
     data_version: str = selected_ver['data_version']
-    model_name = "wisdomify_def_{epoch:02d}_{train_loss:.2f}"
+    model_name = "wisdomifier"
 
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)

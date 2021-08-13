@@ -148,25 +148,26 @@ class Wisdomifier:
         self.tokenizer = tokenizer
 
     # TODO: this should be a ... static method.
-    def from_pretrained(self, ver: str, device) -> 'Wisdomifier':
+    @staticmethod
+    def from_pretrained(ver: str, device) -> 'Wisdomifier':
         conf = load_conf()
         vers = conf['versions']
+        # error handling
         if ver not in vers.keys():
             raise NotImplementedError(
                 f"Cannot find version {ver}.\nWrite your setting and version properly on conf.json")
 
-        wisdomifier_path = WISDOMIFIER_CKPT
+        wisdomifier_path = WISDOMIFIER_CKPT.format(ver=ver)
         k: int = conf['versions'][ver]['k']
         bert_model: str = conf['versions'][ver]['bert_model']
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
-        self.tokenizer = AutoTokenizer.from_pretrained(bert_model)
-        vocab2subwords = build_vocab2subwords(self.tokenizer, k, VOCAB).to(device)
+        tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
 
-        self.rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
-        self.rd.to(device)
-        self.rd.eval()
-        wisdomifier = Wisdomifier(self.rd, self.tokenizer)
-
+        rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
+        rd.to(device)
+        rd.eval()
+        wisdomifier = Wisdomifier(rd, tokenizer)
         return wisdomifier
 
     def wisdomify(self, sents: List[str]) -> List[List[Tuple[str, float]]]:

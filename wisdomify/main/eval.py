@@ -24,16 +24,12 @@ def main():
         raise NotImplementedError("Invalid version provided".format(ver))
 
     selected_ver = vers[ver]
-    bert_model: str = selected_ver['bert_model']
     data_version: str = selected_ver['data_version']
-
     # TODO: should enable to load both example and definition on one dataset
     data_name: str = selected_ver['data_name'][0]
     batch_size: int = selected_ver['batch_size']
     repeat: bool = selected_ver['repeat']
     num_workers: int = selected_ver['num_workers']
-    train_ratio: float = selected_ver['train_ratio']
-    test_ratio: float = selected_ver['test_ratio']
     k: int = selected_ver['k']
 
     wisdomifier = Wisdomifier.from_pretrained(ver, device)
@@ -46,8 +42,6 @@ def main():
                                    tokenizer=wisdomifier.tokenizer,
                                    batch_size=batch_size,
                                    num_workers=num_workers,
-                                   train_ratio=train_ratio,
-                                   test_ratio=test_ratio,
                                    shuffle=False,
                                    repeat=repeat)
 
