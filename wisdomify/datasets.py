@@ -60,6 +60,7 @@ class WisdomDataModule(LightningDataModule):
                  test_ratio: float = None,
                  shuffle: bool = None,
                  repeat: bool = None):
+      
         super().__init__()
         self.data_version = data_version
         self.data_name = data_name

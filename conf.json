@@ -10,7 +10,7 @@
       "max_epochs": 20,
       "batch_size": 40,
       "repeat": 20,
-      "num_workers": 4,
+      "num_workers": 0,
       "shuffle": true,
       "train_ratio": 0.8,
       "test_ratio": 0.2

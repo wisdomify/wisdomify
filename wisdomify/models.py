@@ -21,7 +21,6 @@ class RD(pl.LightningModule):
     """
     A reverse-dictionary. The model is based on
     """
-    # fruitify into these!
     def __init__(self, bert_mlm: BertForMaskedLM, vocab2subwords: Tensor, k: int, lr: float):
         super().__init__()
         # -- the only network we need -- #
@@ -155,6 +154,7 @@ class Wisdomifier:
             bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
             tokenizer = AutoTokenizer.from_pretrained(bert_model)
             vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
+
             self.rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
             self.rd.to(device)
             self.rd.eval()
