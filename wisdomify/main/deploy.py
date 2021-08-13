@@ -10,7 +10,7 @@ from wisdomify.vocab import VOCAB
 
 
 class WisdomifierAPI:
-    def __init__(self, ver: int):
+    def __init__(self, ver: str):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         conf = load_conf()
@@ -19,28 +19,14 @@ class WisdomifierAPI:
             raise NotImplementedError("Invalid version provided".format(ver))
 
         selected_ver = vers[ver]
-        bert_model: str = selected_ver['bert_model']
 
-        wisdomifier_path = WISDOMIFIER_CKPT.format(ver=ver)
-        with open(WISDOMIFIER_HPARAMS_YAML.format(ver=ver), 'r') as fh:
-            wisdomifier_hparams = yaml.safe_load(fh)
-        k = wisdomifier_hparams['k']
-
-        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
-        tokenizer = AutoTokenizer.from_pretrained(bert_model)
-        print('bert_mlm and tokenizer loaded')
-        vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
-        rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
-        rd.eval()  # otherwise, the model will output different results with the same inputs
-        rd = rd.to(device)  # otherwise, you can not run the inference process on GPUs.
-        wisdomifier = Wisdomifier(rd, tokenizer)
-
-        self.wisdomifier = wisdomifier
-        print('wisdomifier loaded')
+        self.wisdomifier = Wisdomifier.from_pretrained(ver, device)
+        print(f'wisdomifier loaded -> ver: {ver}')
 
 
 app = Flask(__name__)
-wisdomifierAPI = WisdomifierAPI(ver=0)
+wisdomifier_0 = WisdomifierAPI(ver="0")
+wisdomifier_1 = WisdomifierAPI(ver="1")
 
 
 @app.route('/', methods=['GET'])
@@ -57,6 +43,7 @@ def wisdomifyHome():
     <body>
         <h1>wisdomify</h1><br>
         
+        <a href="/gwageo"><button>GwaGeo</button></a>
         <a href="/search"><button>Search</button></a>
         <a href="/api"><button>API</button></a>
     </body>
@@ -67,92 +54,78 @@ def wisdomifyHome():
 @app.route('/search', methods=['GET'])
 def wisdomifySearch():
     desc = request.args.get('desc')
-    if desc:
-        desc_result = wisdomifierAPI.wisdomifier.wisdomify(sents=[desc])
-        return render_template_string(
-            """
-            <html>
-            <head>
-                <title>
-                    wisdomify - version_0
-                </title>
-                <style>
-                table, th, td {
-                  border: 1px solid black;
-                  margin: 1px;
-                  padding: 1px;
-                }
-                </style>
-            </head>
-            <body>
-                <h1>wisdomify</h1><br>
-                <form method="GET" action="/search">
-                    <div>
-                        <label for="desc"> 검색할 문장을 입력하세요 </label>
-                        <input type="text" name="desc">
-                    </div>
-                    <div class='button'>
-                        <button type="submit">검색하기</button>
-                    </div>
-                </form>
-                <p>
-                    {% if desc == None %}
-                        <h5> 문장을 입력해주세요. </h5>
-                    {% else %}
-                        <h3> 검색어: {{ desc }}</h3>
-                        <table style="width:100%">
-                          <tr>
-                            <th>속담</th>
-                            <th>확률</th>
-                          </tr>
-                        
-                        {% for results in desc_result %}
-                            {% for res in results %}
-                            <tr>
-                                <td>{{ res[0] }}</td>
-                                <td>{{ res[1] }}</td>
-                            </tr>
-                            {% endfor %}
-                        </table>
-                        {% endfor %}
-                    {% endif %}
-                </p>
-            </body>
-            </html>
-            """,
-            desc=desc,
-            desc_result=desc_result
-        )
+    ver = str(request.args.get('ver'))
+
     return render_template_string(
         """
-            <html>
-            <head>
-                <title>
-                    wisdomify - version_0
-                </title>
-                <style>
-                </style>
-            </head>
-            <body>
-                <h1>wisdomify</h1><br>
-                <form method="GET" action="/search">
-                    <div>
-                        <label for="desc"> 검색할 문장을 입력하세요 </label>
-                        <input type="text" name="desc">
-                    </div>
-                    <div class='button'>
-                        <button type="submit">검색하기</button>
-                    </div>
-                </form>
-            </body>
-            </html>
-            """
+        <html>
+        <head>
+            <title>
+                wisdomify - version_0
+            </title>
+            <style>
+            table, th, td {
+              border: 1px solid black;
+              margin: 1px;
+              padding: 1px;
+            }
+            </style>
+        </head>
+        <body>
+            <h1>wisdomify</h1><br>
+            
+            <form method="GET" action="/search" >
+                <div>
+                    <select name="ver">
+                        <option value="None">Select Version</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="desc"> 검색할 문장을 입력하세요 </label>
+                    <input type="text" name="desc">
+                </div>
+                <div class='button'>
+                    <button type="submit">검색하기</button>
+                </div>
+            </form>
+            <p>
+                {% if desc == None %}
+                    <h5> 문장을 입력해주세요. </h5>
+                {% else %}
+                    <h3> 검색어: {{ desc }}</h3>
+                    <h4> Version: {{ ver }}</h4>
+                    <table style="width:100%">
+                      <tr>
+                        <th>속담</th>
+                        <th>확률</th>
+                      </tr>
+                    
+                    {% for results in desc_result %}
+                        {% for res in results %}
+                        <tr>
+                            <td>{{ res[0] }}</td>
+                            <td>{{ res[1] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% endfor %}
+                {% endif %}
+            </p>
+        </body>
+        </html>
+        """,
+        ver=ver,
+        desc=desc,
+        desc_result=globals()[f'wisdomifier_{ver}'].wisdomifier.wisdomify(sents=[desc]) if desc else None
     )
 
 
 @app.route('/api', methods=['GET'])
 def wisdomifyAPI():
     desc = request.args.get('desc')
+    ver = str(request.args.get('ver'))
     if desc:
         return jsonify(list(map(
             lambda results: dict(map(
@@ -160,10 +133,88 @@ def wisdomifyAPI():
                 (res[0], res[1]),
                 results
             )),
-            wisdomifierAPI.wisdomifier.wisdomify(sents=[desc])
+            globals()[f'wisdomifier_{ver}'].wisdomifier.wisdomify(sents=[desc])
         )))
 
     return jsonify(None)
+
+
+@app.route('/gwageo', methods=['GET'])
+def GwaGeo():
+    desc = request.args.get('desc')
+
+    return render_template_string(
+        """
+        <html>
+        <head>
+            <title>
+                wisdomify
+            </title>
+            <style>
+            table, th, td {
+              border: 1px solid black;
+              margin: 1px;
+              padding: 1px;
+            }
+            </style>
+        </head>
+        <body>
+            <h1>wisdomify</h1><br>
+
+            <form method="GET" action="/gwageo" >
+                <div>
+                    <label for="desc"> 검색할 문장을 입력하세요 </label>
+                    <input type="text" name="desc">
+                </div>
+                <div class='button'>
+                    <button type="submit">검색하기</button>
+                </div>
+            </form>
+            <p>
+                {% if desc == None %}
+                    <h5> 문장을 입력해주세요. </h5>
+                {% else %}
+                    <h3> 검색어: {{ desc }}</h3>
+                    <table style="width:100%">
+                    <tr>
+                        <th>Version_0</th>
+                        <th>Version_0</th>
+                        <th></th>
+                        <th>Version_1</th>
+                        <th>Version_1</th>
+                        
+                      </tr>
+                      <tr>
+                        <th>속담</th>
+                        <th>확률</th>
+                        <th></th>
+                        <th>속담</th>
+                        <th>확률</th>
+                      </tr>
+
+                    {% for results in desc_result %}
+                        {% for res in results %}
+                        <tr>
+                            <td>{{ res[0][0] }}</td>
+                            <td>{{ res[0][1] }}</td>
+                            <td></td>
+                            <td>{{ res[1][0] }}</td>
+                            <td>{{ res[1][1] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                    {% endfor %}
+                {% endif %}
+            </p>
+        </body>
+        </html>
+        """,
+        desc=desc,
+        desc_result=[list(zip(
+            wisdomifier_0.wisdomifier.wisdomify(sents=[desc])[0],
+            wisdomifier_1.wisdomifier.wisdomify(sents=[desc])[0],
+        ))] if desc else None
+    )
 
 
 @app.route('/healthz', methods=['GET'])
@@ -172,4 +223,4 @@ def checkHealth():
 
 
 if __name__ == '__main__':
-    app.run(debug=False, port=5000, host='0.0.0.0', threaded=True)
+    app.run(debug=True, port=5000, host='0.0.0.0', threaded=True)
