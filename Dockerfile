@@ -9,6 +9,7 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 RUN pip install 'dvc[gdrive]'
+RUN ls -al
 RUN dvc pull
 
 #RUN mkdir ./data
