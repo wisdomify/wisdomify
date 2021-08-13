@@ -2,17 +2,33 @@
   "versions": {
     "0": {
       "bert_model": "beomi/kcbert-base",
-      "desc": "The first minimal-viable-product of wisdomify",
-      "data_version": "0",
+      "desc": "[version_0]: The first minimal-viable-product of wisdomify",
+      "data": {
+        "train": "version_0/wisdom2def_train.tsv",
+        "test": ""
+      },
       "k": 11,
       "lr": 0.00001,
       "max_epochs": 20,
       "batch_size": 40,
       "repeat": 20,
       "num_workers": 0,
-      "shuffle": true,
-      "train_ratio": 0.8,
-      "test_ratio": 0.2
+      "shuffle": true
+    },
+    "1": {
+      "bert_model": "beomi/kcbert-base",
+      "desc": "[version_1]: Trained on a data with increased size",
+      "data": {
+        "train": "version_1/wisdom2eg_train.tsv",
+        "test": "version_1/wisdom2eg_test.tsv"
+      },
+      "k": 11,
+      "lr": 0.00001,
+      "max_epochs": 20,
+      "batch_size": 40,
+      "repeat": 0,
+      "num_workers": 0,
+      "shuffle": true
     }
   }
 }

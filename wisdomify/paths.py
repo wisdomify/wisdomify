@@ -20,7 +20,7 @@ CONF_JSON = path.join(PROJECT_ROOT, "conf.json")
 WISDOMDATA_VER_0_DIR = path.join(WISDOMDATA_DIR, "version_0")
 WISDOMDATA_VER_1_DIR = path.join(WISDOMDATA_DIR, "version_1")
 # 요기는 이제 필요 없을 것.
-# WISDOM2DEF_TSV = path.join(DATA_DIR, "wisdom2def.tsv")
+# WISDOM2DEF_TSV = path.join(DATA_DIR, "wisdom2def_train.tsv")
 # WISDOM2EG_TSV = path.join(DATA_DIR, "wisdom2eg.tsv")
 
 # the directories in which each version is stored

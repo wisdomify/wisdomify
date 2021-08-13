@@ -1,11 +1,11 @@
 from typing import List, Tuple, Optional
 from pytorch_lightning import LightningDataModule
 from wisdomify.builders import build_X, build_y
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader
 import csv
 import torch
 from os import path
-from wisdomify.paths import WISDOMDATA_VER_0_DIR, WISDOMDATA_VER_1_DIR
+from wisdomify.paths import WISDOMDATA_DIR
 
 
 class WisdomDataset(Dataset):
@@ -44,72 +44,65 @@ class WisdomDataset(Dataset):
 
 class WisdomDataModule(LightningDataModule):
     def __init__(self,
-                 data_version: str,
+                 data_train_path: str,
+                 data_test_path: str,
                  k: int,
                  device,
                  vocab,
                  tokenizer,
                  batch_size: int,
                  num_workers: int,
-                 train_ratio: float,
-                 test_ratio: float,
                  shuffle: bool,
                  repeat: bool):
         super().__init__()
-        self.data_version = data_version
+        self.data_train_path = data_train_path
+        self.data_test_path = data_test_path
         self.k = k
         self.device = device
         self.vocab = vocab
         self.tokenizer = tokenizer
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.train_ratio = train_ratio
-        self.test_ratio = test_ratio
         self.shuffle = shuffle
         self.repeat = repeat
-        self.dataset_all: Optional[WisdomDataset] = None
+        self.wisdom2sent_train: Optional[List[Tuple[str, str]]] = None
+        self.wisdom2sent_test: Optional[List[Tuple[str, str]]] = None
         self.dataset_train: Optional[WisdomDataset] = None
-        self.dataset_val: Optional[WisdomDataset] = None
         self.dataset_test: Optional[WisdomDataset] = None
 
     def prepare_data(self):
         """
-        prepare the data needed.
+        prepare the data needed. (download, etc)
         """
-        if self.data_version == "0":
-            version_dir = WISDOMDATA_VER_0_DIR
-            wisdom2def_tsv_path = path.join(version_dir, "wisdom2def.tsv")
-            wisdom2sent = self.load_wisdom2sent(wisdom2def_tsv_path)
-        elif self.data_version == "1":
-            version_dir = WISDOMDATA_VER_1_DIR
-            # we only use examples for version 1
-            wisdom2def_tsv_path = path.join(version_dir, "wisdom2eg.tsv")
-            wisdom2sent = self.load_wisdom2sent(wisdom2def_tsv_path)
-        else:
-            raise NotImplementedError
-        X = build_X(wisdom2sent, self.tokenizer, self.k).to(self.device)
-        y = build_y(wisdom2sent, self.vocab).to(self.device)
-        self.dataset_all = WisdomDataset(X, y)
-        self.dataset_all.upsample(self.repeat)
+        wisdom2sent_train_tsv_path = path.join(WISDOMDATA_DIR, self.data_train_path)
+        self.wisdom2sent_train = self.load_wisdom2sent(wisdom2sent_train_tsv_path)
+        if self.data_test_path:
+            wisdom2sent_test_tsv_path = path.join(WISDOMDATA_DIR, self.data_test_path)
+            self.wisdom2sent_test = self.load_wisdom2sent(wisdom2sent_test_tsv_path)
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
         역할?
         """
-        n_total_data = len(self.dataset_all)
-        n_train = int(n_total_data * self.train_ratio)
-        n_test = int(n_total_data * self.test_ratio)
-        n_val = n_total_data - (n_train + n_test)
-        self.dataset_train, self.dataset_val, self.dataset_test = random_split(self.dataset_all,
-                                                                               [n_train, n_val, n_test])
+        if stage == "fit":
+            X_train = build_X(self.wisdom2sent_train, self.tokenizer, self.k).to(self.device)
+            y_train = build_y(self.wisdom2sent_train, self.vocab).to(self.device)
+            self.dataset_train = WisdomDataset(X_train, y_train)
+            self.dataset_train.upsample(self.repeat)
+        elif stage == "test":
+            X_test = build_X(self.wisdom2sent_test, self.tokenizer, self.k).to(self.device)
+            y_test = build_y(self.wisdom2sent_test, self.vocab).to(self.device)
+            self.dataset_test = WisdomDataset(X_test, y_test)
 
     def train_dataloader(self):
         return DataLoader(self.dataset_train, batch_size=self.batch_size,
                           shuffle=self.shuffle, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.dataset_val, batch_size=self.batch_size,
-                          shuffle=self.shuffle, num_workers=self.num_workers)
+        """
+        implement this later.
+        """
+        raise NotImplementedError
 
     def test_dataloader(self):
         return DataLoader(self.dataset_test, batch_size=self.batch_size,
@@ -123,7 +116,7 @@ class WisdomDataModule(LightningDataModule):
         """
         with open(tsv_path, 'r') as fh:
             tsv_reader = csv.reader(fh, delimiter="\t")
-            next(tsv_reader)
+            next(tsv_reader)  # skip the header
             return [
                 (row[0], row[1])  # wisdom, sent pair
                 for row in tsv_reader

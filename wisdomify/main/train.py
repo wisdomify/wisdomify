@@ -19,7 +19,7 @@ def main():
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
-                        default="0")
+                        default="1")
     args = parser.parse_args()
     ver: str = args.ver
     # parameters from conf
@@ -32,32 +32,24 @@ def main():
     repeat: bool = conf['versions'][ver]['repeat']
     shuffle: bool = conf['versions'][ver]['shuffle']
     num_workers: int = conf['versions'][ver]['num_workers']
-    data_version: str = conf['versions'][ver]['data_version']
-    train_ratio: float = conf['versions'][ver]['train_ratio']
-    test_ratio: float = conf['versions'][ver]['test_ratio']
-
-    if ver == "0":
-        model_name = "wisdomify_def_{epoch:02d}_{train_loss:.2f}"
-    else:
-        raise NotImplementedError
-
+    data_train_path: str = conf['versions'][ver]['data']['train']
+    data_test_path: str = conf['versions'][ver]['data']['test']
+    model_name = "wisdomify_{epoch:02d}_{train_loss:.2f}"
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
-
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd
     rd.to(device)
     # --- setup a dataloader --- #
-    data_module = WisdomDataModule(data_version=data_version,
+    data_module = WisdomDataModule(data_train_path=data_train_path,
+                                   data_test_path=data_test_path,
                                    k=k,
                                    device=device,
                                    vocab=VOCAB,
                                    tokenizer=tokenizer,
                                    batch_size=batch_size,
                                    num_workers=num_workers,
-                                   train_ratio=train_ratio,
-                                   test_ratio=test_ratio,
                                    shuffle=shuffle,
                                    repeat=repeat)
 

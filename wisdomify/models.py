@@ -66,9 +66,6 @@ class RD(pl.LightningModule):
         :return: (1,); the train_loss for this batch
         """
         X, y = batch
-        # load the batches on the device.
-        X = X.to(self.device)
-        y = y.to(self.device)
         S_subword = self.forward(X)
         S_word = self.S_word(S_subword)
         # compute the loss
