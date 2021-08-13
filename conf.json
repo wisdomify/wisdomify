@@ -31,7 +31,7 @@
     },
     "1": {
       "bert_model": "beomi/kcbert-base",
-      "desc": "[version_1]: Trained on a very",
+      "desc": "[version_1]: Trained on a very tiny examples",
       "data_version": "0.0.0",
       "data_name": ["example"],
       "k": 11,
