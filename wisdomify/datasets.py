@@ -1,11 +1,15 @@
+import csv
+
+import torch
+
+from datasets import load_dataset
+from datasets.dataset_dict import DatasetDict
+from datasets.dataset_dict import Dataset as hg_dataset
+from torch.utils.data import Dataset, DataLoader
 from typing import List, Tuple, Optional
 from pytorch_lightning import LightningDataModule
+
 from wisdomify.builders import build_X, build_y
-from torch.utils.data import Dataset, DataLoader
-import csv
-import torch
-from os import path
-from wisdomify.paths import WISDOMDATA_DIR
 
 
 class WisdomDataset(Dataset):
@@ -44,19 +48,22 @@ class WisdomDataset(Dataset):
 
 class WisdomDataModule(LightningDataModule):
     def __init__(self,
-                 data_train_path: str,
-                 data_test_path: str,
-                 k: int,
-                 device,
-                 vocab,
-                 tokenizer,
-                 batch_size: int,
-                 num_workers: int,
-                 shuffle: bool,
-                 repeat: bool):
+                 data_version: str,
+                 data_name: str,
+                 k: int = None,
+                 device=None,
+                 vocab=None,
+                 tokenizer=None,
+                 batch_size: int = None,
+                 num_workers: int = None,
+                 train_ratio: float = None,
+                 test_ratio: float = None,
+                 shuffle: bool = None,
+                 repeat: bool = None):
+      
         super().__init__()
-        self.data_train_path = data_train_path
-        self.data_test_path = data_test_path
+        self.data_version = data_version
+        self.data_name = data_name
         self.k = k
         self.device = device
         self.vocab = vocab
@@ -65,34 +72,57 @@ class WisdomDataModule(LightningDataModule):
         self.num_workers = num_workers
         self.shuffle = shuffle
         self.repeat = repeat
-        self.wisdom2sent_train: Optional[List[Tuple[str, str]]] = None
-        self.wisdom2sent_test: Optional[List[Tuple[str, str]]] = None
+        self.story: Optional[DatasetDict] = None
         self.dataset_train: Optional[WisdomDataset] = None
         self.dataset_test: Optional[WisdomDataset] = None
+        self.seed = 42
 
     def prepare_data(self):
         """
-        prepare the data needed. (download, etc)
+        prepare the data needed. (eg. downloading)
         """
-        wisdom2sent_train_tsv_path = path.join(WISDOMDATA_DIR, self.data_train_path)
-        self.wisdom2sent_train = self.load_wisdom2sent(wisdom2sent_train_tsv_path)
-        if self.data_test_path:
-            wisdom2sent_test_tsv_path = path.join(WISDOMDATA_DIR, self.data_test_path)
-            self.wisdom2sent_test = self.load_wisdom2sent(wisdom2sent_test_tsv_path)
+
+        self.story = load_dataset(path="DicoTiar/story",
+                                  name=self.data_name,
+                                  script_version=f"version_{self.data_version}")
+
+        if self.story['train'].version.version_str != self.data_version:
+            raise NotImplementedError(f"This version is not valid: {self.data_version}")
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
-        역할?
+        convert dataset to desired form. (eg. pre-process)
         """
-        if stage == "fit":
-            X_train = build_X(self.wisdom2sent_train, self.tokenizer, self.k).to(self.device)
-            y_train = build_y(self.wisdom2sent_train, self.vocab).to(self.device)
-            self.dataset_train = WisdomDataset(X_train, y_train)
-            self.dataset_train.upsample(self.repeat)
-        elif stage == "test":
-            X_test = build_X(self.wisdom2sent_test, self.tokenizer, self.k).to(self.device)
-            y_test = build_y(self.wisdom2sent_test, self.vocab).to(self.device)
-            self.dataset_test = WisdomDataset(X_test, y_test)
+        def _convert_raw_to_embed(raw_data: hg_dataset, x_col: str, y_col: str) -> WisdomDataset:
+            """
+            This function convert
+            raw data from huggingface api (which has form of DatasetDict)
+            to WisdomDataset.
+
+            :param raw_data: raw dataset from huggingface api
+            :param x_col: name of x column
+            :param y_col: name of y column
+            :return:
+            """
+            wisdom2sent = list(map(lambda row: (row[x_col], row[y_col]), raw_data))
+
+            X = build_X(wisdom2sent, self.tokenizer, self.k).to(self.device)
+            y = build_y(wisdom2sent, self.vocab).to(self.device)
+
+            data = WisdomDataset(X, y)
+            data.upsample(self.repeat)
+
+            return data
+
+        x_col = 'wisdom'
+        y_col = 'def' if self.data_name == 'definition' else 'eg' if self.data_name == 'example' else None
+
+        if y_col is None:
+            raise ValueError("Wrong data name")
+
+        self.dataset_train = _convert_raw_to_embed(self.story['train'], x_col, y_col)
+        self.dataset_train = _convert_raw_to_embed(self.story['validation'], x_col, y_col)
+        self.dataset_train = _convert_raw_to_embed(self.story['test'], x_col, y_col)
 
     def train_dataloader(self):
         return DataLoader(self.dataset_train, batch_size=self.batch_size,

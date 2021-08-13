@@ -1,8 +1,10 @@
+import pytorch_lightning as pl
 import torch
 import argparse
 from wisdomify.datasets import WisdomDataModule
 from wisdomify.loaders import load_conf
-from wisdomify.metrics import RDMetric
+
+from wisdomify.vocab import VOCAB
 from wisdomify.models import Wisdomifier
 
 
@@ -15,39 +17,43 @@ def main():
 
     args = parser.parse_args()
     ver: str = args.ver
+
     conf = load_conf()
-    data_version: str = conf['versions'][ver]['data_version']
-    batch_size: int = conf['versions'][ver]['batch_size']
-    shuffle: bool = conf['versions'][ver]['shuffle']
-    k: int = conf['versions'][ver]['k']
-    num_workers: int = conf['versions'][ver]['num_workers']
+    vers = conf['versions']
+    if ver not in vers.keys():
+        raise NotImplementedError("Invalid version provided".format(ver))
+
+    selected_ver = vers[ver]
+    bert_model: str = selected_ver['bert_model']
+    data_version: str = selected_ver['data_version']
+
+    # TODO: should enable to load both example and definition on one dataset
+    data_name: str = selected_ver['data_name'][0]
+    batch_size: int = selected_ver['batch_size']
+    repeat: bool = selected_ver['repeat']
+    num_workers: int = selected_ver['num_workers']
+    train_ratio: float = selected_ver['train_ratio']
+    test_ratio: float = selected_ver['test_ratio']
+    k: int = selected_ver['k']
 
     wisdomifier = Wisdomifier.from_pretrained(ver, device)
 
     data_module = WisdomDataModule(data_version=data_version,
+                                   data_name=data_name,
+                                   k=k,
+                                   device=device,
+                                   vocab=VOCAB,
+                                   tokenizer=wisdomifier.tokenizer,
                                    batch_size=batch_size,
-                                   shuffle=shuffle,
-                                   num_workers=num_workers)
-    data_module.prepare_data()
-    data_module.setup()
-    test_loader = data_module.test_dataloader()
+                                   num_workers=num_workers,
+                                   train_ratio=train_ratio,
+                                   test_ratio=test_ratio,
+                                   shuffle=False,
+                                   repeat=repeat)
 
-    # the metric
-    rd_metric = RDMetric()
-    for idx, batch in enumerate(test_loader):
-        X, y = batch
-        S_word_probs = wisdomifier.rd.S_word_probs(X)
-        rd_metric.update(preds=S_word_probs, targets=y)
-        print("batch:{}".format(idx), rd_metric.compute())
-        # top1 , top10, top100 -- should be 1.0?
-    median, var, top1, top10, top100 = rd_metric.compute()
-    print("### final ###")
-    print("data_version:", data_version)
-    print("median:", median)
-    print("var:", var)
-    print("top1:", top1)
-    print("top10:", top10)
-    print("top100:", top100)
+    trainer = pl.Trainer(gpus=torch.cuda.device_count())
+
+    trainer.test(model=wisdomifier.rd, datamodule=data_module, verbose=False)
 
 
 if __name__ == '__main__':

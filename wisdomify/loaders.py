@@ -1,9 +1,5 @@
-from typing import List, Tuple
-import csv
 import json
-from wisdomify.paths import WISDOMDATA_VER_0_DIR, CONF_JSON
-from dataclasses import dataclass
-from os import path
+from wisdomify.paths import CONF_JSON
 
 
 def load_conf() -> dict:

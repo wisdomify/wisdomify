@@ -6,6 +6,9 @@ cachetools==4.2.2
 certifi==2021.5.30
 chardet==4.0.0
 click==8.0.1
+datasets==1.11.0
+dill==0.3.4
+enum-compat==0.0.3
 filelock==3.0.12
 Flask==2.0.1
 fsspec==2021.6.1
@@ -22,6 +25,7 @@ joblib==1.0.1
 Markdown==3.3.4
 MarkupSafe==2.0.1
 multidict==5.1.0
+multiprocess==0.70.12.2
 numpy==1.21.0
 oauthlib==3.1.1
 packaging==20.9
