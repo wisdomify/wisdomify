@@ -1,5 +1,4 @@
 {
-  "run_env": "0",
   "versions": {
     "_모델 버전": {
       "주의사항!": "추후 버전 추가에 따라 파라미터가 추가되면 해당 파라미터를 아래 설명 추가해주세요",
@@ -21,7 +20,7 @@
       "bert_model": "beomi/kcbert-base",
       "desc": "[version_0]: The first minimal-viable-product of wisdomify",
       "data_version": "0.0.0",
-      "data_name": ["example"],
+      "data_name": ["definition"],
       "k": 11,
       "lr": 0.00001,
       "max_epochs": 20,
@@ -32,16 +31,14 @@
     },
     "1": {
       "bert_model": "beomi/kcbert-base",
-      "desc": "[version_1]: Trained on a data with increased size",
-      "data": {
-        "train": "version_1/wisdom2eg_train.tsv",
-        "test": "version_1/wisdom2eg_test.tsv"
-      },
+      "desc": "[version_1]: Trained on a very",
+      "data_version": "0.0.0",
+      "data_name": ["example"],
       "k": 11,
       "lr": 0.00001,
       "max_epochs": 20,
       "batch_size": 40,
-      "repeat": 0,
+      "repeat": 30,
       "num_workers": 0,
       "shuffle": true
     }

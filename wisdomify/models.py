@@ -108,14 +108,6 @@ class RD(pl.LightningModule):
         self.logger.experiment.add_scalar("Train/Average Top 10 Acc", avg_top10, self.current_epoch)
         self.logger.experiment.add_scalar("Train/Average Top 100 Acc", avg_top100, self.current_epoch)
 
-    def configure_optimizers(self) -> Optimizer:
-        """
-        Instantiates and returns the optimizer to be used for this model
-        e.g. torch.optim.Adam
-        """
-        # The authors used Adam, so we might as well use it
-        return torch.optim.AdamW(self.parameters(), lr=self.hparams['lr'])
-
     def test_step(self, batch, batch_idx, *args, **kwargs):
         self.rd_metric.reset()
 
@@ -137,12 +129,25 @@ class RD(pl.LightningModule):
         print("top10:", top10)
         print("top100:", top100)
 
+    def validation_step(self, *args, **kwargs):
+        # TODO: 나중에 구현하기. (이렇게 하면 워닝은 안뜨겠지)
+        pass
+
+    def configure_optimizers(self) -> Optimizer:
+        """
+        Instantiates and returns the optimizer to be used for this model
+        e.g. torch.optim.Adam
+        """
+        # The authors used Adam, so we might as well use it
+        return torch.optim.AdamW(self.parameters(), lr=self.hparams['lr'])
+
 
 class Wisdomifier:
     def __init__(self, rd: RD, tokenizer: BertTokenizerFast):
         self.rd = rd  # a trained reverse dictionary
         self.tokenizer = tokenizer
 
+    # TODO: this should be a ... static method.
     def from_pretrained(self, ver: str, device) -> 'Wisdomifier':
         conf = load_conf()
         vers = conf['versions']

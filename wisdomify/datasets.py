@@ -1,14 +1,11 @@
 import csv
-
 import torch
-
+from typing import List, Tuple, Optional
 from datasets import load_dataset
 from datasets.dataset_dict import DatasetDict
-from datasets.dataset_dict import Dataset as hg_dataset
+from datasets.dataset_dict import Dataset as HuggingFaceDataset
 from torch.utils.data import Dataset, DataLoader
-from typing import List, Tuple, Optional
 from pytorch_lightning import LightningDataModule
-
 from wisdomify.builders import build_X, build_y
 
 
@@ -56,10 +53,8 @@ class WisdomDataModule(LightningDataModule):
                  tokenizer=None,
                  batch_size: int = None,
                  num_workers: int = None,
-                 train_ratio: float = None,
-                 test_ratio: float = None,
                  shuffle: bool = None,
-                 repeat: bool = None):
+                 repeat: int = None):
       
         super().__init__()
         self.data_version = data_version
@@ -74,8 +69,8 @@ class WisdomDataModule(LightningDataModule):
         self.repeat = repeat
         self.story: Optional[DatasetDict] = None
         self.dataset_train: Optional[WisdomDataset] = None
+        self.dataset_val: Optional[WisdomDataset] = None
         self.dataset_test: Optional[WisdomDataset] = None
-        self.seed = 42
 
     def prepare_data(self):
         """
@@ -93,51 +88,31 @@ class WisdomDataModule(LightningDataModule):
         """
         convert dataset to desired form. (eg. pre-process)
         """
-        def _convert_raw_to_embed(raw_data: hg_dataset, x_col: str, y_col: str) -> WisdomDataset:
-            """
-            This function convert
-            raw data from huggingface api (which has form of DatasetDict)
-            to WisdomDataset.
-
-            :param raw_data: raw dataset from huggingface api
-            :param x_col: name of x column
-            :param y_col: name of y column
-            :return:
-            """
-            wisdom2sent = list(map(lambda row: (row[x_col], row[y_col]), raw_data))
-
-            X = build_X(wisdom2sent, self.tokenizer, self.k).to(self.device)
-            y = build_y(wisdom2sent, self.vocab).to(self.device)
-
-            data = WisdomDataset(X, y)
-            data.upsample(self.repeat)
-
-            return data
-
         x_col = 'wisdom'
         y_col = 'def' if self.data_name == 'definition' else 'eg' if self.data_name == 'example' else None
 
         if y_col is None:
             raise ValueError("Wrong data name")
 
-        self.dataset_train = _convert_raw_to_embed(self.story['train'], x_col, y_col)
-        self.dataset_train = _convert_raw_to_embed(self.story['validation'], x_col, y_col)
-        self.dataset_train = _convert_raw_to_embed(self.story['test'], x_col, y_col)
+        self.dataset_train = self.convert_raw_to_embed(self.story['train'], x_col, y_col)
+        self.dataset_val = self.convert_raw_to_embed(self.story['validation'], x_col, y_col)
+        self.dataset_test = self.convert_raw_to_embed(self.story['test'], x_col, y_col)
 
     def train_dataloader(self):
         return DataLoader(self.dataset_train, batch_size=self.batch_size,
                           shuffle=self.shuffle, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        """
-        implement this later.
-        """
-        raise NotImplementedError
+        # why should we set shuffle for val & test to False?
+        # 오히려 셔플을 하면 지표가 자꾸 바뀌겠다. 비교를 해야하는데.. 그러면 안되겠지.
+        return DataLoader(self.dataset_val, batch_size=self.batch_size,
+                          shuffle=False, num_workers=self.num_workers)
 
     def test_dataloader(self):
         return DataLoader(self.dataset_test, batch_size=self.batch_size,
-                          shuffle=self.shuffle, num_workers=self.num_workers)
+                          shuffle=False, num_workers=self.num_workers)
 
+    # --- user-defined methods --- #
     @staticmethod
     def load_wisdom2sent(tsv_path: str) -> List[Tuple[str, str]]:
         """
@@ -151,3 +126,24 @@ class WisdomDataModule(LightningDataModule):
                 (row[0], row[1])  # wisdom, sent pair
                 for row in tsv_reader
             ]
+
+    def convert_raw_to_embed(self, raw_data: HuggingFaceDataset, x_col: str, y_col: str) -> WisdomDataset:
+        """
+        This function convert
+        raw data from huggingface api (which has form of DatasetDict)
+        to WisdomDataset.
+
+        :param raw_data: raw dataset from huggingface api
+        :param x_col: name of x column
+        :param y_col: name of y column
+        :return:
+        """
+        wisdom2sent = list(map(lambda row: (row[x_col], row[y_col]), raw_data))
+
+        X = build_X(wisdom2sent, self.tokenizer, self.k).to(self.device)
+        y = build_y(wisdom2sent, self.vocab).to(self.device)
+
+        data = WisdomDataset(X, y)
+        data.upsample(self.repeat)
+
+        return data
