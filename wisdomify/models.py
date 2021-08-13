@@ -108,14 +108,6 @@ class RD(pl.LightningModule):
         self.logger.experiment.add_scalar("Train/Average Top 10 Acc", avg_top10, self.current_epoch)
         self.logger.experiment.add_scalar("Train/Average Top 100 Acc", avg_top100, self.current_epoch)
 
-    def configure_optimizers(self) -> Optimizer:
-        """
-        Instantiates and returns the optimizer to be used for this model
-        e.g. torch.optim.Adam
-        """
-        # The authors used Adam, so we might as well use it
-        return torch.optim.AdamW(self.parameters(), lr=self.hparams['lr'])
-
     def test_step(self, batch, batch_idx, *args, **kwargs):
         self.rd_metric.reset()
 
@@ -137,31 +129,45 @@ class RD(pl.LightningModule):
         print("top10:", top10)
         print("top100:", top100)
 
+    def validation_step(self, *args, **kwargs):
+        # TODO: 나중에 구현하기. (이렇게 하면 워닝은 안뜨겠지)
+        pass
+
+    def configure_optimizers(self) -> Optimizer:
+        """
+        Instantiates and returns the optimizer to be used for this model
+        e.g. torch.optim.Adam
+        """
+        # The authors used Adam, so we might as well use it
+        return torch.optim.AdamW(self.parameters(), lr=self.hparams['lr'])
+
 
 class Wisdomifier:
     def __init__(self, rd: RD, tokenizer: BertTokenizerFast):
         self.rd = rd  # a trained reverse dictionary
         self.tokenizer = tokenizer
 
-    def from_pretrained(self, ver: str, device) -> 'Wisdomifier':
+    # TODO: this should be a ... static method.
+    @staticmethod
+    def from_pretrained(ver: str, device) -> 'Wisdomifier':
         conf = load_conf()
         vers = conf['versions']
+        # error handling
         if ver not in vers.keys():
             raise NotImplementedError(
                 f"Cannot find version {ver}.\nWrite your setting and version properly on conf.json")
 
-        wisdomifier_path = WISDOMIFIER_CKPT
+        wisdomifier_path = WISDOMIFIER_CKPT.format(ver=ver)
         k: int = conf['versions'][ver]['k']
         bert_model: str = conf['versions'][ver]['bert_model']
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
-        self.tokenizer = AutoTokenizer.from_pretrained(bert_model)
-        vocab2subwords = build_vocab2subwords(self.tokenizer, k, VOCAB).to(device)
+        tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
 
-        self.rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
-        self.rd.to(device)
-        self.rd.eval()
-        wisdomifier = Wisdomifier(self.rd, self.tokenizer)
-
+        rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
+        rd.to(device)
+        rd.eval()
+        wisdomifier = Wisdomifier(rd, tokenizer)
         return wisdomifier
 
     def wisdomify(self, sents: List[str]) -> List[List[Tuple[str, float]]]:

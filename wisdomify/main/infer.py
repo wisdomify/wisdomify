@@ -3,9 +3,8 @@ load a pre-trained wisdomify, and play with it.
 """
 import argparse
 import torch
-from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoConfig
 from wisdomify.loaders import load_conf
-from wisdomify.models import RD, Wisdomifier
+from wisdomify.models import Wisdomifier
 
 
 def main():

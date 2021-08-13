@@ -2,6 +2,7 @@ import pytorch_lightning as pl
 import torch
 import argparse
 from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import TensorBoardLogger
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 from wisdomify.loaders import load_conf
 from wisdomify.models import RD
@@ -9,7 +10,6 @@ from wisdomify.builders import build_vocab2subwords
 from wisdomify.paths import DATA_DIR
 from wisdomify.vocab import VOCAB
 from wisdomify.datasets import WisdomDataModule
-from pytorch_lightning.loggers import TensorBoardLogger
 
 
 def main():
@@ -36,16 +36,13 @@ def main():
     lr: float = selected_ver['lr']
     max_epochs: int = selected_ver['max_epochs']
     batch_size: int = selected_ver['batch_size']
-    repeat: bool = selected_ver['repeat']
+    repeat: int = selected_ver['repeat']
     shuffle: bool = selected_ver['shuffle']
     num_workers: int = selected_ver['num_workers']
     # TODO: should enable to load both example and definition on one dataset
-    data_name: str = selected_ver['data_name']
+    data_name: str = selected_ver['data_name'][0]
     data_version: str = selected_ver['data_version']
-    train_ratio: float = selected_ver['train_ratio']
-    test_ratio: float = selected_ver['test_ratio']
-
-    model_name = "wisdomify_def_{epoch:02d}_{train_loss:.2f}"
+    model_name = "wisdomifier"
 
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
@@ -67,8 +64,8 @@ def main():
 
     # --- init callbacks --- #
     checkpoint_callback = ModelCheckpoint(
-        monitor='train_loss',
-        filename=model_name
+        filename=model_name,
+        verbose=True,
     )
     # --- instantiate the logger --- #
     logger = TensorBoardLogger(save_dir=DATA_DIR,
@@ -81,7 +78,6 @@ def main():
                          default_root_dir=DATA_DIR,
                          logger=logger)
     # --- start training --- #
-
     # data_module.prepare_data()
     # data_module.setup(stage='fit')
 
