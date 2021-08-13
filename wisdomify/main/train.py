@@ -64,8 +64,8 @@ def main():
 
     # --- init callbacks --- #
     checkpoint_callback = ModelCheckpoint(
-        monitor='train_loss',
-        filename=model_name
+        filename=model_name,
+        verbose=True,
     )
     # --- instantiate the logger --- #
     logger = TensorBoardLogger(save_dir=DATA_DIR,

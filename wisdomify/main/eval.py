@@ -45,7 +45,9 @@ def main():
                                    shuffle=False,
                                    repeat=repeat)
 
-    trainer = pl.Trainer(gpus=torch.cuda.device_count())
+    trainer = pl.Trainer(gpus=torch.cuda.device_count(),
+                         # do not save checkpoints to a file.
+                         logger=False)
 
     trainer.test(model=wisdomifier.rd, datamodule=data_module, verbose=False)
 
