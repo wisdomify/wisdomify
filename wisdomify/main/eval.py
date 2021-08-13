@@ -1,14 +1,11 @@
+import pytorch_lightning as pl
 import torch
 import argparse
-import yaml
-from transformers import AutoModelForMaskedLM, AutoConfig, AutoTokenizer
-from wisdomify.builders import build_vocab2subwords
 from wisdomify.datasets import WisdomDataModule
 from wisdomify.loaders import load_conf
-from wisdomify.metrics import RDMetric
-from wisdomify.models import RD
-from wisdomify.paths import WISDOMIFIER_CKPT, WISDOMIFIER_HPARAMS_YAML
+
 from wisdomify.vocab import VOCAB
+from wisdomify.models import Wisdomifier
 
 
 def main():
@@ -29,46 +26,34 @@ def main():
     selected_ver = vers[ver]
     bert_model: str = selected_ver['bert_model']
     data_version: str = selected_ver['data_version']
-    batch_size: int = selected_ver['batch_size']
-    shuffle: bool = selected_ver['shuffle']
-    num_workers: int = selected_ver['num_workers']
 
-    wisdomifier_path = WISDOMIFIER_CKPT.format(ver=ver)
-    with open(WISDOMIFIER_HPARAMS_YAML.format(ver=ver), 'r') as fh:
-        wisdomifier_hparams = yaml.safe_load(fh)
-    k = wisdomifier_hparams['k']
+    # TODO: should enable to load both example and definition on one dataset
+    data_name: str = selected_ver['data_name'][0]
+    batch_size: int = selected_ver['batch_size']
+    repeat: bool = selected_ver['repeat']
+    num_workers: int = selected_ver['num_workers']
+    train_ratio: float = selected_ver['train_ratio']
+    test_ratio: float = selected_ver['test_ratio']
+    k: int = selected_ver['k']
+
+    wisdomifier = Wisdomifier.from_pretrained(ver, device)
 
     data_module = WisdomDataModule(data_version=data_version,
+                                   data_name=data_name,
+                                   k=k,
+                                   device=device,
+                                   vocab=VOCAB,
+                                   tokenizer=wisdomifier.tokenizer,
                                    batch_size=batch_size,
-                                   shuffle=shuffle,
-                                   num_workers=num_workers)
-    data_module.prepare_data()
-    data_module.setup()
+                                   num_workers=num_workers,
+                                   train_ratio=train_ratio,
+                                   test_ratio=test_ratio,
+                                   shuffle=False,
+                                   repeat=repeat)
 
-    bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
-    tokenizer = AutoTokenizer.from_pretrained(bert_model)
-    vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
-    rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
-    rd.eval()  # otherwise, the model will output different results with the same inputs
-    rd = rd.to(device)  # otherwise, you can not run the inference process on GPUs.
-    test_loader = data_module.test_dataloader()
+    trainer = pl.Trainer(gpus=torch.cuda.device_count())
 
-    # the metric
-    rd_metric = RDMetric()
-    for idx, batch in enumerate(test_loader):
-        X, y = batch
-        S_word_probs = rd.S_word_probs(X)
-        rd_metric.update(preds=S_word_probs, targets=y)
-        print("batch:{}".format(idx), rd_metric.compute())
-        # top1 , top10, top100 -- should be 1.0?
-    median, var, top1, top10, top100 = rd_metric.compute()
-    print("### final ###")
-    print("data_version:", data_version)
-    print("median:", median)
-    print("var:", var)
-    print("top1:", top1)
-    print("top10:", top10)
-    print("top100:", top100)
+    trainer.test(model=wisdomifier.rd, datamodule=data_module, verbose=False)
 
 
 if __name__ == '__main__':

@@ -26,10 +26,11 @@ def main():
     # parameters from conf
 
     conf = load_conf()
+
     vers = conf['versions']
     if ver not in vers.keys():
         raise NotImplementedError(f"Cannot find version {ver}.\nWrite your setting and version properly on conf.json")
-
+        
     selected_ver = vers[ver]
     bert_model: str = selected_ver['bert_model']
     k: int = selected_ver['k']
@@ -39,6 +40,7 @@ def main():
     repeat: bool = selected_ver['repeat']
     shuffle: bool = selected_ver['shuffle']
     num_workers: int = selected_ver['num_workers']
+    # TODO: should enable to load both example and definition on one dataset
     data_version: str = selected_ver['data_version']
     train_ratio: float = selected_ver['train_ratio']
     test_ratio: float = selected_ver['test_ratio']
@@ -54,6 +56,7 @@ def main():
     rd.to(device)
     # --- setup a dataloader --- #
     data_module = WisdomDataModule(data_version=data_version,
+                                   data_name=data_name,
                                    k=k,
                                    device=device,
                                    vocab=VOCAB,
