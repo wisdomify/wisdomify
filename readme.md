@@ -7,6 +7,10 @@ A BERT-based reverse-dictionary of Korean proverbs.
 - 김종윤 : 데이터 수집 / 프로젝트 설계 / front-end / back-end
 - 임용택 : 모델링 / deploy / back-end
 
+Related Projects:
+- Model design/analysis, proposal: https://github.com/wisdomify/wisdomify
+- Data collect, Feature engineering: https://github.com/wisdomify/storyteller
+- Web service, Front-End: https://github.com/wisdomify/platanus
 
 ## Quick Start
 
