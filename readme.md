@@ -8,9 +8,9 @@ A BERT-based reverse-dictionary of Korean proverbs.
 - 임용택 : 모델링 / deploy / back-end
 
 Related Projects:
-- Model design/analysis, proposal: https://github.com/wisdomify/wisdomify
-- Data collect, Feature engineering: https://github.com/wisdomify/storyteller
-- Web service, Front-End: https://github.com/wisdomify/platanus
+- Model design/analysis, proposal: [wisdomify/wisdomify](https://github.com/wisdomify/wisdomify)
+- Data collect, Feature engineering: [wisdomify/storyteller](https://github.com/wisdomify/storyteller)
+- Web service, Front-End: [wisdomify/platanus](https://github.com/wisdomify/platanus)
 
 ## Quick Start
 
