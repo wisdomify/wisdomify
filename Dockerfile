@@ -1,8 +1,8 @@
 # Base python image Build
 FROM pytorch/torchserve:latest-gpu
 
-COPY requirements.txt /
-COPY config.properties /
+COPY requirements.txt ./requirementes.txt
+COPY config.properties ./config.properties
 
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
