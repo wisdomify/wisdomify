@@ -3,7 +3,7 @@ FROM pytorch/torchserve:latest-gpu
 
 RUN pip install --upgrade pip
 COPY . .
-RUN pip install -r requirements.txt
+RUN pip install transformers
 
 RUN mkdir ./model_storage
 
