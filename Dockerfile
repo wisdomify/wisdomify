@@ -1,10 +1,8 @@
 # Base python image Build
 FROM pytorch/torchserve:latest-gpu
 
-COPY requirements.txt ./requirementes.txt
-COPY config.properties ./config.properties
-
 RUN pip install --upgrade pip
+COPY . .
 RUN pip install -r requirements.txt
 
 RUN mkdir ./model_storage
