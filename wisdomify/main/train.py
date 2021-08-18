@@ -8,6 +8,7 @@ from wisdomify.loaders import load_conf
 from wisdomify.models import RD
 from wisdomify.builders import build_vocab2subwords
 from wisdomify.paths import DATA_DIR
+from wisdomify.utils import TrainerFileSupporter
 from wisdomify.vocab import VOCAB
 from wisdomify.datasets import WisdomDataModule
 
@@ -29,7 +30,7 @@ def main():
     vers = conf['versions']
     if ver not in vers.keys():
         raise NotImplementedError(f"Cannot find version {ver}.\nWrite your setting and version properly on conf.json")
-        
+
     selected_ver = vers[ver]
     bert_model: str = selected_ver['bert_model']
     k: int = selected_ver['k']
@@ -71,17 +72,22 @@ def main():
     logger = TensorBoardLogger(save_dir=DATA_DIR,
                                name="lightning_logs")
 
+    # --- version check logic --- #
+    trainerFileSupporter = TrainerFileSupporter(version=ver,
+                                                logger=logger,
+                                                data_dir=DATA_DIR)
+
     # --- instantiate the trainer --- #
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          max_epochs=max_epochs,
                          callbacks=[checkpoint_callback],
                          default_root_dir=DATA_DIR,
                          logger=logger)
-    # --- start training --- #
-    # data_module.prepare_data()
-    # data_module.setup(stage='fit')
 
+    # --- start training --- #
     trainer.fit(model=rd, datamodule=data_module)
+
+    trainerFileSupporter.save_training_result()
 
     # TODO: validate every epoch and test model after training
     '''
