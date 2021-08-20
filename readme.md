@@ -19,7 +19,6 @@ Check the dependencies:
 pytorch-lightning==1.3.7.post0
 transformers==4.8.1
 ```
-
 Clone the project and set up a virtualenv for the project:
 ```bash
 git clone https://github.com/eubinecto/wisdomify.git
@@ -40,10 +39,12 @@ Before downloading the model data and dataset, you must [install DVC](https://dv
 After installing the DVC, you can download data with following command.
 
 If your system is docker-like light OS, you can also install with pip.
-`pip install 'dvc[gdrive]'`
+`pip install 'dvc[gs]'`
 
 
 ```bash
+gcloud auth application-default login   
+# as this repository uses google storage for dvc, please authenticate with your google account 
 dvc pull
 # follow the instruction from dvc after this command.
 ```

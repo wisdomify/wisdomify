@@ -1,4 +1,4 @@
 [core]
-    remote = wisdomifygdrive
-['remote "wisdomifygdrive"']
-    url = gdrive://1fp-Wfhx8iAHP-X0zOBJkuiYh3FnhsN2f
+    remote = wisdomify
+['remote "wisdomify"']
+    url = gs://wisdomify/wisdom/wisdomify
