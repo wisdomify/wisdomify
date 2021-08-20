@@ -77,7 +77,7 @@ class WisdomDataModule(LightningDataModule):
         prepare the data needed. (eg. downloading)
         """
 
-        self.story = load_dataset(path="DicoTiar/story",
+        self.story = load_dataset(path="wisdomify/story",
                                   name=self.data_name,
                                   script_version=f"version_{self.data_version}")
 
