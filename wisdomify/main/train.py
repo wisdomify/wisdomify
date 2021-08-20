@@ -8,7 +8,7 @@ from wisdomify.loaders import load_conf
 from wisdomify.models import RD
 from wisdomify.builders import build_vocab2subwords
 from wisdomify.paths import DATA_DIR
-from wisdomify.utils import TrainerFileSupporter
+from wisdomify.utils import TrainerFileSupport
 from wisdomify.vocab import VOCAB
 from wisdomify.datasets import WisdomDataModule
 
@@ -73,9 +73,9 @@ def main():
                                name="lightning_logs")
 
     # --- version check logic --- #
-    trainerFileSupporter = TrainerFileSupporter(version=ver,
-                                                logger=logger,
-                                                data_dir=DATA_DIR)
+    trainerFileSupporter = TrainerFileSupport(version=ver,
+                                              logger=logger,
+                                              data_dir=DATA_DIR)
 
     # --- instantiate the trainer --- #
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
