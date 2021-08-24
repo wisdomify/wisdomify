@@ -6,7 +6,7 @@ from wisdomify.builders import build_vocab2subwords, build_X, build_y
 from wisdomify.models import RD
 from wisdomify.loaders import load_conf
 from wisdomify.vocab import VOCAB
-from wisdomify.datasets import WisdomDataset
+from wisdomify.dataloaders import WisdomDataset
 
 
 class TestRD(unittest.TestCase):

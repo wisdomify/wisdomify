@@ -1,6 +1,6 @@
 import argparse
 from torch.utils.data import Dataset, DataLoader, random_split
-from wisdomify.datasets import WisdomDataModule
+from wisdomify.dataloaders import WisdomDataModule
 from wisdomify.loaders import load_conf
 from wisdomify.paths import WISDOMDATA_VER_1_DIR
 from os import path

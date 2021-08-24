@@ -41,6 +41,19 @@
       "repeat": 30,
       "num_workers": 0,
       "shuffle": true
+    },
+    "3": {
+      "bert_model": "beomi/kcbert-base",
+      "desc": "[version_3]: Proverb parsed as [wisdom] token",
+      "data_version": "1.0.0",
+      "data_name": ["example"],
+      "k": 11,
+      "lr": 0.00001,
+      "max_epochs": 20,
+      "batch_size": 40,
+      "repeat": 30,
+      "num_workers": 0,
+      "shuffle": true
     }
   }
 }

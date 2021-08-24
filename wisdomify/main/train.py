@@ -10,7 +10,7 @@ from wisdomify.builders import build_vocab2subwords
 from wisdomify.paths import DATA_DIR
 from wisdomify.utils import TrainerFileSupport
 from wisdomify.vocab import VOCAB
-from wisdomify.datasets import WisdomDataModule
+from wisdomify.dataloaders import WisdomDataModule
 
 
 def main():

@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 import torch
 import argparse
-from wisdomify.datasets import WisdomDataModule
+from wisdomify.dataloaders import WisdomDataModule
 from wisdomify.loaders import load_conf
 
 from wisdomify.vocab import VOCAB
