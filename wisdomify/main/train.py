@@ -48,6 +48,7 @@ def main():
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
+    tokenizer.add_tokens(['WISDOM'])
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd
     rd.to(device)
