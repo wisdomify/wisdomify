@@ -162,6 +162,10 @@ class Wisdomifier:
         bert_model: str = conf['versions'][ver]['bert_model']
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
+
+        tokenizer.add_tokens(['WISDOM'])
+        bert_mlm.resize_token_embeddings(len(tokenizer))
+
         vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
 
         rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
@@ -187,3 +191,4 @@ class Wisdomifier:
             # sort and append
             results.append(sorted(wisdom2prob, key=lambda x: x[1], reverse=True))
         return results
+

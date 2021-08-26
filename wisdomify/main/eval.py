@@ -13,7 +13,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
-                        default="0")
+                        default="3")
 
     args = parser.parse_args()
     ver: str = args.ver
