@@ -20,7 +20,7 @@ def main():
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
-                        default="1")
+                        default="3")
 
     args = parser.parse_args()
     ver: str = args.ver
@@ -48,7 +48,10 @@ def main():
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
+
     tokenizer.add_tokens(['WISDOM'])
+    kcbert_mlm.resize_token_embeddings(len(tokenizer))
+
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd
     rd.to(device)
@@ -69,6 +72,7 @@ def main():
         filename=model_name,
         verbose=True,
     )
+
     # --- instantiate the logger --- #
     logger = TensorBoardLogger(save_dir=DATA_DIR,
                                name="lightning_logs")

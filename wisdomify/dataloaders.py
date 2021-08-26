@@ -1,5 +1,10 @@
 import csv
+import re
+import string
 import torch
+
+import pandas as pd
+
 from typing import List, Tuple, Optional
 from datasets import load_dataset
 from datasets.dataset_dict import DatasetDict
@@ -55,7 +60,7 @@ class WisdomDataModule(LightningDataModule):
                  num_workers: int = None,
                  shuffle: bool = None,
                  repeat: int = None):
-      
+
         super().__init__()
         self.data_version = data_version
         self.data_name = data_name
@@ -138,6 +143,9 @@ class WisdomDataModule(LightningDataModule):
         :param y_col: name of y column
         :return:
         """
+
+        raw_data = self.parse_proverb(raw_data)
+
         wisdom2sent = list(map(lambda row: (row[x_col], row[y_col]), raw_data))
 
         X = build_X(wisdom2sent, self.tokenizer, self.k).to(self.device)
@@ -147,3 +155,49 @@ class WisdomDataModule(LightningDataModule):
         data.upsample(self.repeat)
 
         return data
+
+    @staticmethod
+    def parse_proverb(raw_data: HuggingFaceDataset):
+        data_df = pd.DataFrame(raw_data)
+
+        # 예시가 비어있는 경우 필터링.
+        data_df = data_df.loc[data_df['eg'].str.len() > 0]
+
+        # 속담이 직접적으로 언급된 문장만 필터링
+        # 5324 -> 556개로 축소됨.
+        data_df = data_df[data_df.apply(lambda r: r['wisdom'] in r['eg'], axis=1)].copy()
+
+        # Remove Emails
+        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub('\S*@\S*\s?', '', r))
+
+        # Remove new line characters
+        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub('\s+', ' ', r))
+
+        # Remove distracting single quotes
+        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub("\'", "", r))
+
+        # 특수 따옴표 제거
+        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub("“", "", r))
+        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub("”", "", r))
+
+        # back slash remove
+        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub('\\\\', "", r))
+
+        # forward slash remove
+        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub('/', " ", r))
+
+        # Punctuation remove
+        data_df['eg'] = data_df.loc[:, 'eg'].apply(
+            lambda r: r.translate(str.maketrans('', '', string.punctuation))
+        )
+
+        # blank space remove at the end of string
+        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: str(r).strip())
+
+        # wisdom fit into vocab.py form
+        data_df['wisdom'] = data_df.loc[:, 'wisdom'].apply(lambda r: str(r).strip())
+        data_df['wisdom'] = data_df.loc[:, 'wisdom'].apply(lambda r: "꿩 대신 닭" if r == '꿩 대신 닭이다' else r)
+
+        data_df['eg'] = data_df.loc[:, ['wisdom', 'eg']].apply(lambda r: re.sub(r[0], '[WISDOM]', r[1]), axis=1)
+
+        return data_df.to_dict(orient='records')
