@@ -49,7 +49,7 @@ def main():
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
 
-    tokenizer.add_tokens(['WISDOM'])
+    tokenizer.add_tokens(['[WISDOM]'])
     kcbert_mlm.resize_token_embeddings(len(tokenizer))
 
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)

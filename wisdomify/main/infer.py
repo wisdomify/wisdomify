@@ -12,9 +12,9 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
-                        default="0")
+                        default="3")
     parser.add_argument("--desc", type=str,
-                        default="왜 하필이면 오늘이야")
+                        default="소문이랑 다르네")
     args = parser.parse_args()
     ver: str = args.ver
     desc: str = args.desc
@@ -30,3 +30,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
