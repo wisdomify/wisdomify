@@ -1,6 +1,8 @@
 import csv
 import re
 import string
+from collections import Counter
+
 import torch
 
 import pandas as pd
@@ -11,6 +13,8 @@ from datasets.dataset_dict import DatasetDict
 from datasets.dataset_dict import Dataset as HuggingFaceDataset
 from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
+from sklearn.utils import resample
+
 from wisdomify.builders import build_X, build_y
 
 
@@ -200,4 +204,17 @@ class WisdomDataModule(LightningDataModule):
 
         data_df['eg'] = data_df.loc[:, ['wisdom', 'eg']].apply(lambda r: re.sub(r[0], '[WISDOM]', r[1]), axis=1)
 
-        return data_df.to_dict(orient='records')
+        counts = sorted(Counter(data_df['wisdom']).items(), key=lambda r: r[1], reverse=True)
+        major = counts[0]
+
+        # Upsample minority class
+        total_df = data_df.loc[data_df['wisdom'] == major[0]]
+        for wis, ct in counts[1:]:
+            df_minority_upsampled = resample(data_df[data_df['wisdom'] == wis],
+                                             replace=True,  # sample with replacement
+                                             n_samples=major[1],  # to match majority class
+                                             random_state=123)  # reproducible results
+
+            total_df = total_df.append(df_minority_upsampled)
+
+        return total_df.to_dict(orient='records')
