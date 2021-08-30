@@ -147,6 +147,7 @@ class WisdomDataModule(LightningDataModule):
         :param y_col: name of y column
         :return:
         """
+        raw_data = self.remove_word_segment_with_proverb(raw_data)
         wisdom2sent = list(map(lambda row: (row[x_col], row[y_col]), raw_data))
 
         X = build_X(wisdom2sent, self.tokenizer, self.k).to(self.device)

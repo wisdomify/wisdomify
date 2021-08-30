@@ -20,7 +20,7 @@ def main():
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
-                        default="1")
+                        default="2")
 
     args = parser.parse_args()
     ver: str = args.ver
