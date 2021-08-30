@@ -169,10 +169,10 @@ class WisdomDataModule(LightningDataModule):
         data_df = data_df[data_df.apply(lambda r: r['wisdom'] in r['eg'], axis=1)].copy()
 
         # Remove Emails
-        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub('\S*@\S*\s?', '', r))
+        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub(r'\S*@\S*\s?', '', r))
 
         # Remove new line characters
-        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub('\s+', ' ', r))
+        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub(r'\s+', ' ', r))
 
         # Remove distracting single quotes
         data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub("\'", "", r))
