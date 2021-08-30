@@ -52,7 +52,7 @@
     "max_epochs": 20,
     "batch_size": 40,
     "repeat": 1,
-    "num_workers": 4,
+    "num_workers": 0,
     "shuffle": true
   }
   }
