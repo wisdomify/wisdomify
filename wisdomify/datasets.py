@@ -209,6 +209,8 @@ class WisdomDataModule(LightningDataModule):
                 context = re.sub(r'([\'\"]|\(.+?\))', "", context)  # get rid of the punctuations
                 if first_pattern.search(context):
                     context = first_pattern.sub(" ", context)
+                    if 'WISDOM' in context:
+                        context.replace('WISDOM', '')
                     row[1] = context
 
         counts = sorted(Counter(data_df['wisdom']).items(), key=lambda r: r[1], reverse=True)

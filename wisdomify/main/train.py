@@ -16,7 +16,6 @@ from wisdomify.datasets import WisdomDataModule
 def main():
     # --- setup the device --- #
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
