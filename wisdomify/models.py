@@ -109,8 +109,6 @@ class RD(pl.LightningModule):
         self.logger.experiment.add_scalar("Train/Average Top 100 Acc", avg_top100, self.current_epoch)
 
     def test_step(self, batch, batch_idx, *args, **kwargs):
-        self.rd_metric.reset()
-
         X, y = batch
 
         S_subword = self.forward(X)
@@ -147,7 +145,6 @@ class Wisdomifier:
         self.rd = rd  # a trained reverse dictionary
         self.tokenizer = tokenizer
 
-    # TODO: this should be a ... static method.
     @staticmethod
     def from_pretrained(ver: str, device) -> 'Wisdomifier':
         conf = load_conf()
