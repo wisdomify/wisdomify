@@ -12,6 +12,10 @@ from wisdomify.utils import TrainerFileSupport
 from wisdomify.vocab import VOCAB
 from wisdomify.datasets import WisdomDataModule
 
+import os
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
 
 def main():
     # --- setup the device --- #

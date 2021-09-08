@@ -109,10 +109,7 @@ class RD(pl.LightningModule):
         self.logger.experiment.add_scalar("Train/Average Top 100 Acc", avg_top100, self.current_epoch)
 
     def test_step(self, batch, batch_idx, *args, **kwargs):
-        self.rd_metric.reset()
-
         X, y = batch
-
         S_subword = self.forward(X)
         S_word = self.S_word(S_subword)
         S_word_probs = F.softmax(S_word, dim=1)
