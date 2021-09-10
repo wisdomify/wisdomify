@@ -13,7 +13,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 
 def main():
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
