@@ -147,7 +147,6 @@ class WisdomDataModule(LightningDataModule):
         :param y_col: name of y column
         :return:
         """
-        raw_data = self.remove_word_segment_with_proverb(raw_data)
         wisdom2sent = list(map(lambda row: (row[x_col], row[y_col]), raw_data))
 
         X = build_X(wisdom2sent, self.tokenizer, self.k).to(self.device)
@@ -157,73 +156,3 @@ class WisdomDataModule(LightningDataModule):
         data.upsample(self.repeat)
 
         return data
-
-    @staticmethod
-    def remove_word_segment_with_proverb(raw_data: HuggingFaceDataset):
-        data_df = pd.DataFrame(raw_data)
-
-        # 예시가 비어있는 경우 필터링.
-        data_df = data_df.loc[data_df['eg'].str.len() > 0]
-
-        # 속담이 직접적으로 언급된 문장만 필터링
-        # 5324 -> 556개로 축소됨.
-        data_df = data_df[data_df.apply(lambda r: r['wisdom'] in r['eg'], axis=1)].copy()
-
-        # Remove Emails
-        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub(r'\S*@\S*\s?', '', r))
-
-        # Remove new line characters
-        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub(r'\s+', ' ', r))
-
-        # Remove distracting single quotes
-        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub("\'", "", r))
-
-        # 특수 따옴표 제거
-        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub("“", "", r))
-        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub("”", "", r))
-
-        # back slash remove
-        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub('\\\\', "", r))
-
-        # forward slash remove
-        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: re.sub('/', " ", r))
-
-        # Punctuation remove
-        data_df['eg'] = data_df.loc[:, 'eg'].apply(
-            lambda r: r.translate(str.maketrans('', '', string.punctuation))
-        )
-
-        # blank space remove at the end of string
-        data_df['eg'] = data_df.loc[:, 'eg'].apply(lambda r: str(r).strip())
-
-        # wisdom fit into vocab.py form
-        data_df['wisdom'] = data_df.loc[:, 'wisdom'].apply(lambda r: str(r).strip())
-        data_df['wisdom'] = data_df.loc[:, 'wisdom'].apply(lambda r: "꿩 대신 닭" if r == '꿩 대신 닭이다' else r)
-
-        first_pattern = re.compile(r'WISDOM[이인\.].*? ')
-        for idx, row in data_df.iterrows():
-            wisdom, context = row[0], row[1]
-            if wisdom in context:
-                context: str
-                context = context.replace(wisdom, "WISDOM")
-                context = re.sub(r'([\'\"]|\(.+?\))', "", context)  # get rid of the punctuations
-                if first_pattern.search(context):
-                    context = first_pattern.sub(" ", context)
-                    if 'WISDOM' in context:
-                        context.replace('WISDOM', '')
-                    row[1] = context
-
-        counts = sorted(Counter(data_df['wisdom']).items(), key=lambda r: r[1], reverse=True)
-        major = counts[0]
-
-        # Upsample minority class
-        total_df = data_df.loc[data_df['wisdom'] == major[0]]
-        for wis, ct in counts[1:]:
-            df_minority_upsampled = resample(data_df[data_df['wisdom'] == wis],
-                                             replace=True,  # sample with replacement
-                                             n_samples=major[1],  # to match majority class
-                                             random_state=123)  # reproducible results
-
-            total_df = total_df.append(df_minority_upsampled)
-
-        return total_df.to_dict(orient='records')
