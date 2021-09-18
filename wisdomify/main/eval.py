@@ -7,10 +7,6 @@ from wisdomify.loaders import load_conf
 from wisdomify.vocab import VOCAB
 from wisdomify.models import Wisdomifier
 
-import os
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
-
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
