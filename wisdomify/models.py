@@ -10,7 +10,7 @@ from torch.optim import Optimizer
 from transformers import BertTokenizerFast, AutoModelForMaskedLM, AutoConfig, AutoTokenizer
 from transformers.models.bert.modeling_bert import BertForMaskedLM
 from torch.nn import functional as F
-from wisdomify.builders import build_X, build_vocab2subwords
+from wisdomify.builders import BuilderZero, BuilderOne
 from wisdomify.loaders import load_conf
 from wisdomify.metrics import RDMetric
 from wisdomify.paths import WISDOMIFIER_CKPT
@@ -19,7 +19,14 @@ from wisdomify.vocab import VOCAB
 
 class RD(pl.LightningModule):
     """
-    A reverse-dictionary. The model is based on
+    superclass of all reverse-dictionaries.
+    """
+    raise NotImplementedError
+
+
+class RDZero(RD):
+    """
+    The first protoype.
     """
 
     def __init__(self, bert_mlm: BertForMaskedLM, vocab2subwords: Tensor, k: int, lr: float):
@@ -142,48 +149,67 @@ class RD(pl.LightningModule):
         return torch.optim.AdamW(self.parameters(), lr=self.hparams['lr'])
 
 
-class Wisdomifier:
-    def __init__(self, rd: RD, tokenizer: BertTokenizerFast):
-        self.rd = rd  # a trained reverse dictionary
-        self.tokenizer = tokenizer
+class RDOne(RD):
+    """
+    Two-stage reverse dictionary.
+    """
 
-    # TODO: this should be a ... static method.
-    @staticmethod
-    def from_pretrained(ver: str, device) -> 'Wisdomifier':
-        conf = load_conf()
-        vers = conf['versions']
-        # error handling
-        if ver not in vers.keys():
-            raise NotImplementedError(
-                f"Cannot find version {ver}.\nWrite your setting and version properly on conf.json")
+    def forward(self, X: torch.Tensor) -> torch.Tensor:
+        """
+        param X: (N, 3, L).
+        """
+        input_ids = X[:, 0]
+        token_type_ids = X[:, 1]
+        attention_mask = X[:, 2]
+        wisdom_mask = X[:, 3]  # this is new.
+        pass
 
-        wisdomifier_path = WISDOMIFIER_CKPT.format(ver=ver)
-        k: int = conf['versions'][ver]['k']
-        bert_model: str = conf['versions'][ver]['bert_model']
-        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
-        tokenizer = AutoTokenizer.from_pretrained(bert_model)
-        vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
+    def training_step(self, X: torch.Tensor) -> torch.Tensor:
+        pass
 
-        rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
-        rd.to(device)
-        rd.eval()
-        wisdomifier = Wisdomifier(rd, tokenizer)
-        return wisdomifier
 
-    def wisdomify(self, sents: List[str]) -> List[List[Tuple[str, float]]]:
-        # get the X
-        wisdom2sent = [("", desc) for desc in sents]
-        X = build_X(wisdom2sent, tokenizer=self.tokenizer, k=self.rd.hparams['k']).to(self.rd.device)
-        # get S_subword for this.
-        S_subword = self.rd.forward(X)
-        S_word = self.rd.S_word(S_subword)
-        S_word_probs = F.softmax(S_word, dim=1)
-        results = list()
-        for S_word_prob in S_word_probs.tolist():
-            wisdom2prob = [
-                (wisdom, prob)
-                for wisdom, prob in zip(VOCAB, S_word_prob)
-            ]
-            # sort and append
-            results.append(sorted(wisdom2prob, key=lambda x: x[1], reverse=True))
-        return results
+# TODO - 빌더 갈아엎기.
+# class Wisdomifier:
+#     def __init__(self, rd: RD, tokenizer: BertTokenizerFast):
+#         self.rd = rd  # a trained reverse dictionary
+#         self.tokenizer = tokenizer
+#
+#     @staticmethod
+#     def from_pretrained(ver: str, device) -> 'Wisdomifier':
+#         conf = load_conf()
+#         vers = conf['versions']
+#         # error handling
+#         if ver not in vers.keys():
+#             raise NotImplementedError(
+#                 f"Cannot find version {ver}.\nWrite your setting and version properly on conf.json")
+#
+#         wisdomifier_path = WISDOMIFIER_CKPT.format(ver=ver)
+#         k: int = conf['versions'][ver]['k']
+#         bert_model: str = conf['versions'][ver]['bert_model']
+#         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
+#         tokenizer = AutoTokenizer.from_pretrained(bert_model)
+#         vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
+#
+#         rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
+#         rd.to(device)
+#         rd.eval()
+#         wisdomifier = Wisdomifier(rd, tokenizer)
+#         return wisdomifier
+#
+#     def wisdomify(self, sents: List[str]) -> List[List[Tuple[str, float]]]:
+#         # get the X
+#         wisdom2sent = [("", desc) for desc in sents]
+#         X = build_X(wisdom2sent, tokenizer=self.tokenizer, k=self.rd.hparams['k']).to(self.rd.device)
+#         # get S_subword for this.
+#         S_subword = self.rd.forward(X)
+#         S_word = self.rd.S_word(S_subword)
+#         S_word_probs = F.softmax(S_word, dim=1)
+#         results = list()
+#         for S_word_prob in S_word_probs.tolist():
+#             wisdom2prob = [
+#                 (wisdom, prob)
+#                 for wisdom, prob in zip(VOCAB, S_word_prob)
+#             ]
+#             # sort and append
+#             results.append(sorted(wisdom2prob, key=lambda x: x[1], reverse=True))
+#         return results
