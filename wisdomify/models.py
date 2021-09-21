@@ -21,26 +21,36 @@ class RD(pl.LightningModule):
     """
     superclass of all reverse-dictionaries.
     """
-    raise NotImplementedError
-
-
-class RDZero(RD):
-    """
-    The first protoype.
-    """
-
-    def __init__(self, bert_mlm: BertForMaskedLM, vocab2subwords: Tensor, k: int, lr: float):
+    def __init__(self, bert_mlm: BertForMaskedLM, wisdom2subwords: Tensor, k: int, lr: float):
         super().__init__()
         # -- the only network we need -- #
         self.bert_mlm = bert_mlm
         # -- to be used to compute S_word -- #
-        self.vocab2subwords = vocab2subwords
+        self.wisdom2subwords = wisdom2subwords
         # -- to be used to evaluate the model -- #
         self.rd_metric = RDMetric()
         # -- hyper params --- #
         # should be saved to self.hparams
         # https://github.com/PyTorchLightning/pytorch-lightning/issues/4390#issue-730493746
         self.save_hyperparameters(Namespace(k=k, lr=lr))
+
+    def S_wisdom_literal(self, S_vocab: Tensor) -> Tensor:
+        # pineapple -> pine, ###apple, mask, mask, mask, mask, mask
+        # [ ...,
+        #   ...,
+        #   ...
+        #   [98, 122, 103, 103]]
+        # [
+        word2subs = self.wisdom2subwords.T.repeat(S_vocab.shape[0], 1, 1)  # (|W|, K) -> (N, K, |W|)
+        S_wisdom = S_vocab.gather(dim=-1, index=word2subs)  # (N, K, |V|) -> (N, K, |W|)
+        S_wisdom = S_wisdom.sum(dim=1)  # (N, K, |W|) -> (N, |W|)
+        return S_wisdom
+
+
+class RDZero(RD):
+    """
+    The first prototype.
+    """
 
     def forward(self, X: Tensor) -> Tensor:
         """
@@ -52,20 +62,8 @@ class RDZero(RD):
         attention_mask = X[:, 2]
         H_all = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, 768)
         H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, 768) -> (N, K, 768)
-        S_subword = self.bert_mlm.cls(H_k)  # (N, K, 768) ->  (N, K, |S|)
-        return S_subword
-
-    def S_word(self, S_subword: Tensor) -> Tensor:
-        # pineapple -> pine, ###apple, mask, mask, mask, mask, mask
-        # [ ...,
-        #   ...,
-        #   ...
-        #   [98, 122, 103, 103]]
-        # [
-        word2subs = self.vocab2subwords.T.repeat(S_subword.shape[0], 1, 1)  # (|V|, K) -> (N, K, |V|)
-        S_word = S_subword.gather(dim=-1, index=word2subs)  # (N, K, |S|) -> (N, K, |V|)
-        S_word = S_word.sum(dim=1)  # (N, K, |V|) -> (N, |V|)
-        return S_word
+        S_vocab = self.bert_mlm.cls(H_k)  # (N, K, 768) ->  (N, K, |V|)
+        return S_vocab
 
     def training_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int) -> dict:
         """
@@ -151,21 +149,46 @@ class RDZero(RD):
 
 class RDOne(RD):
     """
-    Two-stage reverse dictionary.
+    A two-stage reverse dictionary.
     """
 
-    def forward(self, X: torch.Tensor) -> torch.Tensor:
+    def forward(self, X: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        param X: (N, 3, L).
+        param X: (N, 3, L)
+        return: what should this return?
         """
         input_ids = X[:, 0]
         token_type_ids = X[:, 1]
         attention_mask = X[:, 2]
-        wisdom_mask = X[:, 3]  # this is new.
-        pass
+        wisdom_mask = X[:, 3]  # this is new.  # (N, L).
+        H_all = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 4, L) -> (N, L, 768)
+        H_cls = H_all[:, 0]  # (N, L, 768) -> (N, 768)
+        n = wisdom_mask.shape[0]  # get the batch size.
+        h = H_all.shape[2]  # get the hidden size.
+        wisdom_mask = wisdom_mask.unsqueeze(-1).expand(H_all.shape)
+        H_k = torch.masked_select(H_all, wisdom_mask.bool())
+        H_k = H_k.reshape(n, self.hparams['k'], h)  # (1, K * N) -> (N, K)
+        return H_cls, H_k
 
-    def training_step(self, X: torch.Tensor) -> torch.Tensor:
-        pass
+    def S_wisdom_figurative(self, H_cls: torch.Tensor, H_k: torch.Tensor) -> torch.Tensor:
+        """
+        param: H_cls (N, H)
+        param: H_k (N, K, H)
+        """
+        H_attn = torch.einsum("nh,nkh->nh", H_cls, H_k)
+        W = ...  # wisdom embeddings.
+
+    def training_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int) -> dict:
+        """
+        param: X (N, 4, L)
+        param:
+        """
+        X, y = batch
+        H_cls, H_k = self.forward(X)
+        S_vocab = self.bert_mlm.cls(H_k)  # (N, K, 768) ->  (N, K, |V|)
+        S_wisdom_literal = self.S_wisdom_literal(S_vocab)  # (N, K, |V|) -> (N, |W|)
+        S_wisdom_figurative = self.S_wisdom_figurative(H_cls, H_k)  # (N, H),(N, K, H) -> (N, |W|)
+        S_wisdom = S_wisdom_literal + S_wisdom_figurative
 
 
 # TODO - 빌더 갈아엎기.

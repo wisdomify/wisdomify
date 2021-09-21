@@ -26,12 +26,8 @@ class TestBuilders(unittest.TestCase):
         X = build_X(self.wisdom2sent, self.tokenizer, self.k)  # should be (N, 3, L)
         self.assertEqual(len(self.wisdom2sent), X.shape[0])
         self.assertEqual(3, X.shape[1])
-        self.assertEqual(27, X.shape[2])  # the max length.. what is it?
+        self.assertEqual(31, X.shape[2])  # the max length.. what is it?
 
-    def test_build_y_dim(self):
-        y = build_y(self.wisdom2sent, VOCAB)  # should be (N,)
-        self.assertEqual(len(self.wisdom2sent), y.shape[0])
-        self.assertEqual(1, len(y.shape))  # should be a 1-dim vector
 
     def test_build_vocab2subwords_dim(self):
         vocab2subwords = build_vocab2subwords(self.tokenizer, self.k, VOCAB)  # should be (V,K)

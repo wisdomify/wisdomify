@@ -24,28 +24,43 @@ class Builder:
         ])
 
     @staticmethod
-    def build_vocab2subwords(tokenizer: BertTokenizerFast, k: int, vocab: List[str]) -> torch.Tensor:
+    def build_wisdom2subwords(tokenizer: BertTokenizerFast, k: int, wisdoms: List[str]) -> torch.Tensor:
         """
         [ ...,
           ...,
           ...
           [98, 122, 103, 103]
         ]
-        :param vocab:
+        :param wisdoms:
         :param tokenizer:
         :param k:
         :return:
         """
-        mask_id = tokenizer.convert_tokens_to_ids("[MASK]")
-        pad_id = tokenizer.convert_tokens_to_ids("[PAD]")
-        encoded = tokenizer(text=vocab,
+        mask_id = tokenizer.mask_token_id
+        pad_id = tokenizer.pad_token_id
+        encoded = tokenizer(text=wisdoms,
                             add_special_tokens=False,
+                            # do not assume that the tokens have been tokenized to words.
+                            is_split_into_words=False,
                             padding='max_length',
                             max_length=k,  # set to k
                             return_tensors="pt")
         input_ids = encoded['input_ids']
         input_ids[input_ids == pad_id] = mask_id  # replace them with masks
         return input_ids
+
+    @staticmethod
+    def build_wiskeys(tokenizer: BertTokenizerFast, wisdoms: List[str]) -> torch.Tensor:
+        """
+        wiskeys!
+        """
+        encoded = tokenizer(text=wisdoms,
+                            add_special_tokens=False,
+                            # assume that the tokens have already been tokenized to words.
+                            is_split_into_words=True,
+                            return_tensors="pt")
+        input_ids = encoded['input_ids']  # (W, 1)
+        return input_ids.squeeze()  # (W, 1) -> (W,)
 
 
 class BuilderZero(Builder):
@@ -107,8 +122,13 @@ class BuilderOne(Builder):
         token_type_ids: torch.Tensor = encodings['token_type_ids']
         attention_mask: torch.Tensor = encodings['attention_mask']
         # another dimension is added.
-        wisdom_mask: torch.Tensor = torch.where(input_ids == mask_id, 1, 0)
+        wisdom_mask: torch.Tensor = BuilderOne.build_wisdom_mask(input_ids, mask_id)
+
         return torch.stack([input_ids,
                             token_type_ids,
                             attention_mask,
                             wisdom_mask], dim=1)
+
+    @staticmethod
+    def build_wisdom_mask(input_ids: torch.Tensor, mask_id: int) -> torch.Tensor:
+        return torch.where(input_ids == mask_id, 1, 0)
