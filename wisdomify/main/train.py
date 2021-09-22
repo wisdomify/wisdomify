@@ -12,15 +12,18 @@ from wisdomify.utils import TrainerFileSupport
 from wisdomify.vocab import VOCAB
 from wisdomify.datasets import WisdomDataModule
 
+import os
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
 
 def main():
     # --- setup the device --- #
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
-                        default="1")
+                        default="2")
 
     args = parser.parse_args()
     ver: str = args.ver
@@ -87,7 +90,10 @@ def main():
     # --- start training --- #
     trainer.fit(model=rd, datamodule=data_module)
 
-    trainerFileSupporter.save_training_result()
+    tokenizer_path = os.path.join(DATA_DIR, f'lightning_logs/version_{ver}/checkpoints/')
+    tokenizer.save_pretrained(tokenizer_path)
+    
+    # trainerFileSupporter.save_training_result()
 
     # TODO: validate every epoch and test model after training
     '''

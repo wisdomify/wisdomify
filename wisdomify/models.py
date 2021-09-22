@@ -5,6 +5,7 @@ from argparse import Namespace
 from typing import Tuple, List
 import pytorch_lightning as pl
 import torch
+import os
 from torch import Tensor
 from torch.optim import Optimizer
 from transformers import BertTokenizerFast, AutoModelForMaskedLM, AutoConfig, AutoTokenizer
@@ -13,9 +14,8 @@ from torch.nn import functional as F
 from wisdomify.builders import build_X, build_vocab2subwords
 from wisdomify.loaders import load_conf
 from wisdomify.metrics import RDMetric
-from wisdomify.paths import WISDOMIFIER_CKPT
+from wisdomify.paths import WISDOMIFIER_CKPT, DATA_DIR
 from wisdomify.vocab import VOCAB
-
 
 class RD(pl.LightningModule):
     """
@@ -109,10 +109,7 @@ class RD(pl.LightningModule):
         self.logger.experiment.add_scalar("Train/Average Top 100 Acc", avg_top100, self.current_epoch)
 
     def test_step(self, batch, batch_idx, *args, **kwargs):
-        self.rd_metric.reset()
-
         X, y = batch
-
         S_subword = self.forward(X)
         S_word = self.S_word(S_subword)
         S_word_probs = F.softmax(S_word, dim=1)
@@ -161,7 +158,10 @@ class Wisdomifier:
         k: int = conf['versions'][ver]['k']
         bert_model: str = conf['versions'][ver]['bert_model']
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
-        tokenizer = AutoTokenizer.from_pretrained(bert_model)
+
+        tokenizer_path = os.path.join(DATA_DIR, f'lightning_logs/version_{ver}/checkpoints/')
+        # tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
         vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
 
         rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
