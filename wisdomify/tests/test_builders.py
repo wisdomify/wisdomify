@@ -1,7 +1,6 @@
 import unittest
-from typing import Tuple, List
-
 import torch
+from typing import Tuple, List
 from transformers import BertTokenizerFast
 from wisdomify.builders import Builder, BuilderZero, BuilderOne
 from wisdomify.loaders import load_conf
@@ -91,5 +90,3 @@ class TestBuilderOne(TestBuilder):
         is_equal = torch.all(mask_from_input_ids.eq(mask_from_wisdom_mask))
 
         self.assertEqual(is_equal, True)
-
-

@@ -38,10 +38,12 @@ class Builder:
         """
         mask_id = tokenizer.mask_token_id
         pad_id = tokenizer.pad_token_id
+        # temporarily disable single-token status of the wisdoms
+        wisdoms = [wisdom.split(" ") for wisdom in wisdoms]
         encoded = tokenizer(text=wisdoms,
                             add_special_tokens=False,
-                            # do not assume that the tokens have been tokenized to words.
-                            is_split_into_words=False,
+                            # should set this to True, as we already have the wisdoms split.
+                            is_split_into_words=True,
                             padding='max_length',
                             max_length=k,  # set to k
                             return_tensors="pt")
@@ -56,8 +58,6 @@ class Builder:
         """
         encoded = tokenizer(text=wisdoms,
                             add_special_tokens=False,
-                            # assume that the tokens have already been tokenized to words.
-                            is_split_into_words=True,
                             return_tensors="pt")
         input_ids = encoded['input_ids']  # (W, 1)
         return input_ids.squeeze()  # (W, 1) -> (W,)
