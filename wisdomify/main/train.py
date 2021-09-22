@@ -90,7 +90,10 @@ def main():
     # --- start training --- #
     trainer.fit(model=rd, datamodule=data_module)
 
-    trainerFileSupporter.save_training_result()
+    tokenizer_path = os.path.join(DATA_DIR, f'lightning_logs/version_{ver}/checkpoints/')
+    tokenizer.save_pretrained(tokenizer_path)
+    
+    # trainerFileSupporter.save_training_result()
 
     # TODO: validate every epoch and test model after training
     '''
