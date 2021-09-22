@@ -12,6 +12,13 @@ Related Projects:
 - Data collect, Feature engineering: [wisdomify/storyteller](https://github.com/wisdomify/storyteller)
 - Web service, Front-End: [wisdomify/platanus](https://github.com/wisdomify/platanus)
 
+Objectives:
+1. 빈도수 TOP 100 속담 검색을 목표로 한다.
+2. 맥락 → 속담 검색을 목표로 한다.
+3. 한국어 → 한국어 속담 검색이 가능하도록 한다.
+4. 영어 → 한국어 속담 검색이 가능하도록 한다.
+5. 우리는 해적. 우리와 같은 가치를 공유하는 사람이라면 기꺼이 동료로 받아들인다. 
+
 ## Quick Start
 
 Check the dependencies:
