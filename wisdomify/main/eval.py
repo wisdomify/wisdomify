@@ -51,7 +51,8 @@ def main():
                                    num_workers=num_workers,
                                    shuffle=False,
                                    repeat=repeat)
-    wandb_logger = WandbLogger(project='wisdomify', entity='wisdomify')
+
+    wandb_logger = WandbLogger(project='wisdomify', entity='wisdomify', name='evaluation_log')
 
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          # do not save checkpoints to a file.

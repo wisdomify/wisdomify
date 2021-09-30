@@ -54,6 +54,8 @@ def main():
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
+
+
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd
     rd.to(device)
@@ -85,7 +87,7 @@ def main():
                                               data_dir=DATA_DIR)
 
     # --- instantiate the trainer --- #
-    wandb_logger = WandbLogger(project='wisdomify', entity='wisdomify')
+    wandb_logger = WandbLogger(project='wisdomify', entity='wisdomify', name='training_log')
 
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          max_epochs=max_epochs,
