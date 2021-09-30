@@ -2,6 +2,10 @@ import pytorch_lightning as pl
 import torch
 import os
 import argparse
+
+import wandb
+from pytorch_lightning.loggers import WandbLogger
+
 from wisdomify.datasets import WisdomDataModule
 from wisdomify.loaders import load_conf
 
@@ -47,12 +51,15 @@ def main():
                                    num_workers=num_workers,
                                    shuffle=False,
                                    repeat=repeat)
+    wandb_logger = WandbLogger(project='wisdomify', entity='wisdomify')
 
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          # do not save checkpoints to a file.
-                         logger=False)
+                         logger=wandb_logger)
 
     trainer.test(model=wisdomifier.rd, datamodule=data_module, verbose=False)
+
+    wandb.finish()
 
 
 if __name__ == '__main__':

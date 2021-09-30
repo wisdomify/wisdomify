@@ -1,6 +1,8 @@
 import pytorch_lightning as pl
 import torch
 import argparse
+
+import wandb
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 from transformers import AutoModelForMaskedLM, AutoTokenizer
@@ -11,10 +13,10 @@ from wisdomify.paths import DATA_DIR
 from wisdomify.utils import TrainerFileSupport
 from wisdomify.vocab import VOCAB
 from wisdomify.datasets import WisdomDataModule
+from pytorch_lightning.loggers import WandbLogger  # newline 1
+from pytorch_lightning import Trainer
 
 import os
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 
 def main():
@@ -44,8 +46,9 @@ def main():
     shuffle: bool = selected_ver['shuffle']
     num_workers: int = selected_ver['num_workers']
     # TODO: should enable to load both example and definition on one dataset
-    data_name: str = selected_ver['data_name'][0]
+    data_name: str = selected_ver['data_name']
     data_version: str = selected_ver['data_version']
+    dtype: str = selected_ver['dtype'][0]
     model_name = "wisdomifier"
 
     # --- instantiate the model --- #
@@ -57,6 +60,7 @@ def main():
     # --- setup a dataloader --- #
     data_module = WisdomDataModule(data_version=data_version,
                                    data_name=data_name,
+                                   dtype=dtype,
                                    k=k,
                                    device=device,
                                    vocab=VOCAB,
@@ -81,18 +85,21 @@ def main():
                                               data_dir=DATA_DIR)
 
     # --- instantiate the trainer --- #
+    wandb_logger = WandbLogger(project='wisdomify', entity='wisdomify')
+
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          max_epochs=max_epochs,
                          callbacks=[checkpoint_callback],
                          default_root_dir=DATA_DIR,
-                         logger=logger)
+                         logger=wandb_logger)
 
     # --- start training --- #
     trainer.fit(model=rd, datamodule=data_module)
 
     tokenizer_path = os.path.join(DATA_DIR, f'lightning_logs/version_{ver}/checkpoints/')
     tokenizer.save_pretrained(tokenizer_path)
-    
+
+    wandb.finish()
     # trainerFileSupporter.save_training_result()
 
     # TODO: validate every epoch and test model after training

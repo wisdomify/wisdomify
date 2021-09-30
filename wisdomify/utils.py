@@ -15,6 +15,33 @@ def get_wandb_artifact(name: str, ver: str, dtype: str):
         return artifact_dir
 
 
+def upload_wandb_artifact(job_type: str, ):
+    with wandb.init(project='wisdomify',
+                    entity='wisdomify',
+                    job_type='remove empty rows') as run:
+        # 새롭게 저장할 아티펙트
+        processed_data = wandb.Artifact(
+            artifact_name, type="dataset",
+            description="Unintended rows, empty information is removed.",
+        )
+
+        # ✔️ declare which artifact we'll be using (기존에 있던 데이터셋)
+        raw_data_artifact = run.use_artifact(f'{artifact_name}:latest')
+
+        # 📥 if need be, download the artifact
+        raw_dataset = raw_data_artifact.download()
+
+        for split in ["training", "validation", "test"]:
+            raw_split = _read(raw_dataset, split)
+            processed_dataset = _preprocess(raw_split)
+
+            with processed_data.new_file(split + ".tsv", mode="wb") as file:
+                processed_dataset.to_csv(file, sep='\t', index=False)
+
+        run.log_artifact(processed_data)
+    pass
+
+
 class TrainerFileSupport:
     def __init__(self, version: str, logger: TensorBoardLogger, data_dir: str):
         self.version = int(version)
