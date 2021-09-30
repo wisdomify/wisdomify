@@ -1,9 +1,18 @@
 import shutil
+import wandb
 
 from os import path
 from os.path import join
 
 from pytorch_lightning.loggers import TensorBoardLogger
+
+
+def get_wandb_artifact(name: str, ver: str, dtype: str):
+    with wandb.init() as run:
+        artifact = run.use_artifact(f'wisdomify/wisdomify/{name}:{ver}', type=dtype)
+        artifact_dir = artifact.download()
+
+        return artifact_dir
 
 
 class TrainerFileSupport:

@@ -57,5 +57,6 @@ tqdm==4.61.1
 transformers==4.8.1
 typing-extensions==3.10.0.0
 urllib3==1.26.6
+wandb==0.12.2
 Werkzeug==2.0.1
 yarl==1.6.3

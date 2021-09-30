@@ -1,21 +1,17 @@
 import csv
-import re
-import string
-from collections import Counter
 
 import torch
 
 import pandas as pd
 
 from typing import List, Tuple, Optional
-from datasets import load_dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.dataset_dict import Dataset as HuggingFaceDataset
 from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
-from sklearn.utils import resample
 
 from wisdomify.builders import build_X, build_y
+from wisdomify.utils import get_wandb_artifact
 
 
 class WisdomDataset(Dataset):
@@ -56,6 +52,7 @@ class WisdomDataModule(LightningDataModule):
     def __init__(self,
                  data_version: str,
                  data_name: str,
+                 dtype: str,
                  k: int = None,
                  device=None,
                  vocab=None,
@@ -64,10 +61,11 @@ class WisdomDataModule(LightningDataModule):
                  num_workers: int = None,
                  shuffle: bool = None,
                  repeat: int = None):
-      
+
         super().__init__()
         self.data_version = data_version
         self.data_name = data_name
+        self.dtype = dtype
         self.k = k
         self.device = device
         self.vocab = vocab
@@ -86,19 +84,31 @@ class WisdomDataModule(LightningDataModule):
         prepare the data needed. (eg. downloading)
         """
 
-        self.story = load_dataset(path="wisdomify/story",
-                                  name=self.data_name,
-                                  script_version=f"version_{self.data_version}")
+        wandb_artifact_dir = get_wandb_artifact(
+            name=self.data_name,
+            ver=self.data_version,
+            dtype='dataset'
+        )
 
-        if self.story['train'].version.version_str != self.data_version:
-            raise NotImplementedError(f"This version is not valid: {self.data_version}")
+        self.story = {
+            'train': self.read_wandb_artifact(wandb_artifact_dir, 'training.tsv'),
+            'validation': self.read_wandb_artifact(wandb_artifact_dir, 'validation.tsv'),
+            'test': self.read_wandb_artifact(wandb_artifact_dir, 'test.tsv'),
+        }
+
+        # self.story = load_dataset(path="wisdomify/story",
+        #                           name=self.data_name,
+        #                           script_version=f"version_{self.data_version}")
+        #
+        # if self.story['train'].version.version_str != self.data_version:
+        #     raise NotImplementedError(f"This version is not valid: {self.data_version}")
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
         convert dataset to desired form. (eg. pre-process)
         """
         x_col = 'wisdom'
-        y_col = 'def' if self.data_name == 'definition' else 'eg' if self.data_name == 'example' else None
+        y_col = 'def' if self.dtype == 'definition' else 'eg' if self.dtype == 'example' else None
 
         if y_col is None:
             raise ValueError("Wrong data name")
@@ -156,3 +166,9 @@ class WisdomDataModule(LightningDataModule):
         data.upsample(self.repeat)
 
         return data
+
+    @staticmethod
+    def read_wandb_artifact(dl_dir: str, file: str):
+        return pd\
+            .read_csv(f"{dl_dir}/{file}", sep='\t' if file.split('.')[-1] == 'tsv' else ',')\
+            .to_dict(orient='records')

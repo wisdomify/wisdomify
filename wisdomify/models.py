@@ -17,6 +17,7 @@ from wisdomify.metrics import RDMetric
 from wisdomify.paths import WISDOMIFIER_CKPT, DATA_DIR
 from wisdomify.vocab import VOCAB
 
+
 class RD(pl.LightningModule):
     """
     A reverse-dictionary. The model is based on
