@@ -38,11 +38,13 @@ def main():
     repeat: bool = selected_ver['repeat']
     num_workers: int = selected_ver['num_workers']
     k: int = selected_ver['k']
+    dtype: str = selected_ver['dtype'][0]
 
     wisdomifier = Wisdomifier.from_pretrained(ver, device)
 
     data_module = WisdomDataModule(data_version=data_version,
                                    data_name=data_name,
+                                   dtype=dtype,
                                    k=k,
                                    device=device,
                                    vocab=VOCAB,
