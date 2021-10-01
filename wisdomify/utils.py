@@ -1,11 +1,14 @@
 import os
 import shutil
+from typing import Optional
+
 import wandb
 
 from os import path
 from os.path import join
 
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
+from transformers import AutoModelForMaskedLM, AutoTokenizer, BertForMaskedLM, BertTokenizer
 
 
 def get_wandb_artifact(name: str, ver: str, dtype: str):
@@ -25,6 +28,7 @@ class WandBSupport:
             project='wisdomfiy',
             job_type=job_type
         )
+        self.models = WandBModels(self)
 
     def _get_artifact(self,
                       name: str,
@@ -47,8 +51,8 @@ class WandBSupport:
         """
         dl_dir = self._get_artifact(name=name, ver=ver, dtype=dtype).download()
         return {
-            'downloaded_dir': dl_dir,
-            'downloaded_files': list(filter(lambda s: s != '.DS_Store', os.listdir(dl_dir)))
+            'download_dir': dl_dir,
+            'download_files': list(filter(lambda s: s != '.DS_Store', os.listdir(dl_dir)))
         }
 
     @staticmethod
@@ -85,6 +89,49 @@ class WandBSupport:
     @staticmethod
     def push() -> None:
         wandb.finish()
+
+
+class WandBModels:
+    def __init__(self, wandb_support: WandBSupport):
+        self.wandb_support = wandb_support
+
+    def get_mlm(self,
+                name: str,
+                ver: str = 'latest'):
+        dl_info = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver)
+        model_dir = os.path.join(dl_info['download_dir'], dl_info['download_files'][0])
+
+        return AutoModelForMaskedLM.from_pretrained(model_dir)
+
+    def push_mlm(self,
+                 model: BertForMaskedLM,
+                 name: str,
+                 desc: str):
+        mlm_artifact = self.wandb_support.create_artifact(name=name, dtype='model', desc=desc)
+
+        with mlm_artifact.new_file(f'mlm_{name}', mode="wb") as file:
+            model.save_pretrained(file)
+
+        self.wandb_support.wandb_obj.log_artifact(mlm_artifact)
+
+    def get_tokenizer(self,
+                      name: str,
+                      ver: str = 'latest'):
+        dl_info = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver)
+        model_dir = os.path.join(dl_info['download_dir'], dl_info['download_files'][0])
+
+        return AutoTokenizer.from_pretrained(model_dir)
+
+    def push_tokenizer(self,
+                       model: BertTokenizer,
+                       name: str,
+                       desc: str):
+        tokenizer_artifact = self.wandb_support.create_artifact(name=name, dtype='model', desc=desc)
+
+        with tokenizer_artifact.new_file(f'tokenizer_{name}', mode="wb") as file:
+            model.save_pretrained(file)
+
+        self.wandb_support.wandb_obj.log_artifact(tokenizer_artifact)
 
 
 class TrainerFileSupport:

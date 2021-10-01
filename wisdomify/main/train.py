@@ -25,11 +25,11 @@ def main():
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str, default="2")
-    parser.add_argument("--job_name", type=str, default="2")
+    parser.add_argument("--wandb_name", type=str)
 
     args = parser.parse_args()
     ver: str = args.ver
-    job_name: str = args.job_name
+    job_name: str = args.wandb_name
 
     # parameters from conf
     conf = load_conf()
@@ -53,18 +53,25 @@ def main():
     dtype: str = selected_ver['dtype'][0]
     model_name = "wisdomifier"
 
+    mlm_name: str = selected_ver['mlm_name']
+    mlm_ver: str = selected_ver['mlm_ver']
+    tokenizer_name: str = selected_ver['tokenizer_name']
+    tokenizer_ver: str = selected_ver['tokenizer_ver']
+
     # --- initialise WandB object --- #
-    wandbSupport = WandBSupport(job_type=job_name)
+    wandb_support = WandBSupport(job_type=job_name)
 
     # --- instantiate the model --- #
-    kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
-    tokenizer = AutoTokenizer.from_pretrained(bert_model)
+    kcbert_mlm = wandb_support.models.get_mlm(name=mlm_name, ver=mlm_ver)
+    tokenizer = wandb_support.models.get_tokenizer(name=tokenizer_name, ver=tokenizer_ver)
 
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd
     rd.to(device)
+
     # --- setup a dataloader --- #
-    data_module = WisdomDataModule(data_version=data_version,
+    data_module = WisdomDataModule(wandb_support=wandb_support,
+                                   data_version=data_version,
                                    data_name=data_name,
                                    dtype=dtype,
                                    k=k,
@@ -81,10 +88,9 @@ def main():
         filename=model_name,
         verbose=True,
     )
-    # --- initialise WandB object --- #
 
     # --- instantiate the trainer --- #
-    wandb_logger = WandbLogger(project='wisdomify', entity='wisdomify', name='training_log')
+    wandb_logger = wandb_support.get_model_logger('training_log')
 
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          max_epochs=max_epochs,
@@ -94,6 +100,13 @@ def main():
 
     # --- start training --- #
     trainer.fit(model=rd, datamodule=data_module)
+
+    wandb_support.models.push_mlm(model=rd.bert_mlm,
+                                  name='',
+                                  desc='')
+    wandb_support.models.push_tokenizer(model=tokenizer,
+                                        name='',
+                                        desc='')
 
     tokenizer_path = os.path.join(DATA_DIR, f'lightning_logs/version_{ver}/checkpoints/')
     tokenizer.save_pretrained(tokenizer_path)
