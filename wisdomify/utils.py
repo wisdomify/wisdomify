@@ -1,10 +1,11 @@
+import os
 import shutil
 import wandb
 
 from os import path
 from os.path import join
 
-from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 
 
 def get_wandb_artifact(name: str, ver: str, dtype: str):
@@ -15,31 +16,75 @@ def get_wandb_artifact(name: str, ver: str, dtype: str):
         return artifact_dir
 
 
-def upload_wandb_artifact(job_type: str, ):
-    with wandb.init(project='wisdomify',
-                    entity='wisdomify',
-                    job_type='remove empty rows') as run:
-        # 새롭게 저장할 아티펙트
-        processed_data = wandb.Artifact(
-            artifact_name, type="dataset",
-            description="Unintended rows, empty information is removed.",
+class WandBSupport:
+    def __init__(self,
+                 job_type: str):
+        # initialise wandb connection object.
+        self.wandb_obj = wandb.init(
+            entity='wisdomify',
+            project='wisdomfiy',
+            job_type=job_type
         )
 
-        # ✔️ declare which artifact we'll be using (기존에 있던 데이터셋)
-        raw_data_artifact = run.use_artifact(f'{artifact_name}:latest')
+    def _get_artifact(self,
+                      name: str,
+                      dtype: str,
+                      ver: str = 'latest'):
+        # this function returns existing artifact object.
+        return self.wandb_obj.use_artifact(f"{name}:{ver}", type=dtype)
 
-        # 📥 if need be, download the artifact
-        raw_dataset = raw_data_artifact.download()
+    def download_artifact(self,
+                          name: str,
+                          dtype: str,
+                          ver: str = 'latest'):
+        # this function returns download path and downloaded files
+        """
+        :return:
+        {
+            'downloaded_dir': downloaded directory
+            'downloaded_files': file names downloaded
+        }
+        """
+        dl_dir = self._get_artifact(name=name, ver=ver, dtype=dtype).download()
+        return {
+            'downloaded_dir': dl_dir,
+            'downloaded_files': list(filter(lambda s: s != '.DS_Store', os.listdir(dl_dir)))
+        }
 
-        for split in ["training", "validation", "test"]:
-            raw_split = _read(raw_dataset, split)
-            processed_dataset = _preprocess(raw_split)
+    @staticmethod
+    def create_artifact(name: str,
+                        dtype: str,
+                        desc: str,
+                        meta: str = None):
+        # this function creates and returns new artifact
+        return wandb.Artifact(name, type=dtype, description=desc, metadata=meta)
 
-            with processed_data.new_file(split + ".tsv", mode="wb") as file:
-                processed_dataset.to_csv(file, sep='\t', index=False)
+    def write_artifact(self,
+                       artifact: wandb.Artifact,
+                       file_name: str,
+                       scripts):
+        # This function was intended to make user to write file on the desired artifact.
+        # However, file saving script may be different depending on the data type.
+        """
+        >>> with artifact.new_file(file_name, mode="wb") as file:
+        >>>     Write_data_saving_script
+        """
+        raise NotImplementedError
 
-        run.log_artifact(processed_data)
-    pass
+    def add_artifact(self,
+                     artifact: wandb.Artifact,
+                     file_path: str):
+        # This function is used when user trying to add already saved file directly with file path
+        return artifact.add_file(file_path)
+
+    @staticmethod
+    def get_model_logger(log_name: str):
+        # this function returns model logger
+        return WandbLogger(project='wisdomify', entity='wisdomify', name=log_name)
+
+    @staticmethod
+    def push() -> None:
+        wandb.finish()
 
 
 class TrainerFileSupport:

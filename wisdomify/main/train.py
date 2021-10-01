@@ -5,12 +5,12 @@ import argparse
 import wandb
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
-from transformers import AutoModelForMaskedLM, AutoTokenizer
+from transformers import AutoModelForMaskedLM, AutoTokenizer, BertForMaskedLM
 from wisdomify.loaders import load_conf
 from wisdomify.models import RD
 from wisdomify.builders import build_vocab2subwords
 from wisdomify.paths import DATA_DIR
-from wisdomify.utils import TrainerFileSupport
+from wisdomify.utils import TrainerFileSupport, WandBSupport
 from wisdomify.vocab import VOCAB
 from wisdomify.datasets import WisdomDataModule
 from pytorch_lightning.loggers import WandbLogger  # newline 1
@@ -24,13 +24,14 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ver", type=str,
-                        default="2")
+    parser.add_argument("--ver", type=str, default="2")
+    parser.add_argument("--job_name", type=str, default="2")
 
     args = parser.parse_args()
     ver: str = args.ver
-    # parameters from conf
+    job_name: str = args.job_name
 
+    # parameters from conf
     conf = load_conf()
     vers = conf['versions']
     if ver not in vers.keys():
@@ -45,16 +46,19 @@ def main():
     repeat: int = selected_ver['repeat']
     shuffle: bool = selected_ver['shuffle']
     num_workers: int = selected_ver['num_workers']
+
     # TODO: should enable to load both example and definition on one dataset
     data_name: str = selected_ver['data_name']
     data_version: str = selected_ver['data_version']
     dtype: str = selected_ver['dtype'][0]
     model_name = "wisdomifier"
 
+    # --- initialise WandB object --- #
+    wandbSupport = WandBSupport(job_type=job_name)
+
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
-
 
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd
@@ -77,14 +81,7 @@ def main():
         filename=model_name,
         verbose=True,
     )
-    # --- instantiate the logger --- #
-    logger = TensorBoardLogger(save_dir=DATA_DIR,
-                               name="lightning_logs")
-
-    # --- version check logic --- #
-    trainerFileSupporter = TrainerFileSupport(version=ver,
-                                              logger=logger,
-                                              data_dir=DATA_DIR)
+    # --- initialise WandB object --- #
 
     # --- instantiate the trainer --- #
     wandb_logger = WandbLogger(project='wisdomify', entity='wisdomify', name='training_log')
@@ -102,7 +99,6 @@ def main():
     tokenizer.save_pretrained(tokenizer_path)
 
     wandb.finish()
-    # trainerFileSupporter.save_training_result()
 
     # TODO: validate every epoch and test model after training
     '''

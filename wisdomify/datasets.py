@@ -11,7 +11,7 @@ from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
 
 from wisdomify.builders import build_X, build_y
-from wisdomify.utils import get_wandb_artifact
+from wisdomify.utils import get_wandb_artifact, WandBSupport
 
 
 class WisdomDataset(Dataset):
@@ -50,6 +50,7 @@ class WisdomDataset(Dataset):
 
 class WisdomDataModule(LightningDataModule):
     def __init__(self,
+                 wandb_support: WandBSupport,
                  data_version: str,
                  data_name: str,
                  dtype: str,
@@ -63,6 +64,7 @@ class WisdomDataModule(LightningDataModule):
                  repeat: int = None):
 
         super().__init__()
+        self.wandb_support = wandb_support
         self.data_version = data_version
         self.data_name = data_name
         self.dtype = dtype
@@ -83,25 +85,19 @@ class WisdomDataModule(LightningDataModule):
         """
         prepare the data needed. (eg. downloading)
         """
-
-        wandb_artifact_dir = get_wandb_artifact(
+        dl_spec = self.wandb_support.download_artifact(
             name=self.data_name,
             ver=self.data_version,
             dtype='dataset'
         )
+
+        wandb_artifact_dir = dl_spec['download_dir']
 
         self.story = {
             'train': self.read_wandb_artifact(wandb_artifact_dir, 'training.tsv'),
             'validation': self.read_wandb_artifact(wandb_artifact_dir, 'validation.tsv'),
             'test': self.read_wandb_artifact(wandb_artifact_dir, 'test.tsv'),
         }
-
-        # self.story = load_dataset(path="wisdomify/story",
-        #                           name=self.data_name,
-        #                           script_version=f"version_{self.data_version}")
-        #
-        # if self.story['train'].version.version_str != self.data_version:
-        #     raise NotImplementedError(f"This version is not valid: {self.data_version}")
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
@@ -168,7 +164,7 @@ class WisdomDataModule(LightningDataModule):
         return data
 
     @staticmethod
-    def read_wandb_artifact(dl_dir: str, file: str):
+    def read_wandb_artifact(dl_dir: str, file: str) -> dict:
         return pd\
             .read_csv(f"{dl_dir}/{file}", sep='\t' if file.split('.')[-1] == 'tsv' else ',')\
             .to_dict(orient='records')
