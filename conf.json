@@ -35,16 +35,16 @@
       "desc": "[version_0]: The first minimal-viable-produ ct of wisdomify",
       "model": {
         "load": {
-          "mlm_name": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 이름을 적어주세요.",
-          "mlm_ver": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 버전을 적어주세요. (default: latest)",
-          "tokenizer_name": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
-          "tokenizer_ver": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 버전을 적어주세요. (default: latest)"
+          "mlm_name": "mlm_init_kcbert",
+          "mlm_ver": "",
+          "tokenizer_name": "tokenizer_init_kcbert",
+          "tokenizer_ver": ""
         },
         "save": {
-          "mlm_name": "(Str) WandB에 저장할 BERT mlm 아티펙트의 이름을 적어주세요. (default: 로드된 아티펙트와 동일한 이름.)",
-          "mlm_desc": "(Str) WandB에 저장할 BERT mlm 아티펙트의 설명을 적어주세요. (default: None)",
-          "tokenizer_name": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 이름을 적어주세요. (default: 로드된 아티펙트와 동일한 이름)",
-          "tokenizer_desc": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 설명을 적어주세요. (default: None)"
+          "mlm_name": "mlm_tiny_data",
+          "mlm_desc": "This BERT mlm is trained on very tiny data, initial model as baseline.",
+          "tokenizer_name": "tokenizer_init_kcbert",
+          "tokenizer_desc": "This tokenizer is used for training very tiny data. Nothing has been changed from previous."
         }
       },
       "data_version": "latest",
