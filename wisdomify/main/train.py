@@ -18,7 +18,7 @@ def main():
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str, default="2")
-    parser.add_argument("--wandb_name", type=str)
+    parser.add_argument("--wandb_name", type=str, required=True)
 
     args = parser.parse_args()
     ver: str = args.ver
