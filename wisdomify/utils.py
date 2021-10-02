@@ -105,7 +105,7 @@ class WandBModels:
                  model: BertForMaskedLM,
                  name: str,
                  desc: str):
-        file_name = f'mlm_{name}'
+        file_name = f'{name}'
         mlm_artifact = self.wandb_support.create_artifact(name=file_name, dtype='model', desc=desc)
 
         model.save_pretrained(file_name)
@@ -126,7 +126,7 @@ class WandBModels:
                        model: BertTokenizer,
                        name: str,
                        desc: str):
-        file_name = f'tokenizer_{name}'
+        file_name = f'{name}'
         tokenizer_artifact = self.wandb_support.create_artifact(name=file_name, dtype='model', desc=desc)
 
         model.save_pretrained(file_name)
