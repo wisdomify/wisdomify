@@ -167,6 +167,17 @@ class RDBeta(RD):
     S_wisdom = S_wisdom_literal + S_wisdom_figurative
     trained on: wisdom2def
     """
+    def __init__(self, bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor,
+                 k: int, lr: float, device: torch.device):
+        super().__init__(bert_mlm, wisdom2subwords, k, lr, device)
+        self.wiskeys = wiskeys
+
+    def W_embed(self) -> torch.Tensor:
+        """
+        returns the embedding vectors of  all the wisdoms
+        return: W_embed (|W|, H)
+        """
+        return self.bert_mlm.bert.embeddings.word_embeddings(self.wiskeys)
 
     def S_wisdom_figurative(self, H_cls: torch.Tensor, H_k: torch.Tensor) -> torch.Tensor:
         """
@@ -174,9 +185,12 @@ class RDBeta(RD):
         param: H_k (N, K, H)
         return: S_wisdom_figurative (N, |W|)
         """
-        # TODO - how do we get an access to ... BERT's embeddings?
-        # TODO - how do we get the embeddings of the wisdoms?
-        pass
+        # 속담의 임베딩은 여기에 있습니다!
+        W_embed = self.W_embed()  # (|W|,) -> (|W|, H)
+
+        # TODO 다음을 계산해주세요!
+        S_wisdom_figurative: torch.Tensor = ...
+        return S_wisdom_figurative
 
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
         H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)

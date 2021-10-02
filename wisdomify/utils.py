@@ -2,12 +2,12 @@ import shutil
 from os import path
 from os.path import join
 from pytorch_lightning.loggers import TensorBoardLogger
-from wisdomify.builders import Wisdom2SubWordsBuilder, XBuilder, XWithWisdomMaskBuilder, YBuilder
+from wisdomify.builders import Wisdom2SubWordsBuilder, XBuilder, XWithWisdomMaskBuilder, YBuilder, WisKeysBuilder
 from wisdomify.rds import RD, RDAlpha, RDBeta
 from wisdomify.datasets import WisdomDataModule
 from wisdomify.paths import WISDOMIFIER_CKPT
 from wisdomify.loaders import load_conf_json
-from transformers import BertTokenizer, AutoModelForMaskedLM, AutoTokenizer, AutoConfig
+from transformers import AutoModelForMaskedLM, BertConfig, AutoTokenizer, BertTokenizer
 import torch
 
 
@@ -30,7 +30,7 @@ class Experiment:
         rd_model = config['rd_model']
         X_mode = config['X_mode']
         y_mode = config['y_mode']
-        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
+        bert_mlm = AutoModelForMaskedLM.from_config(BertConfig.from_pretrained(bert_model))
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
         wisdom2subwords_builder = Wisdom2SubWordsBuilder(tokenizer, k, device)
         wisdom2subwords = wisdom2subwords_builder(wisdoms)
@@ -72,7 +72,10 @@ class Experiment:
         if rd_model == "RDAlpha":
             rd = RDAlpha(bert_mlm, wisdom2subwords, k, lr, device)
         elif rd_model == "RDBeta":
-            rd = RDBeta(bert_mlm, wisdom2subwords, k, lr, device)
+            tokenizer.add_tokens(wisdoms)
+            bert_mlm.resize_token_embeddings(len(tokenizer))
+            wiskeys = WisKeysBuilder(tokenizer, device)(wisdoms)
+            rd = RDBeta(bert_mlm, wisdom2subwords, wiskeys, k, lr, device)
         else:
             raise NotImplementedError
         # --- load a data module --- #
