@@ -12,8 +12,6 @@ from wisdomify.loaders import load_conf
 from wisdomify.vocab import VOCAB
 from wisdomify.models import Wisdomifier
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,14 +29,22 @@ def main():
         raise NotImplementedError("Invalid version provided".format(ver))
 
     selected_ver = vers[ver]
-    data_version: str = selected_ver['data_version']
     # TODO: should enable to load both example and definition on one dataset
-    data_name: str = selected_ver['data_name'][0]
     batch_size: int = selected_ver['batch_size']
     repeat: bool = selected_ver['repeat']
     num_workers: int = selected_ver['num_workers']
     k: int = selected_ver['k']
+
+    data_name: str = selected_ver['data_name']
+    data_version: str = selected_ver['data_version']
     dtype: str = selected_ver['dtype'][0]
+
+    desc: str = selected_ver['desc']
+
+    in_mlm_name: str = selected_ver['model']['load']['mlm_name']
+    in_mlm_ver: str = selected_ver['model']['load']['mlm_ver']
+    in_tokenizer_name: str = selected_ver['model']['load']['tokenizer_name']
+    in_tokenizer_ver: str = selected_ver['model']['load']['tokenizer_ver']
 
     wisdomifier = Wisdomifier.from_pretrained(ver, device)
 

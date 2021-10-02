@@ -15,6 +15,7 @@ from wisdomify.builders import build_X, build_vocab2subwords
 from wisdomify.loaders import load_conf
 from wisdomify.metrics import RDMetric
 from wisdomify.paths import WISDOMIFIER_CKPT, DATA_DIR
+from wisdomify.utils import WandBSupport
 from wisdomify.vocab import VOCAB
 
 
@@ -150,7 +151,8 @@ class Wisdomifier:
 
     # TODO: this should be a ... static method.
     @staticmethod
-    def from_pretrained(ver: str, device) -> 'Wisdomifier':
+    def from_pretrained(wandb_support: WandBSupport,
+                        ver: str, device) -> 'Wisdomifier':
         conf = load_conf()
         vers = conf['versions']
         # error handling
@@ -160,12 +162,10 @@ class Wisdomifier:
 
         wisdomifier_path = WISDOMIFIER_CKPT.format(ver=ver)
         k: int = conf['versions'][ver]['k']
-        bert_model: str = conf['versions'][ver]['bert_model']
-        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
+        # --- instantiate the model --- #
+        bert_mlm = wandb_support.models.get_mlm(name=in_mlm_name, ver=in_mlm_ver)
+        tokenizer = wandb_support.models.get_tokenizer(name=in_tokenizer_name, ver=in_tokenizer_ver)
 
-        tokenizer_path = os.path.join(DATA_DIR, f'lightning_logs/version_{ver}/checkpoints/')
-        # tokenizer = AutoTokenizer.from_pretrained(bert_model)
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
         vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
 
         rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
