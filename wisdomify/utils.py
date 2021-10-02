@@ -2,6 +2,116 @@ import shutil
 from os import path
 from os.path import join
 from pytorch_lightning.loggers import TensorBoardLogger
+from wisdomify.builders import Wisdom2SubWordsBuilder, XBuilder, XWithWisdomMaskBuilder, YBuilder
+from wisdomify.paths import CONF_JSON
+from wisdomify.rds import RD, RDAlpha, RDBeta
+from wisdomify.datasets import WisdomDataModule
+from wisdomify.paths import WISDOMIFIER_CKPT
+from transformers import BertTokenizer, AutoModelForMaskedLM, AutoTokenizer, AutoConfig
+import torch
+import json
+
+
+# --- loaders --- #
+def load_conf_json() -> dict:
+    with open(CONF_JSON, 'r') as fh:
+        return json.loads(fh.read())
+
+
+# --- an experiment --- #
+class Experiment:
+    def __init__(self, config: dict, rd: RD, tokenizer: BertTokenizer, data_module: WisdomDataModule):
+        self.config = config
+        self.rd = rd
+        self.tokenizer = tokenizer
+        self.data_module = data_module
+
+    @classmethod
+    def from_pretrained(cls, ver: str, device: torch.device) -> 'Experiment':
+        conf_json = load_conf_json()
+        wisdomifier_path = WISDOMIFIER_CKPT.format(ver=ver)
+        config = conf_json['versions'][ver]
+        bert_model = config['bert_model']
+        k = config['k']
+        wisdoms = config['wisdoms']
+        rd_model = config['rd_model']
+        X_mode = config['X_mode']
+        y_mode = config['y_mode']
+        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
+        tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        wisdom2subwords_builder = Wisdom2SubWordsBuilder(tokenizer, k, device)
+        wisdom2subwords = wisdom2subwords_builder(wisdoms)
+        # --- choose an appropriate rd version --- #
+        if rd_model == "RDAlpha":
+            rd = RDAlpha.load_from_checkpoint(wisdomifier_path,
+                                              bert_mlm=bert_mlm, wisdom2subwords=wisdom2subwords,
+                                              device=device)
+        elif rd_model == "RDBeta":
+            rd = RDBeta.load_from_checkpoint(wisdomifier_path,
+                                             bert_mlm=bert_mlm, wisdom2subwords=wisdom2subwords,
+                                             device=device)
+        else:
+            raise NotImplementedError
+        data_module = cls.get_data_module(config, X_mode, y_mode, tokenizer, k, device)
+        return Experiment(config, rd, tokenizer, data_module)
+
+    @classmethod
+    def build(cls, ver: str, device: torch.device) -> 'Experiment':
+        """
+        for training.
+        """
+        conf_json = load_conf_json()
+        config = conf_json['versions'][ver]
+        bert_model = config['bert_model']
+        wisdoms = config['wisdoms']
+        X_mode = config['X_mode']
+        y_mode = config['y_mode']
+        k = config['k']
+        lr = config['lr']
+        rd_model = config['rd_model']
+        # --- load a bert_mlm model --- #
+        bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
+        tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        wisdom2subwords_builder = Wisdom2SubWordsBuilder(tokenizer, k, device)
+        wisdom2subwords = wisdom2subwords_builder(wisdoms)
+
+        # --- choose an appropriate rd version --- #
+        if rd_model == "RDAlpha":
+            rd = RDAlpha(bert_mlm, wisdom2subwords, k, lr, device)
+        elif rd_model == "RDBeta":
+            rd = RDBeta(bert_mlm, wisdom2subwords, k, lr, device)
+        else:
+            raise NotImplementedError
+        # --- load a data module --- #
+        data_module = cls.get_data_module(config, X_mode, y_mode, tokenizer, k, device)
+        return Experiment(config, rd, tokenizer, data_module)
+
+    @classmethod
+    def get_data_module(cls, config: dict, X_mode: str, y_mode: str,
+                        tokenizer: BertTokenizer, k: int, device: torch.optim) -> WisdomDataModule:
+        X_builder = cls.get_X_builder(X_mode, tokenizer, k, device)
+        y_builder = cls.get_y_builder(y_mode, device)
+        return WisdomDataModule(config, X_builder, y_builder, tokenizer, device)
+
+    @staticmethod
+    def get_X_builder(X_mode: str, tokenizer: BertTokenizer, k: int, device: torch.device) -> XBuilder:
+        # --- choose an appropriate builder for X --- #
+        if X_mode == "XBuilder":
+            X_builder = XBuilder(tokenizer, k, device)
+        elif X_mode == "XWithWisdomMaskBuilder":
+            X_builder = XWithWisdomMaskBuilder(tokenizer, k, device)
+        else:
+            raise ValueError(f"Invalid X_mode: {X_mode}")
+        return X_builder
+
+    @staticmethod
+    def get_y_builder(y_mode: str, device: torch.device) -> YBuilder:
+        # --- choose an appropriate builder for y --- #
+        if y_mode == "YBuilder":
+            y_builder = YBuilder(device)
+        else:
+            raise ValueError(f"Invalid y_mode: {y_mode}")
+        return y_builder
 
 
 class TrainerFileSupport:

@@ -1,25 +1,11 @@
 import torch
-import yaml
 from flask import Flask, jsonify, request, render_template_string
-from transformers import AutoModelForMaskedLM, AutoConfig, AutoTokenizer
-from wisdomify.builders import build_vocab2subwords
-from wisdomify.loaders import load_conf
-from wisdomify.models import RD, Wisdomifier
-from wisdomify.paths import WISDOMIFIER_HPARAMS_YAML, WISDOMIFIER_CKPT
-from wisdomify.classes import WISDOMS
+from wisdomify.models import Wisdomifier
 
 
 class WisdomifierAPI:
     def __init__(self, ver: str):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        conf = load_conf()
-        vers = conf['versions']
-        if ver not in vers.keys():
-            raise NotImplementedError("Invalid version provided".format(ver))
-
-        selected_ver = vers[ver]
-
         self.wisdomifier = Wisdomifier.from_pretrained(ver, device)
         print(f'wisdomifier loaded -> ver: {ver}')
 
@@ -211,8 +197,8 @@ def GwaGeo():
         """,
         desc=desc,
         desc_result=[list(zip(
-            wisdomifier_0.wisdomifier.wisdomify(sents=[desc])[0],
-            wisdomifier_1.wisdomifier.wisdomify(sents=[desc])[0],
+            wisdomifier_0.wisdomifier(sents=[desc])[0],
+            wisdomifier_1.wisdomifier(sents=[desc])[0],
         ))] if desc else None
     )
 
@@ -224,3 +210,4 @@ def checkHealth():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000, host='0.0.0.0', threaded=True)
+

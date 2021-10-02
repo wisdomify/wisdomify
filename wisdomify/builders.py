@@ -1,100 +1,87 @@
 """
 all the functions for building tensors are defined here.
+builders must accept device as one of the parameters.
 """
 from typing import List, Tuple
 import torch
-from transformers import BertTokenizerFast
+from transformers import BertTokenizer
 
 
-class Builder:
-    @staticmethod
-    def build_X(*args, **kwargs) -> torch.Tensor:
+class TensorBuilder:
+
+    def __call__(self, *args, **kwargs) -> torch.Tensor:
+        """
+        whatever it does,a bui;der outputs a Tensor.
+        """
         raise NotImplementedError
 
-    @staticmethod
-    def build_y(wisdom2sent: List[Tuple[str, str]], vocab: List[str]) -> torch.LongTensor:
-        """
-        :param wisdom2sent:
-        :param vocab:
-        :return: (N, )
-        """
-        return torch.LongTensor([
-            vocab.index(wisdom)
-            for wisdom in [wisdom for wisdom, _ in wisdom2sent]
-        ])
 
-    @staticmethod
-    def build_wisdom2subwords(tokenizer: BertTokenizerFast, k: int, wisdoms: List[str]) -> torch.Tensor:
-        """
-        [ ...,
-          ...,
-          ...
-          [98, 122, 103, 103]
-        ]
-        :param wisdoms:
-        :param tokenizer:
-        :param k:
-        :return:
-        """
-        mask_id = tokenizer.mask_token_id
-        pad_id = tokenizer.pad_token_id
+class Wisdom2SubWordsBuilder(TensorBuilder):
+    def __init__(self, tokenizer: BertTokenizer, k: int, device: torch.device):
+        self.tokenizer = tokenizer
+        self.k = k
+        self.device = device
+
+    def __call__(self, wisdoms: List[str]) -> torch.Tensor:
+        mask_id = self.tokenizer.mask_token_id
+        pad_id = self.tokenizer.pad_token_id
         # temporarily disable single-token status of the wisdoms
         wisdoms = [wisdom.split(" ") for wisdom in wisdoms]
-        encoded = tokenizer(text=wisdoms,
-                            add_special_tokens=False,
-                            # should set this to True, as we already have the wisdoms split.
-                            is_split_into_words=True,
-                            padding='max_length',
-                            max_length=k,  # set to k
-                            return_tensors="pt")
+        encoded = self.tokenizer(text=wisdoms,
+                                 add_special_tokens=False,
+                                 # should set this to True, as we already have the wisdoms split.
+                                 is_split_into_words=True,
+                                 padding='max_length',
+                                 max_length=self.k,  # set to k
+                                 return_tensors="pt")
         input_ids = encoded['input_ids']
         input_ids[input_ids == pad_id] = mask_id  # replace them with masks
-        return input_ids
+        return input_ids.to(self.device)
 
-    @staticmethod
-    def build_wiskeys(tokenizer: BertTokenizerFast, wisdoms: List[str]) -> torch.Tensor:
-        """
-        wiskeys!
-        """
-        encoded = tokenizer(text=wisdoms,
-                            add_special_tokens=False,
-                            return_tensors="pt")
+
+class WisKeysBuilder(TensorBuilder):
+    def __init__(self, tokenizer: BertTokenizer, device: torch.device):
+        self.tokenizer = tokenizer
+        self.device = device
+
+    def __call__(self, wisdoms: List[str]) -> torch.Tensor:
+        # TODO: makes sure that the tokenizer treats each wisdom as a single token.
+        encoded = self.tokenizer(text=wisdoms,
+                                 add_special_tokens=False,
+                                 return_tensors="pt")
         input_ids = encoded['input_ids']  # (W, 1)
-        return input_ids.squeeze()  # (W, 1) -> (W,)
+        input_ids = input_ids.squeeze()  # (W, 1) -> (W,)
+        return input_ids.to(self.device)
 
 
-class BuilderAlpha(Builder):
-    @staticmethod
-    def build_X(wisdom2sent: List[Tuple[str, str]], tokenizer: BertTokenizerFast, k: int) -> torch.Tensor:
-        """
-        :param wisdom2sent:
-        :param tokenizer:
-        :param k:
-        :return: (N, 3, L)
-        """
+class XBuilder(TensorBuilder):
+    def __init__(self, tokenizer: BertTokenizer, k: int, device: torch.device):
+        self.tokenizer = tokenizer
+        self.k = k
+        self.device = device
+
+    def __call__(self, wisdom2sent: List[Tuple[str, str]]) -> torch.Tensor:
         sents = [sent for _, sent in wisdom2sent]
-        lefts = [" ".join(["[MASK]"] * k)] * len(sents)
+        lefts = [" ".join(["[MASK]"] * self.k)] * len(sents)
         rights = sents
-
-        encodings = tokenizer(text=lefts,
-                              text_pair=rights,
-                              return_tensors="pt",
-                              add_special_tokens=True,
-                              truncation=True,
-                              padding=True,
-                              verbose=True)
-
+        encodings = self.tokenizer(text=lefts,
+                                   text_pair=rights,
+                                   return_tensors="pt",
+                                   add_special_tokens=True,
+                                   truncation=True,
+                                   padding=True,
+                                   verbose=True)
         return torch.stack([encodings['input_ids'],
                             # token type for the padded tokens? -> they are masked with the
                             # attention mask anyways
                             # https://github.com/google-research/bert/issues/635#issuecomment-491485521
                             encodings['token_type_ids'],
-                            encodings['attention_mask']], dim=1)
+                            encodings['attention_mask']], dim=1).to(self.device)
 
 
-class BuilderBeta(Builder):
-    @staticmethod
-    def build_X(wisdom2sent: List[Tuple[str, str]], tokenizer: BertTokenizerFast, k: int) -> torch.Tensor:
+class XWithWisdomMaskBuilder(XBuilder):
+
+    def __call__(self, wisdom2sent: List[Tuple[str, str]]) -> torch.Tensor:
         """
         param wisdom2sent: 아이고... [WISDOM]이라더니, 오늘 하필 비가 오네.
         return: (N, 4, L)
@@ -107,28 +94,40 @@ class BuilderBeta(Builder):
         """
         sents = [sent for _, sent in wisdom2sent]
         sents = [
-            sent.replace("[WISDOM]", " ".join(["[MASK]"] * k))
+            sent.replace("[WISDOM]", " ".join(["[MASK]"] * self.k))
             for sent in sents
         ]
-
-        encodings = tokenizer(text=sents,
-                              return_tensors="pt",
-                              add_special_tokens=True,
-                              truncation=True,
-                              padding=True,
-                              verbose=True)
-        mask_id: int = tokenizer.mask_token_id
+        encodings = self.tokenizer(text=sents,
+                                   return_tensors="pt",
+                                   add_special_tokens=True,
+                                   truncation=True,
+                                   padding=True,
+                                   verbose=True)
+        mask_id: int = self.tokenizer.mask_token_id
         input_ids: torch.Tensor = encodings['input_ids']
         token_type_ids: torch.Tensor = encodings['token_type_ids']
         attention_mask: torch.Tensor = encodings['attention_mask']
-        # another dimension is added.
-        wisdom_mask: torch.Tensor = BuilderBeta.build_wisdom_mask(input_ids, mask_id)
-
+        # wisdom_mask is added.
+        wisdom_mask = torch.where(input_ids == mask_id, 1, 0)
         return torch.stack([input_ids,
                             token_type_ids,
                             attention_mask,
-                            wisdom_mask], dim=1)
+                            wisdom_mask], dim=1).to(self.device)
 
-    @staticmethod
-    def build_wisdom_mask(input_ids: torch.Tensor, mask_id: int) -> torch.Tensor:
-        return torch.where(input_ids == mask_id, 1, 0)
+
+class YBuilder(TensorBuilder):
+
+    def __init__(self, device: torch.device):
+        self.device = device
+
+    def __call__(self, wisdom2sent: List[Tuple[str, str]], wisdoms: List[str]) -> torch.LongTensor:
+        """
+        :param wisdom2sent:
+        :param wisdoms:
+        :return: (N, )
+        """
+        return torch.LongTensor([
+            wisdoms.index(wisdom)
+            for wisdom in [wisdom for wisdom, _ in wisdom2sent]
+        ]).to(self.device)
+

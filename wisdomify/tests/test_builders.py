@@ -2,7 +2,7 @@ import unittest
 import torch
 from typing import Tuple, List
 from transformers import BertTokenizerFast
-from wisdomify.builders import Builder, BuilderAlpha, BuilderBeta
+from wisdomify.builders import TensorBuilder, BuilderAlpha, BuilderBeta
 from wisdomify.loaders import load_conf
 from wisdomify.classes import WISDOMS
 
@@ -28,18 +28,18 @@ class TestBuilder(unittest.TestCase):
         ]  # data to test.
 
     def test_build_wisdom2subwords_dim(self):
-        wisdom2subwords = Builder.build_wisdom2subwords(self.tokenizer, self.k, WISDOMS)  # should be (V,K)
+        wisdom2subwords = TensorBuilder.build_wisdom2subwords(self.tokenizer, self.k, WISDOMS)  # should be (V,K)
         self.assertEqual(len(WISDOMS), wisdom2subwords.shape[0])
         self.assertEqual(self.k, wisdom2subwords.shape[1])
 
     def test_build_wiskeys_dim(self):
         # this should be added someday.
-        wiskeys = Builder.build_wiskeys(self.tokenizer, WISDOMS)
+        wiskeys = TensorBuilder.build_wiskeys(self.tokenizer, WISDOMS)
         self.assertEqual(len(WISDOMS), wiskeys.shape[0])
         self.assertEqual(1, len(wiskeys.shape))  # should be a vector
 
     def test_build_y_dim(self):
-        y = Builder.build_y(self.get_wisdom2sent(), WISDOMS)  # should be (N,)
+        y = TensorBuilder.build_y(self.get_wisdom2sent(), WISDOMS)  # should be (N,)
         self.assertEqual(len(self.get_wisdom2sent()), y.shape[0])
         self.assertEqual(1, len(y.shape))  # should be a 1-dim vector
 

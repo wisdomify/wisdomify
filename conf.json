@@ -1,6 +1,6 @@
 {
   "versions": {
-    "_모델 버전": {
+    "_실험 버전": {
       "주의사항!": "추후 버전 추가에 따라 파라미터가 추가되면 해당 파라미터를 아래 설명 추가해주세요",
       "bert_model": "(Str)모델 트레이닝에 사용된 베이스 BERT model",
       "desc": "(Str)해당 모델 버전 간략한 설명, def로 트레이닝하는지, eg로 트레이닝하는지, 모두 이용해서 하는 지 적어주세요.",
@@ -12,61 +12,61 @@
       "repeat": "(Int)반복 횟수",
       "num_workers": "(Int)워커 개수 (해당 컴퓨터 사양에 맞춰 작성하세요. CPU의 경우 코어 개수이하여야합니다.)",
       "shuffle": "(Bool)셔플여부",
-      "train_ratio": "(Float, 0~1)트레이닝에 사용될 데이터 비율",
-      "val_ratio": "(Float, 0~1)validation에 사용될 데이터 비율",
-      "test_ratio": "(Float, 0~1)테스트에 사용될 데이터 비율"
+      "wisdoms": "(List[str]) - 검색할 속담 리스트"
     },
     "0": {
-      "bert_model": "beomi/kcbert-base",
       "desc": "[version_0]: The first minimal-viable-product of wisdomify",
+      "bert_model": "beomi/kcbert-base",
+      "rd_model": "RDAlpha",
+      "X_mode": "XBuilder",
+      "y_mode": "YBuilder",
       "data_version": "0.0.0",
-      "data_name": ["definition"],
+      "data_name": "definition",
       "k": 11,
       "lr": 0.00001,
-      "max_epochs": 20,
+      "max_epochs": 60,
       "batch_size": 40,
-      "repeat": 20,
       "num_workers": 0,
-      "shuffle": true
+      "shuffle": true,
+      "wisdoms": [
+        "가는 날이 장날",
+        "갈수록 태산",
+        "꿩 대신 닭",
+        "등잔 밑이 어둡다",
+        "소문난 잔치에 먹을 것 없다",
+        "핑계 없는 무덤 없다",
+        "고래 싸움에 새우 등 터진다",
+        "서당개 삼 년이면 풍월을 읊는다",
+        "원숭이도 나무에서 떨어진다",
+        "산 넘어 산"
+      ]
     },
     "1": {
-      "bert_model": "beomi/kcbert-base",
       "desc": "[version_1]: Trained on a very tiny examples",
-      "data_version": "0.0.0",
-      "data_name": ["example"],
-      "k": 11,
-      "lr": 0.00001,
-      "max_epochs": 20,
-      "batch_size": 40,
-      "repeat": 30,
-      "num_workers": 0,
-      "shuffle": true
-    },
-     "4": {
       "bert_model": "beomi/kcbert-base",
-      "desc": "[version_4]: Two-stage model.",
+      "rd_model": "RDAlpha",
+      "X_mode": "XBuilder",
+      "y_mode": "YBuilder",
       "data_version": "0.0.0",
-      "data_name": ["example"],
+      "data_name": "example",
       "k": 11,
       "lr": 0.00001,
-      "max_epochs": 20,
+      "max_epochs": 60,
       "batch_size": 40,
-      "repeat": 30,
       "num_workers": 0,
-      "shuffle": true
-    },
-    "5": {
-      "bert_model": "beomi/kcbert-base",
-      "desc": "[version_4]: Two-stage model.",
-      "data_version": "0.0.0",
-      "data_name": ["definition"],
-      "k": 11,
-      "lr": 0.00001,
-      "max_epochs": 20,
-      "batch_size": 40,
-      "repeat": 30,
-      "num_workers": 0,
-      "shuffle": true
+      "shuffle": true,
+      "wisdoms": [
+        "가는 날이 장날",
+        "갈수록 태산",
+        "꿩 대신 닭",
+        "등잔 밑이 어둡다",
+        "소문난 잔치에 먹을 것 없다",
+        "핑계 없는 무덤 없다",
+        "고래 싸움에 새우 등 터진다",
+        "서당개 삼 년이면 풍월을 읊는다",
+        "원숭이도 나무에서 떨어진다",
+        "산 넘어 산"
+      ]
     }
   }
 }

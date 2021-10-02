@@ -1,6 +1,6 @@
 from transformers import AutoTokenizer
 from wisdomify.loaders import load_conf
-from wisdomify.builders import Builder
+from wisdomify.builders import TensorBuilder
 from wisdomify.classes import WISDOMS
 
 
@@ -11,7 +11,7 @@ def main():
     for val in range(50):
         k += 1
         try:
-            wisdom2subwords = Builder.build_wisdom2subwords(tokenizer, k, WISDOMS)
+            wisdom2subwords = TensorBuilder.build_wisdom2subwords(tokenizer, k, WISDOMS)
         except ValueError as ve:
             print(ve, k)
         else:

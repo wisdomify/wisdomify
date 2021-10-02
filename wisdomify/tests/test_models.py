@@ -2,8 +2,8 @@ import unittest
 import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForMaskedLM
-from wisdomify.builders import build_vocab2subwords, build_X, build_y
-from wisdomify.models import RD
+from wisdomify.builders import build_vocab2subwords, build_X_with_wisdom_mask, build_y
+from wisdomify.rds import RD
 from wisdomify.loaders import load_conf
 from wisdomify.classes import WISDOMS
 from wisdomify.datasets import WisdomDataset
@@ -31,7 +31,7 @@ class TestRD(unittest.TestCase):
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
         wisdom2sent = cls.get_base_data_set()
         vocab2subwords = build_vocab2subwords(tokenizer, k=k, vocab=WISDOMS)
-        X = build_X(wisdom2sent, tokenizer, k)
+        X = build_X_with_wisdom_mask(wisdom2sent, tokenizer, k)
         y = build_y(wisdom2sent, WISDOMS)
         cls.rd = RD(bert_mlm, vocab2subwords, k=k, lr=lr)
         cls.S = tokenizer.vocab_size
