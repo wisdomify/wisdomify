@@ -63,7 +63,7 @@ class Builder:
         return input_ids.squeeze()  # (W, 1) -> (W,)
 
 
-class BuilderZero(Builder):
+class BuilderAlpha(Builder):
     @staticmethod
     def build_X(wisdom2sent: List[Tuple[str, str]], tokenizer: BertTokenizerFast, k: int) -> torch.Tensor:
         """
@@ -92,7 +92,7 @@ class BuilderZero(Builder):
                             encodings['attention_mask']], dim=1)
 
 
-class BuilderOne(Builder):
+class BuilderBeta(Builder):
     @staticmethod
     def build_X(wisdom2sent: List[Tuple[str, str]], tokenizer: BertTokenizerFast, k: int) -> torch.Tensor:
         """
@@ -122,7 +122,7 @@ class BuilderOne(Builder):
         token_type_ids: torch.Tensor = encodings['token_type_ids']
         attention_mask: torch.Tensor = encodings['attention_mask']
         # another dimension is added.
-        wisdom_mask: torch.Tensor = BuilderOne.build_wisdom_mask(input_ids, mask_id)
+        wisdom_mask: torch.Tensor = BuilderBeta.build_wisdom_mask(input_ids, mask_id)
 
         return torch.stack([input_ids,
                             token_type_ids,

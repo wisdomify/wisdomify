@@ -1,7 +1,7 @@
 
 from wisdomify.loaders import load_conf
 from transformers import AutoTokenizer
-from wisdomify.vocab import VOCAB
+from wisdomify.classes import WISDOMS
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
     # apparently, I should access the vocab size by len(tokenizer), not tokenizer.vocab_size
     # print(tokenizer.vocab_size)
     print(len(tokenizer))
-    tokenizer.add_tokens(VOCAB)
+    tokenizer.add_tokens(WISDOMS)
     print(len(tokenizer))
     # print(tokenizer.vocab_size)
 

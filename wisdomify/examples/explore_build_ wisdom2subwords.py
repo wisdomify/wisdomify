@@ -1,7 +1,7 @@
 
 from wisdomify.builders import Builder
 from wisdomify.loaders import load_conf
-from wisdomify.vocab import VOCAB
+from wisdomify.classes import WISDOMS
 from transformers import AutoTokenizer
 from pprint import pprint
 
@@ -11,8 +11,8 @@ def main():
     bert_model = conf['bert_model']
     k = conf['k']
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
-    tokenizer.add_tokens(new_tokens=VOCAB)  # this is the expected input coming in.
-    wisdom2subwords = Builder.build_wisdom2subwords(tokenizer, k, VOCAB)
+    tokenizer.add_tokens(new_tokens=WISDOMS)  # this is the expected input coming in.
+    wisdom2subwords = Builder.build_wisdom2subwords(tokenizer, k, WISDOMS)
     decoded = [
         [tokenizer.decode(idx) for idx in row]
         for row in wisdom2subwords.tolist()

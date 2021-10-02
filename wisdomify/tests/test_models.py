@@ -5,7 +5,7 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM
 from wisdomify.builders import build_vocab2subwords, build_X, build_y
 from wisdomify.models import RD
 from wisdomify.loaders import load_conf
-from wisdomify.vocab import VOCAB
+from wisdomify.classes import WISDOMS
 from wisdomify.datasets import WisdomDataset
 
 
@@ -30,9 +30,9 @@ class TestRD(unittest.TestCase):
         bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
         wisdom2sent = cls.get_base_data_set()
-        vocab2subwords = build_vocab2subwords(tokenizer, k=k, vocab=VOCAB)
+        vocab2subwords = build_vocab2subwords(tokenizer, k=k, vocab=WISDOMS)
         X = build_X(wisdom2sent, tokenizer, k)
-        y = build_y(wisdom2sent, VOCAB)
+        y = build_y(wisdom2sent, WISDOMS)
         cls.rd = RD(bert_mlm, vocab2subwords, k=k, lr=lr)
         cls.S = tokenizer.vocab_size
         # load a single batch
@@ -41,7 +41,7 @@ class TestRD(unittest.TestCase):
         X, y = next(iter(loader))  # just get the first batch.
         cls.X = X
         cls.y = y
-        cls.V = len(VOCAB)
+        cls.V = len(WISDOMS)
 
     def test_forward_dim(self):
         # (N, 3, L) -> (N, K, |S|)

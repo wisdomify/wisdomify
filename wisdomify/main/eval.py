@@ -4,7 +4,7 @@ import argparse
 from wisdomify.datasets import WisdomDataModule
 from wisdomify.loaders import load_conf
 
-from wisdomify.vocab import VOCAB
+from wisdomify.classes import WISDOMS
 from wisdomify.models import Wisdomifier
 
 
@@ -38,7 +38,7 @@ def main():
                                    data_name=data_name,
                                    k=k,
                                    device=device,
-                                   vocab=VOCAB,
+                                   vocab=WISDOMS,
                                    tokenizer=wisdomifier.tokenizer,
                                    batch_size=batch_size,
                                    num_workers=num_workers,

@@ -9,7 +9,7 @@ from wisdomify.models import RD
 from wisdomify.builders import build_vocab2subwords
 from wisdomify.paths import DATA_DIR
 from wisdomify.utils import TrainerFileSupport
-from wisdomify.vocab import VOCAB
+from wisdomify.classes import WISDOMS
 from wisdomify.datasets import WisdomDataModule
 
 
@@ -48,7 +48,7 @@ def main():
     # --- instantiate the model --- #
     kcbert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
-    vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
+    vocab2subwords = build_vocab2subwords(tokenizer, k, WISDOMS).to(device)
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd
     rd.to(device)
     # --- setup a dataloader --- #
@@ -56,7 +56,7 @@ def main():
                                    data_name=data_name,
                                    k=k,
                                    device=device,
-                                   vocab=VOCAB,
+                                   vocab=WISDOMS,
                                    tokenizer=tokenizer,
                                    batch_size=batch_size,
                                    num_workers=num_workers,

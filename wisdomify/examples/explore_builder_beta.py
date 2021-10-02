@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from wisdomify.builders import BuilderOne
+from wisdomify.builders import BuilderBeta
 from wisdomify.loaders import load_conf
 from transformers import AutoTokenizer
 
@@ -19,7 +19,7 @@ def main():
     bert_model: str = selected_ver['bert_model']
     k: int = selected_ver['k']
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
-    X = BuilderOne.build_X(wisdom2sent=WISDOM2SENT, tokenizer=tokenizer, k=k)
+    X = BuilderBeta.build_X(wisdom2sent=WISDOM2SENT, tokenizer=tokenizer, k=k)
     print(X)
 
 

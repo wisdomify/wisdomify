@@ -4,6 +4,7 @@ from transformers.models.bert.modeling_bert import BertEmbeddings
 
 
 def main():
+    # 목표: 한 토큰에 대응하는... 임베딩 벡터가져오기!
     config = BertConfig('beomi/kcbert-base')
     bertEmbedding = BertEmbeddings(config)
     X = torch.Tensor([[[2, 4, 4, 4, 4, 4, 4, 4, 4, 4,

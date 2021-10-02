@@ -1,8 +1,6 @@
 import shutil
-
 from os import path
 from os.path import join
-
 from pytorch_lightning.loggers import TensorBoardLogger
 
 

@@ -6,7 +6,7 @@ from wisdomify.builders import build_vocab2subwords
 from wisdomify.loaders import load_conf
 from wisdomify.models import RD, Wisdomifier
 from wisdomify.paths import WISDOMIFIER_HPARAMS_YAML, WISDOMIFIER_CKPT
-from wisdomify.vocab import VOCAB
+from wisdomify.classes import WISDOMS
 
 
 class WisdomifierAPI:
