@@ -5,7 +5,7 @@ import argparse
 import torch
 
 from wisdomify.loaders import load_device
-from wisdomify.models import Wisdomifier
+from wisdomify.wisdomifier import Wisdomifier
 
 
 def main():

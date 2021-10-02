@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, render_template_string
 from wisdomify.loaders import load_device
-from wisdomify.models import Wisdomifier
+from wisdomify.wisdomifier import Wisdomifier
 
 
 class WisdomifierAPI:

@@ -15,7 +15,7 @@
       "wisdoms": "(List[str]) - 검색할 속담 리스트"
     },
     "0": {
-      "desc": "[version_0]: The first minimal-viable-product of wisdomify",
+      "desc": "[version_0]: The first minimal-viable-product of wisdomify. S_wisdom = S_wisdom_literal",
       "bert_model": "beomi/kcbert-base",
       "rd_model": "RDAlpha",
       "X_mode": "XBuilder",
@@ -42,7 +42,34 @@
       ]
     },
     "1": {
-      "desc": "[version_1]: Trained on a very tiny examples",
+      "desc": "[version_1]: Trained on a very few examples. S_wisdom = S_wisdom_literal",
+      "bert_model": "beomi/kcbert-base",
+      "rd_model": "RDAlpha",
+      "X_mode": "XBuilder",
+      "y_mode": "YBuilder",
+      "data_version": "0.0.0",
+      "data_name": "example",
+      "k": 11,
+      "lr": 0.00001,
+      "max_epochs": 60,
+      "batch_size": 40,
+      "num_workers": 0,
+      "shuffle": true,
+      "wisdoms": [
+        "가는 날이 장날",
+        "갈수록 태산",
+        "꿩 대신 닭",
+        "등잔 밑이 어둡다",
+        "소문난 잔치에 먹을 것 없다",
+        "핑계 없는 무덤 없다",
+        "고래 싸움에 새우 등 터진다",
+        "서당개 삼 년이면 풍월을 읊는다",
+        "원숭이도 나무에서 떨어진다",
+        "산 넘어 산"
+      ]
+    },
+    "2": {
+      "desc": "[version_2]: Trained on a very tiny examples",
       "bert_model": "beomi/kcbert-base",
       "rd_model": "RDAlpha",
       "X_mode": "XBuilder",

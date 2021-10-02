@@ -41,14 +41,29 @@ class RD(pl.LightningModule):
         """
         raise NotImplementedError("An RD class must compute S_wisdom")
 
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor],
-                      batch_idx: int) -> dict:
-        """
-        :param batch: A tuple of X, y.
-        :param batch_idx: the index of the batch
-        :return loss: (1,); the train_loss for this batch
-        """
-        raise NotImplementedError
+    def P_wisdom(self, X: torch.Tensor) -> torch.Tensor:
+        S_vocab = self.forward(X)
+        S_wisdom = self.S_wisdom(S_vocab)
+        P_wisdom = F.softmax(S_wisdom, dim=1)
+        return P_wisdom
+
+    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
+        X, y = batch
+        H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
+        S_wisdom = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
+        loss = F.cross_entropy(S_wisdom, y)  # (N, |W|), (N,) -> (N,)
+        loss = loss.sum()  # (N,) -> (1,)
+        P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)
+        self.rd_metric.update(preds=P_wisdom, targets=y)
+        median, var, top1, top10, top100 = self.rd_metric.compute()
+        return {
+            'loss': loss,
+            'median': median,
+            'var': var,
+            'top1': top1,
+            'top10': top10,
+            'top100': top100
+        }
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:
         """
@@ -107,48 +122,11 @@ class RD(pl.LightningModule):
         # TODO: 나중에 구현하기. (이렇게 하면 워닝은 안뜨겠지)
         pass
 
-
-class RDAlpha(RD):
-    """
-    The first prototype.
-    S_wisdom = S_wisdom_literal
-    trained on: wisdom2def
-    """
-    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
-        H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, H) -> (N, K, H)
-        S_wisdom = self.S_wisdom_literal(H_k)  # (N, K, H) -> (N, |W|)
-        return S_wisdom
-
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor],
-                      batch_idx: int) -> dict:
-        """
-        :param batch: A tuple of X, y, subword_ids; ((N, 3, L), (N,),
-        :param batch_idx: the index of the batch
-        :return loss: (1,); the train_loss for this batch
-        """
-        X, y = batch
-        H_all = self.forward(X)  # (N, 3, L) -> (N, K, |V|)
-        S_wisdom = self.S_wisdom(H_all)  # (N, K, |V|) -> (N, |W|)
-        loss = F.cross_entropy(S_wisdom, y).sum()  # (N, |V|) -> (N,) -> scalar
-        P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)
-        self.rd_metric.update(preds=P_wisdom, targets=y)
-        median, var, top1, top10, top100 = self.rd_metric.compute()
-        return {
-            'loss': loss,
-            'median': median,
-            'var': var,
-            'top1': top1,
-            'top10': top10,
-            'top100': top100
-        }
-
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor],
                   batch_idx: int, *args, **kwargs):
         self.rd_metric.reset()
         X, y = batch
-        S_vocab = self.forward(X)
-        S_wisdom = self.S_wisdom_literal(S_vocab)
-        P_wisdom = F.softmax(S_wisdom, dim=1)
+        P_wisdom = self.P_wisdom(X)
         self.rd_metric.update(preds=P_wisdom, targets=y)
         print("batch:{}".format(batch_idx), self.rd_metric.compute())
 
@@ -161,23 +139,29 @@ class RDAlpha(RD):
         return torch.optim.AdamW(self.parameters(), lr=self.hparams['lr'])
 
 
+class RDAlpha(RD):
+    """
+    The first prototype.
+    S_wisdom = S_wisdom_literal
+    trained on: wisdom2def
+    """
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
+        H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, H) -> (N, K, H)
+        S_wisdom = self.S_wisdom_literal(H_k)  # (N, K, H) -> (N, |W|)
+        return S_wisdom
+
+
 class RDBeta(RD):
     """
     The second prototype.
     S_wisdom = S_wisdom_literal + S_wisdom_figurative
     trained on: wisdom2def
     """
-    def __init__(self, bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor,
+    def __init__(self, bert_mlm: BertForMaskedLM,
+                 wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor,
                  k: int, lr: float, device: torch.device):
         super().__init__(bert_mlm, wisdom2subwords, k, lr, device)
-        self.wiskeys = wiskeys
-
-    def W_embed(self) -> torch.Tensor:
-        """
-        returns the embedding vectors of  all the wisdoms
-        return: W_embed (|W|, H)
-        """
-        return self.bert_mlm.bert.embeddings.word_embeddings(self.wiskeys)
+        self.wiskeys = wiskeys   # (|W|,)
 
     def S_wisdom_figurative(self, H_cls: torch.Tensor, H_k: torch.Tensor) -> torch.Tensor:
         """
@@ -186,7 +170,7 @@ class RDBeta(RD):
         return: S_wisdom_figurative (N, |W|)
         """
         # 속담의 임베딩은 여기에 있습니다!
-        W_embed = self.W_embed()  # (|W|,) -> (|W|, H)
+        W_embed = self.bert_mlm.bert.embeddings.word_embeddings(self.wiskeys)  # (|W|,) -> (|W|, H)
 
         # TODO 다음을 계산해주세요!
         S_wisdom_figurative: torch.Tensor = ...
@@ -197,14 +181,6 @@ class RDBeta(RD):
         H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, H) -> (N, K, H)
         S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_cls, H_k)  # (N, |W|) + (N, |W|) -> (N, |W|)
         return S_wisdom
-
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
-        X, y = batch
-        H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
-        S_wisdom = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
-        loss = F.cross_entropy(S_wisdom, y)  # (N, |W|), (N,) -> (N,)
-        loss = loss.sum()  # (N,) -> (1,)
-        return loss
 
 
 class RDGamma(RD):

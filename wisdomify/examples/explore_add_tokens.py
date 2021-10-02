@@ -1,6 +1,6 @@
 
 from wisdomify.utils import load_conf_json
-from transformers import AutoTokenizer
+from transformers import BertTokenizer
 
 
 def main():
@@ -8,7 +8,7 @@ def main():
     bert_model = conf['bert_model']
     k = conf['k']
     wisdoms = conf['wisdoms']
-    tokenizer = AutoTokenizer.from_pretrained(bert_model)
+    tokenizer = BertTokenizer.from_pretrained(bert_model)
     # why does the vocab size not increase after adding new tokens?
     # https://github.com/huggingface/transformers/issues/12632
     # apparently, I should access the vocab size by len(tokenizer), not tokenizer.vocab_size

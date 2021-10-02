@@ -12,7 +12,7 @@ def main():
     device = load_device()
     args = parser.parse_args()
     ver: str = args.ver
-    exp = Experiment.from_pretrained(ver, device)
+    exp = Experiment.load(ver, device)
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          # do not save checkpoints to a file.
                          logger=False)

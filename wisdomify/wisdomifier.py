@@ -1,5 +1,4 @@
 from typing import List, Tuple
-from torch.nn import functional as F
 from wisdomify.builders import XBuilder
 from wisdomify.rds import RD
 from transformers import BertTokenizer
@@ -15,7 +14,7 @@ class Wisdomifier:
 
     @staticmethod
     def from_pretrained(ver: str, device) -> 'Wisdomifier':
-        exp = Experiment.from_pretrained(ver, device)
+        exp = Experiment.load(ver, device)
         exp.rd.eval()
         wisdomifier = Wisdomifier(exp.rd, exp.tokenizer, exp.data_module.X_builder,
                                   exp.config['wisdoms'])
@@ -26,9 +25,7 @@ class Wisdomifier:
         wisdom2sent = [("", desc) for desc in sents]
         X = self.X_builder(wisdom2sent)
         # get H_all for this.
-        H_all = self.rd.forward(X)
-        S_wisdom = self.rd.S_wisdom(H_all)
-        P_wisdom = F.softmax(S_wisdom, dim=1)
+        P_wisdom = self.rd.P_wisdom(X)
         results = list()
         for S_word_prob in P_wisdom.tolist():
             wisdom2prob = [

@@ -2,7 +2,7 @@
 from wisdomify.builders import Wisdom2SubWordsBuilder
 from wisdomify.loaders import load_device
 from wisdomify.utils import load_conf_json
-from transformers import AutoTokenizer
+from transformers import BertTokenizer
 
 
 def main():
@@ -11,7 +11,7 @@ def main():
     bert_model = conf['bert_model']
     k = conf['k']
     wisdoms = conf['wisdoms']
-    tokenizer = AutoTokenizer.from_pretrained(bert_model)
+    tokenizer = BertTokenizer.from_pretrained(bert_model)
     tokenizer.add_tokens(new_tokens=wisdoms)  # this is the expected input coming in.
     wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
     decoded = [

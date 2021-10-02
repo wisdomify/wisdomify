@@ -3,11 +3,9 @@ import torch
 import argparse
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
-
 from wisdomify.loaders import load_device
-from wisdomify.models import Experiment
-from wisdomify.paths import DATA_DIR
-from wisdomify.utils import TrainerFileSupport
+from wisdomify.wisdomifier import Experiment
+from wisdomify.paths import DATA_DIR, WISDOMIFIER_TOKENIZER_DIR
 
 
 def main():
@@ -21,23 +19,18 @@ def main():
     args = parser.parse_args()
     ver: str = args.ver
 
-    # --- load an experiment instance --- #
+    # --- build an experiment instance --- #
     exp = Experiment.build(ver, device)
     model_name = "wisdomifier"
 
     # --- init callbacks --- #
     checkpoint_callback = ModelCheckpoint(
         filename=model_name,
-        verbose=True,
+        verbose=True
     )
     # --- instantiate the logger --- #
     logger = TensorBoardLogger(save_dir=DATA_DIR,
                                name="lightning_logs")
-
-    # --- version check logic --- #
-    trainerFileSupporter = TrainerFileSupport(version=ver,
-                                              logger=logger,
-                                              data_dir=DATA_DIR)
 
     # --- instantiate the trainer --- #
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
@@ -48,7 +41,9 @@ def main():
 
     # --- start training --- #
     trainer.fit(model=exp.rd, datamodule=exp.data_module)
-    trainerFileSupporter.save_training_result()
+
+    # --- save the tokenizer --- #
+    exp.tokenizer.save_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))
 
 
 if __name__ == '__main__':
