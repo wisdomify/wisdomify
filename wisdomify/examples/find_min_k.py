@@ -1,24 +1,25 @@
 from transformers import AutoTokenizer
-from wisdomify.loaders import load_conf
-from wisdomify.builders import TensorBuilder
-from wisdomify.classes import WISDOMS
+from wisdomify.loaders import load_conf_json, load_device
+from wisdomify.builders import Wisdom2SubWordsBuilder
 
 
 def main():
-    bert_model = load_conf()['versions']['0']['bert_model']
+    conf = load_conf_json()['versions']['0']
+    device = load_device()
+    bert_model = conf['bert_model']
+    wisdoms = conf['wisdoms']
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
     k = 0
     for val in range(50):
         k += 1
         try:
-            wisdom2subwords = TensorBuilder.build_wisdom2subwords(tokenizer, k, WISDOMS)
+            wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
         except ValueError as ve:
             print(ve, k)
         else:
             print("minimum k:", k)
             print(wisdom2subwords)
             break
-    # the minimum possible k is 11.
 
 
 if __name__ == '__main__':

@@ -3,6 +3,8 @@ import torch
 import argparse
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
+
+from wisdomify.loaders import load_device
 from wisdomify.models import Experiment
 from wisdomify.paths import DATA_DIR
 from wisdomify.utils import TrainerFileSupport
@@ -10,7 +12,7 @@ from wisdomify.utils import TrainerFileSupport
 
 def main():
     # --- setup the device --- #
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = load_device()
 
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()

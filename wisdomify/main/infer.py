@@ -3,11 +3,13 @@ load a pre-trained wisdomify, and play with it.
 """
 import argparse
 import torch
+
+from wisdomify.loaders import load_device
 from wisdomify.models import Wisdomifier
 
 
 def main():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = load_device()
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
                         default="0")

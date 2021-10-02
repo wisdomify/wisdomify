@@ -1,11 +1,11 @@
-import torch
 from flask import Flask, jsonify, request, render_template_string
+from wisdomify.loaders import load_device
 from wisdomify.models import Wisdomifier
 
 
 class WisdomifierAPI:
     def __init__(self, ver: str):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = load_device()
         self.wisdomifier = Wisdomifier.from_pretrained(ver, device)
         print(f'wisdomifier loaded -> ver: {ver}')
 

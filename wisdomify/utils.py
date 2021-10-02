@@ -3,19 +3,12 @@ from os import path
 from os.path import join
 from pytorch_lightning.loggers import TensorBoardLogger
 from wisdomify.builders import Wisdom2SubWordsBuilder, XBuilder, XWithWisdomMaskBuilder, YBuilder
-from wisdomify.paths import CONF_JSON
 from wisdomify.rds import RD, RDAlpha, RDBeta
 from wisdomify.datasets import WisdomDataModule
 from wisdomify.paths import WISDOMIFIER_CKPT
+from wisdomify.loaders import load_conf_json
 from transformers import BertTokenizer, AutoModelForMaskedLM, AutoTokenizer, AutoConfig
 import torch
-import json
-
-
-# --- loaders --- #
-def load_conf_json() -> dict:
-    with open(CONF_JSON, 'r') as fh:
-        return json.loads(fh.read())
 
 
 # --- an experiment --- #

@@ -1,15 +1,15 @@
 import pytorch_lightning as pl
 import torch
 import argparse
+from wisdomify.loaders import load_device
 from wisdomify.utils import Experiment
 
 
 def main():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
                         default="0")
-
+    device = load_device()
     args = parser.parse_args()
     ver: str = args.ver
     exp = Experiment.from_pretrained(ver, device)
