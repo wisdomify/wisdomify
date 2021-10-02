@@ -11,7 +11,7 @@ from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
 
 from wisdomify.builders import build_X, build_y
-from wisdomify.utils import get_wandb_artifact, WandBSupport
+from wisdomify.utils import WandBSupport
 
 
 class WisdomDataset(Dataset):

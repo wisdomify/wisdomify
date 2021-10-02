@@ -1,22 +1,15 @@
-import pytorch_lightning as pl
 import torch
 import argparse
 
-import wandb
 from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger
-from transformers import AutoModelForMaskedLM, AutoTokenizer, BertForMaskedLM
 from wisdomify.loaders import load_conf
 from wisdomify.models import RD
 from wisdomify.builders import build_vocab2subwords
 from wisdomify.paths import DATA_DIR
-from wisdomify.utils import TrainerFileSupport, WandBSupport
+from wisdomify.utils import WandBSupport
 from wisdomify.vocab import VOCAB
 from wisdomify.datasets import WisdomDataModule
-from pytorch_lightning.loggers import WandbLogger  # newline 1
 from pytorch_lightning import Trainer
-
-import os
 
 
 def main():
@@ -38,7 +31,7 @@ def main():
         raise NotImplementedError(f"Cannot find version {ver}.\nWrite your setting and version properly on conf.json")
 
     selected_ver = vers[ver]
-    bert_model: str = selected_ver['bert_model']
+
     k: int = selected_ver['k']
     lr: float = selected_ver['lr']
     max_epochs: int = selected_ver['max_epochs']
@@ -53,17 +46,24 @@ def main():
     dtype: str = selected_ver['dtype'][0]
     model_name = "wisdomifier"
 
-    mlm_name: str = selected_ver['mlm_name']
-    mlm_ver: str = selected_ver['mlm_ver']
-    tokenizer_name: str = selected_ver['tokenizer_name']
-    tokenizer_ver: str = selected_ver['tokenizer_ver']
+    desc: str = selected_ver['desc']
+
+    in_mlm_name: str = selected_ver['model']['load']['mlm_name']
+    in_mlm_ver: str = selected_ver['model']['load']['mlm_ver']
+    in_tokenizer_name: str = selected_ver['model']['load']['tokenizer_name']
+    in_tokenizer_ver: str = selected_ver['model']['load']['tokenizer_ver']
+
+    out_mlm_name: str = selected_ver['model']['save']['mlm_name']
+    out_mlm_desc: str = selected_ver['model']['save']['mlm_desc']
+    out_tokenizer_name: str = selected_ver['model']['save']['tokenizer_name']
+    out_tokenizer_desc: str = selected_ver['model']['save']['tokenizer_desc']
 
     # --- initialise WandB object --- #
-    wandb_support = WandBSupport(job_type=job_name)
+    wandb_support = WandBSupport(job_type=job_name, notes=desc)
 
     # --- instantiate the model --- #
-    kcbert_mlm = wandb_support.models.get_mlm(name=mlm_name, ver=mlm_ver)
-    tokenizer = wandb_support.models.get_tokenizer(name=tokenizer_name, ver=tokenizer_ver)
+    kcbert_mlm = wandb_support.models.get_mlm(name=in_mlm_name, ver=in_mlm_ver)
+    tokenizer = wandb_support.models.get_tokenizer(name=in_tokenizer_name, ver=in_tokenizer_ver)
 
     vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
     rd = RD(kcbert_mlm, vocab2subwords, k, lr)  # mono rd
@@ -89,29 +89,29 @@ def main():
         verbose=True,
     )
 
-    # --- instantiate the trainer --- #
+    # --- instantiate the training logger --- #
     wandb_logger = wandb_support.get_model_logger('training_log')
 
-    trainer = pl.Trainer(gpus=torch.cuda.device_count(),
-                         max_epochs=max_epochs,
-                         callbacks=[checkpoint_callback],
-                         default_root_dir=DATA_DIR,
-                         logger=wandb_logger)
+    # --- instantiate the trainer --- #
+    trainer = Trainer(gpus=torch.cuda.device_count(),
+                      max_epochs=max_epochs,
+                      callbacks=[checkpoint_callback],
+                      default_root_dir=DATA_DIR,
+                      logger=wandb_logger)
 
     # --- start training --- #
     trainer.fit(model=rd, datamodule=data_module)
 
+    # --- saving and logging model --- #
     wandb_support.models.push_mlm(model=rd.bert_mlm,
-                                  name='',
-                                  desc='')
+                                  name=out_mlm_name,
+                                  desc=out_mlm_desc)
+
     wandb_support.models.push_tokenizer(model=tokenizer,
-                                        name='',
-                                        desc='')
+                                        name=out_tokenizer_name,
+                                        desc=out_tokenizer_desc)
 
-    tokenizer_path = os.path.join(DATA_DIR, f'lightning_logs/version_{ver}/checkpoints/')
-    tokenizer.save_pretrained(tokenizer_path)
-
-    wandb.finish()
+    wandb_support.push()
 
     # TODO: validate every epoch and test model after training
     '''

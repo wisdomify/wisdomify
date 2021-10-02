@@ -11,24 +11,20 @@ from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 from transformers import AutoModelForMaskedLM, AutoTokenizer, BertForMaskedLM, BertTokenizer
 
 
-def get_wandb_artifact(name: str, ver: str, dtype: str):
-    with wandb.init() as run:
-        artifact = run.use_artifact(f'wisdomify/wisdomify/{name}:{ver}', type=dtype)
-        artifact_dir = artifact.download()
-
-        return artifact_dir
-
-
 class WandBSupport:
     def __init__(self,
-                 job_type: str):
+                 job_type: str,
+                 notes: str):
         # initialise wandb connection object.
         self.wandb_obj = wandb.init(
             entity='wisdomify',
-            project='wisdomfiy',
-            job_type=job_type
+            project='wisdomify',
+            job_type=job_type,
+            notes=notes
         )
         self.models = WandBModels(self)
+
+        self.tmp_files = list()
 
     def _get_artifact(self,
                       name: str,
@@ -75,8 +71,8 @@ class WandBSupport:
         """
         raise NotImplementedError
 
-    def add_artifact(self,
-                     artifact: wandb.Artifact,
+    @staticmethod
+    def add_artifact(artifact: wandb.Artifact,
                      file_path: str):
         # This function is used when user trying to add already saved file directly with file path
         return artifact.add_file(file_path)
@@ -86,9 +82,12 @@ class WandBSupport:
         # this function returns model logger
         return WandbLogger(project='wisdomify', entity='wisdomify', name=log_name)
 
-    @staticmethod
-    def push() -> None:
+    def push(self) -> None:
+        self.wandb_obj.finish()
         wandb.finish()
+
+        for file in self.tmp_files:
+            shutil.rmtree(file)
 
 
 class WandBModels:
@@ -99,38 +98,42 @@ class WandBModels:
                 name: str,
                 ver: str = 'latest'):
         dl_info = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver)
-        model_dir = os.path.join(dl_info['download_dir'], dl_info['download_files'][0])
 
-        return AutoModelForMaskedLM.from_pretrained(model_dir)
+        return AutoModelForMaskedLM.from_pretrained(dl_info['download_dir'])
 
     def push_mlm(self,
                  model: BertForMaskedLM,
                  name: str,
                  desc: str):
-        mlm_artifact = self.wandb_support.create_artifact(name=name, dtype='model', desc=desc)
+        file_name = f'mlm_{name}'
+        mlm_artifact = self.wandb_support.create_artifact(name=file_name, dtype='model', desc=desc)
 
-        with mlm_artifact.new_file(f'mlm_{name}', mode="wb") as file:
-            model.save_pretrained(file)
+        model.save_pretrained(file_name)
+        mlm_artifact.add_dir(file_name)
+        wandb.save(file_name)
 
+        self.wandb_support.tmp_files.append(file_name)
         self.wandb_support.wandb_obj.log_artifact(mlm_artifact)
 
     def get_tokenizer(self,
                       name: str,
                       ver: str = 'latest'):
         dl_info = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver)
-        model_dir = os.path.join(dl_info['download_dir'], dl_info['download_files'][0])
 
-        return AutoTokenizer.from_pretrained(model_dir)
+        return AutoTokenizer.from_pretrained(dl_info['download_dir'])
 
     def push_tokenizer(self,
                        model: BertTokenizer,
                        name: str,
                        desc: str):
-        tokenizer_artifact = self.wandb_support.create_artifact(name=name, dtype='model', desc=desc)
+        file_name = f'tokenizer_{name}'
+        tokenizer_artifact = self.wandb_support.create_artifact(name=file_name, dtype='model', desc=desc)
 
-        with tokenizer_artifact.new_file(f'tokenizer_{name}', mode="wb") as file:
-            model.save_pretrained(file)
+        model.save_pretrained(file_name)
+        tokenizer_artifact.add_dir(file_name)
+        wandb.save(file_name)
 
+        self.wandb_support.tmp_files.append(file_name)
         self.wandb_support.wandb_obj.log_artifact(tokenizer_artifact)
 
 

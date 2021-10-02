@@ -2,8 +2,21 @@
   "versions": {
     "_모델 버전": {
       "주의사항!": "추후 버전 추가에 따라 파라미터가 추가되면 해당 파라미터를 아래 설명 추가해주세요",
-      "bert_model": "(Str)모델 트레이닝에 사용된 베이스 BERT model",
       "desc": "(Str)해당 모델 버전 간략한 설명, def로 트레이닝하는지, eg로 트레이닝하는지, 모두 이용해서 하는 지 적어주세요.",
+      "model": {
+        "load": {
+          "mlm_name": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 이름을 적어주세요.",
+          "mlm_ver": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 버전을 적어주세요. (default: latest)",
+          "tokenizer_name": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
+          "tokenizer_ver": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 버전을 적어주세요. (default: latest)"
+        },
+        "save": {
+          "mlm_name": "(Str) WandB에 저장할 BERT mlm 아티펙트의 이름을 적어주세요. (default: 로드된 아티펙트와 동일한 이름.)",
+          "mlm_desc": "(Str) WandB에 저장할 BERT mlm 아티펙트의 설명을 적어주세요. (default: None)",
+          "tokenizer_name": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 이름을 적어주세요. (default: 로드된 아티펙트와 동일한 이름)",
+          "tokenizer_desc": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 설명을 적어주세요. (default: None)"
+        }
+      },
       "data_version": "(Str)해당 모델 트레이닝에 사용된 데이터 버전",
       "data_name": "(Str)해당 모델 트레이닝에 사용된 데이터 이름",
       "dtype": "(Str)해당 모델 트레이닝에 사용된 데이터의 타입 (definition, example)",
@@ -19,8 +32,21 @@
       "test_ratio": "(Float, 0~1)테스트에 사용될 데이터 비율"
     },
     "0": {
-      "bert_model": "beomi/kcbert-base",
-      "desc": "[version_0]: The first minimal-viable-product of wisdomify",
+      "desc": "[version_0]: The first minimal-viable-produ ct of wisdomify",
+      "model": {
+        "load": {
+          "mlm_name": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 이름을 적어주세요.",
+          "mlm_ver": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 버전을 적어주세요. (default: latest)",
+          "tokenizer_name": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
+          "tokenizer_ver": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 버전을 적어주세요. (default: latest)"
+        },
+        "save": {
+          "mlm_name": "(Str) WandB에 저장할 BERT mlm 아티펙트의 이름을 적어주세요. (default: 로드된 아티펙트와 동일한 이름.)",
+          "mlm_desc": "(Str) WandB에 저장할 BERT mlm 아티펙트의 설명을 적어주세요. (default: None)",
+          "tokenizer_name": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 이름을 적어주세요. (default: 로드된 아티펙트와 동일한 이름)",
+          "tokenizer_desc": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 설명을 적어주세요. (default: None)"
+        }
+      },
       "data_version": "latest",
       "data_name": "init_wisdom2def-raw",
       "dtype": ["definition"],
@@ -33,8 +59,21 @@
       "shuffle": true
     },
     "1": {
-      "bert_model": "beomi/kcbert-base",
       "desc": "[version_1]: Trained on a very tiny examples",
+      "model": {
+        "load": {
+          "mlm_name": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 이름을 적어주세요.",
+          "mlm_ver": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 버전을 적어주세요. (default: latest)",
+          "tokenizer_name": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
+          "tokenizer_ver": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 버전을 적어주세요. (default: latest)"
+        },
+        "save": {
+          "mlm_name": "(Str) WandB에 저장할 BERT mlm 아티펙트의 이름을 적어주세요. (default: 로드된 아티펙트와 동일한 이름.)",
+          "mlm_desc": "(Str) WandB에 저장할 BERT mlm 아티펙트의 설명을 적어주세요. (default: None)",
+          "tokenizer_name": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 이름을 적어주세요. (default: 로드된 아티펙트와 동일한 이름)",
+          "tokenizer_desc": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 설명을 적어주세요. (default: None)"
+        }
+      },
       "data_version": "latest",
       "data_name": "init_wisdom2eg-raw",
       "dtype": ["example"],
@@ -47,8 +86,21 @@
       "shuffle": true
     },
     "2": {
-      "bert_model": "beomi/kcbert-base",
       "desc": "[version_2]: Removed word segment with proverb.",
+      "model": {
+        "load": {
+          "mlm_name": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 이름을 적어주세요.",
+          "mlm_ver": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 버전을 적어주세요. (default: latest)",
+          "tokenizer_name": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
+          "tokenizer_ver": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 버전을 적어주세요. (default: latest)"
+        },
+        "save": {
+          "mlm_name": "(Str) WandB에 저장할 BERT mlm 아티펙트의 이름을 적어주세요. (default: 로드된 아티펙트와 동일한 이름.)",
+          "mlm_desc": "(Str) WandB에 저장할 BERT mlm 아티펙트의 설명을 적어주세요. (default: None)",
+          "tokenizer_name": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 이름을 적어주세요. (default: 로드된 아티펙트와 동일한 이름)",
+          "tokenizer_desc": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 설명을 적어주세요. (default: None)"
+        }
+      },
       "data_version": "latest",
       "data_name": "init_kuniv-preprocess_no_wisdom",
       "dtype": ["example"],
