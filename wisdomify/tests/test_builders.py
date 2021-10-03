@@ -4,14 +4,14 @@ at the moment, the tests test for version_0 only.
 import unittest
 from wisdomify.loaders import load_conf, load_device
 from wisdomify.builders import *
-from transformers import BertTokenizer
+from transformers import AutoTokenizer
 from typing import Tuple, List
 import torch
 
 
 class TestTensorBuilder(unittest.TestCase):
 
-    tokenizer: BertTokenizer
+    tokenizer: BertTokenizerFast
     k: int
     device: torch.device
     wisdoms: List[str]
@@ -19,7 +19,7 @@ class TestTensorBuilder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         conf = load_conf()['versions']['0']
-        cls.tokenizer = BertTokenizer.from_pretrained(conf['bert_model'])
+        cls.tokenizer = AutoTokenizer.from_pretrained(conf['bert_model'])
         cls.tokenizer.add_tokens(conf['wisdoms'])
         cls.k = conf['k']
         cls.wisdoms = conf['wisdoms']

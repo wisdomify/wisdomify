@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 import torch
 import argparse
 from wisdomify.loaders import load_device
-from wisdomify.utils import Experiment
+from wisdomify.experiment import Experiment
 
 
 def main():

@@ -31,8 +31,7 @@ class Experiment:
         y_mode = config['y_mode']
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))  # loading the skeleton
         tokenizer = AutoTokenizer.from_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))  # from local
-        wisdom2subwords_builder = Wisdom2SubWordsBuilder(tokenizer, k, device)
-        wisdom2subwords = wisdom2subwords_builder(wisdoms)
+        wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
         # --- choose an appropriate rd version --- #
         if rd_model == "RDAlpha":
             rd = RDAlpha.load_from_checkpoint(WISDOMIFIER_CKPT.format(ver=ver),
@@ -65,9 +64,7 @@ class Experiment:
         # --- load a bert_mlm model --- #
         bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
-        wisdom2subwords_builder = Wisdom2SubWordsBuilder(tokenizer, k, device)
-        wisdom2subwords = wisdom2subwords_builder(wisdoms)
-
+        wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
         # --- choose an appropriate rd version --- #
         if rd_model == "RDAlpha":
             rd = RDAlpha(bert_mlm, wisdom2subwords, k, lr, device)
