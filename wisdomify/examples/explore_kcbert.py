@@ -1,5 +1,5 @@
 from transformers import AutoModelForMaskedLM, AutoTokenizer
-from transformers.models.bert import BertModel
+
 BERT_MODEL = "beomi/kcbert-base"
 
 

@@ -1,12 +1,12 @@
 from typing import List, Tuple
 from wisdomify.builders import XBuilder
 from wisdomify.models import RD
-from transformers import BertTokenizer
+from transformers import BertTokenizerFast
 from wisdomify.experiment import Experiment
 
 
 class Wisdomifier:
-    def __init__(self, rd: RD, tokenizer: BertTokenizer, X_builder: XBuilder, wisdoms: List[str]):
+    def __init__(self, rd: RD, tokenizer: BertTokenizerFast, X_builder: XBuilder, wisdoms: List[str]):
         self.rd = rd
         self.tokenizer = tokenizer
         self.X_builder = X_builder

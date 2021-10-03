@@ -71,11 +71,11 @@
     "2": {
       "desc": "[version_2]: Trained on a very tiny examples",
       "bert_model": "beomi/kcbert-base",
-      "rd_model": "RDAlpha",
+      "rd_model": "RDBeta",
       "X_mode": "XBuilder",
       "y_mode": "YBuilder",
       "data_version": "0.0.0",
-      "data_name": "example",
+      "data_name": "definition",
       "k": 11,
       "lr": 0.00001,
       "max_epochs": 60,

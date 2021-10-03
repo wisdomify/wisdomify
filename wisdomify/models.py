@@ -40,9 +40,13 @@ class RD(pl.LightningModule):
         :param H_all: (N, L, H)
         :return S_wisdom: (N, |W|)
         """
-        raise NotImplementedError("An RD class must compute S_wisdom")
+        raise NotImplementedError("An RD class must implement S_wisdom")
 
     def P_wisdom(self, X: torch.Tensor) -> torch.Tensor:
+        """
+        :param X: (N, 3, L)
+        :return P_wisdom: (N, |W|), normalized over dim 1.
+        """
         S_vocab = self.forward(X)
         S_wisdom = self.S_wisdom(S_vocab)
         P_wisdom = F.softmax(S_wisdom, dim=1)

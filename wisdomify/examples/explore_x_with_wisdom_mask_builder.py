@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from wisdomify.builders import XWithWisdomMaskBuilder
 from wisdomify.loaders import load_conf, load_device
-from transformers import BertTokenizer
+from transformers import AutoTokenizer
 
 # 예시 문장.
 WISDOM2SENT: List[Tuple[str, str]] = [
@@ -19,7 +19,7 @@ def main():
     selected_ver = vers[VER]
     bert_model: str = selected_ver['bert_model']
     k: int = selected_ver['k']
-    tokenizer = BertTokenizer.from_pretrained(bert_model)
+    tokenizer = AutoTokenizer.from_pretrained(bert_model)
     X = XWithWisdomMaskBuilder(tokenizer, k, device)(wisdom2sent=WISDOM2SENT)
     print(X)
 

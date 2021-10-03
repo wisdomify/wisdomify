@@ -1,4 +1,4 @@
-from transformers import BertTokenizer
+from transformers import AutoTokenizer
 from wisdomify.loaders import load_conf, load_device
 from wisdomify.builders import Wisdom2SubWordsBuilder
 
@@ -8,7 +8,7 @@ def main():
     device = load_device()
     bert_model = conf['bert_model']
     wisdoms = conf['wisdoms']
-    tokenizer = BertTokenizer.from_pretrained(bert_model)
+    tokenizer = AutoTokenizer.from_pretrained(bert_model)
     k = 0
     for val in range(50):
         k += 1

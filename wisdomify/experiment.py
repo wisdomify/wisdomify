@@ -3,13 +3,13 @@ from wisdomify.models import RD, RDAlpha, RDBeta
 from wisdomify.data import WisdomDataModule
 from wisdomify.paths import WISDOMIFIER_CKPT, WISDOMIFIER_TOKENIZER_DIR
 from wisdomify.loaders import load_conf
-from transformers import BertForMaskedLM, BertConfig, BertTokenizer, AutoModelForMaskedLM
+from transformers import AutoTokenizer, AutoConfig, AutoModelForMaskedLM, BertTokenizerFast
 import torch
 
 
 # --- an experiment --- #
 class Experiment:
-    def __init__(self, ver: str, config: dict, rd: RD, tokenizer: BertTokenizer, data_module: WisdomDataModule):
+    def __init__(self, ver: str, config: dict, rd: RD, tokenizer: BertTokenizerFast, data_module: WisdomDataModule):
         self.ver = ver
         self.config = config
         self.rd = rd
@@ -29,8 +29,8 @@ class Experiment:
         rd_model = config['rd_model']
         X_mode = config['X_mode']
         y_mode = config['y_mode']
-        bert_mlm = AutoModelForMaskedLM.from_config(BertConfig.from_pretrained(bert_model))  # loading the skeleton
-        tokenizer = BertTokenizer.from_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))  # from local
+        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))  # loading the skeleton
+        tokenizer = AutoTokenizer.from_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))  # from local
         wisdom2subwords_builder = Wisdom2SubWordsBuilder(tokenizer, k, device)
         wisdom2subwords = wisdom2subwords_builder(wisdoms)
         # --- choose an appropriate rd version --- #
@@ -63,8 +63,8 @@ class Experiment:
         lr = config['lr']
         rd_model = config['rd_model']
         # --- load a bert_mlm model --- #
-        bert_mlm = BertForMaskedLM.from_pretrained(bert_model)
-        tokenizer = BertTokenizer.from_pretrained(bert_model)
+        bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
+        tokenizer = AutoTokenizer.from_pretrained(bert_model)
         wisdom2subwords_builder = Wisdom2SubWordsBuilder(tokenizer, k, device)
         wisdom2subwords = wisdom2subwords_builder(wisdoms)
 
@@ -84,13 +84,13 @@ class Experiment:
 
     @classmethod
     def get_data_module(cls, config: dict, X_mode: str, y_mode: str,
-                        tokenizer: BertTokenizer, k: int, device: torch.optim) -> WisdomDataModule:
+                        tokenizer: BertTokenizerFast, k: int, device: torch.optim) -> WisdomDataModule:
         X_builder = cls.get_X_builder(X_mode, tokenizer, k, device)
         y_builder = cls.get_y_builder(y_mode, device)
         return WisdomDataModule(config, X_builder, y_builder, tokenizer, device)
 
     @staticmethod
-    def get_X_builder(X_mode: str, tokenizer: BertTokenizer, k: int, device: torch.device) -> XBuilder:
+    def get_X_builder(X_mode: str, tokenizer: BertTokenizerFast, k: int, device: torch.device) -> XBuilder:
         # --- choose an appropriate builder for X --- #
         if X_mode == "XBuilder":
             X_builder = XBuilder(tokenizer, k, device)

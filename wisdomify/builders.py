@@ -4,7 +4,7 @@ builders must accept device as one of the parameters.
 """
 from typing import List, Tuple
 import torch
-from transformers import BertTokenizer
+from transformers import BertTokenizerFast
 
 
 class TensorBuilder:
@@ -17,7 +17,7 @@ class TensorBuilder:
 
 
 class Wisdom2SubWordsBuilder(TensorBuilder):
-    def __init__(self, tokenizer: BertTokenizer, k: int, device: torch.device):
+    def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
         self.tokenizer = tokenizer
         self.k = k
         self.device = device
@@ -40,7 +40,7 @@ class Wisdom2SubWordsBuilder(TensorBuilder):
 
 
 class WisKeysBuilder(TensorBuilder):
-    def __init__(self, tokenizer: BertTokenizer, device: torch.device):
+    def __init__(self, tokenizer: BertTokenizerFast, device: torch.device):
         self.tokenizer = tokenizer
         self.device = device
 
@@ -55,7 +55,7 @@ class WisKeysBuilder(TensorBuilder):
 
 
 class XBuilder(TensorBuilder):
-    def __init__(self, tokenizer: BertTokenizer, k: int, device: torch.device):
+    def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
         self.tokenizer = tokenizer
         self.k = k
         self.device = device
@@ -130,4 +130,3 @@ class YBuilder(TensorBuilder):
             wisdoms.index(wisdom)
             for wisdom in [wisdom for wisdom, _ in wisdom2sent]
         ]).to(self.device)
-

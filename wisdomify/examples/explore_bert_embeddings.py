@@ -1,6 +1,6 @@
 from wisdomify.loaders import load_conf, load_device
 from wisdomify.builders import WisKeysBuilder
-from transformers import BertForMaskedLM, BertTokenizer
+from transformers import AutoTokenizer, AutoModelForMaskedLM
 import torch
 
 
@@ -9,8 +9,8 @@ def main():
     device = load_device()
     bert_model = conf['bert_model']
     wisdoms = conf['wisdoms']
-    tokenizer = BertTokenizer.from_pretrained(bert_model)
-    model = BertForMaskedLM.from_pretrained(bert_model)
+    tokenizer = AutoTokenizer.from_pretrained(bert_model)
+    model = AutoModelForMaskedLM.from_pretrained(bert_model)
     # add wisdoms, and sync model
     # https://huggingface.co/transformers/internal/tokenization_utils.html#transformers.tokenization_utils_base.SpecialTokensMixin.add_tokens
     tokenizer.add_tokens(wisdoms)

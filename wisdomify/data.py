@@ -5,7 +5,7 @@ from datasets.dataset_dict import DatasetDict
 from datasets.dataset_dict import Dataset as HuggingFaceDataset
 from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
-from transformers import BertTokenizer
+from transformers import BertTokenizerFast
 from wisdomify.builders import XBuilder, YBuilder
 
 
@@ -41,7 +41,7 @@ class WisdomDataModule(LightningDataModule):
                  config: dict,
                  X_builder: XBuilder,
                  y_builder: YBuilder,
-                 tokenizer: BertTokenizer,
+                 tokenizer: BertTokenizerFast,
                  device: torch.device):
       
         super().__init__()
