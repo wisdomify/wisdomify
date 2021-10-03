@@ -2,8 +2,6 @@
 load a pre-trained wisdomify, and play with it.
 """
 import argparse
-import torch
-
 from wisdomify.loaders import load_device
 from wisdomify.wisdomifier import Wisdomifier
 

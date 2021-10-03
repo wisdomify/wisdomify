@@ -4,7 +4,7 @@ import torch
 
 
 # --- loaders --- #
-def load_conf_json() -> dict:
+def load_conf() -> dict:
     with open(CONF_JSON, 'r') as fh:
         return json.loads(fh.read())
 

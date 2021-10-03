@@ -1,24 +1,29 @@
+"""
+at the moment, the tests test for version_0 only.
+"""
 import unittest
-import torch
+from wisdomify.loaders import load_conf, load_device
+from wisdomify.builders import *
+from transformers import BertTokenizer
 from typing import Tuple, List
-from transformers import BertTokenizerFast
-from wisdomify.builders import TensorBuilder, BuilderAlpha, BuilderBeta
-from wisdomify.loaders import load_conf
-from wisdomify.classes import WISDOMS
+import torch
 
 
-class TestBuilder(unittest.TestCase):
-    WISDOM2SENT: List[Tuple[str, str]]
-    tokenizer: BertTokenizerFast
+class TestTensorBuilder(unittest.TestCase):
+
+    tokenizer: BertTokenizer
     k: int
+    device: torch.device
+    wisdoms: List[str]
 
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUpClass(cls):
         conf = load_conf()['versions']['0']
-        bert_model = conf['bert_model']
-        cls.tokenizer = BertTokenizerFast.from_pretrained(bert_model)
-        cls.tokenizer.add_tokens(new_tokens=WISDOMS)
+        cls.tokenizer = BertTokenizer.from_pretrained(conf['bert_model'])
+        cls.tokenizer.add_tokens(conf['wisdoms'])
         cls.k = conf['k']
+        cls.wisdoms = conf['wisdoms']
+        cls.device = load_device()
 
     @classmethod
     def get_wisdom2sent(cls) -> List[Tuple[str, str]]:
@@ -27,47 +32,68 @@ class TestBuilder(unittest.TestCase):
             ('서당개 삼 년이면 풍월을 읊는다', '아무리 무지해도 오래오래 듣거나 보게 되면 자연히 잘하게 된다'),
         ]  # data to test.
 
+
+class TestWisdom2SubwordsBuilder(TestTensorBuilder):
+
+    wisdom2subwords_builder: Wisdom2SubWordsBuilder
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.tokenizer.add_tokens(cls.wisdoms)  # treat wisdoms as single tokens
+        cls.wisdom2subwords_builder = Wisdom2SubWordsBuilder(cls.tokenizer, cls.k, cls.device)
+
     def test_build_wisdom2subwords_dim(self):
-        wisdom2subwords = TensorBuilder.build_wisdom2subwords(self.tokenizer, self.k, WISDOMS)  # should be (V,K)
-        self.assertEqual(len(WISDOMS), wisdom2subwords.shape[0])
+        wisdom2subwords = self.wisdom2subwords_builder(self.wisdoms)  # should be (V,K)
+        # --- check dimensions --- #
+        self.assertEqual(len(self.wisdoms), wisdom2subwords.shape[0])
         self.assertEqual(self.k, wisdom2subwords.shape[1])
 
+    def test_build_wisdom2subwords_semantics(self):
+        # -- check the semantics --- #
+        wisdom2subwords = self.wisdom2subwords_builder(self.wisdoms)  # should be (V,K)
+        wisdom2subwords = wisdom2subwords != self.tokenizer.mask_token_id
+        # there must be at least one non-mask tensor.
+        self.assertIn(torch.ones(wisdom2subwords.shape[1]), wisdom2subwords)
+
+
+class TestWiskeysBuilder(TestTensorBuilder):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.tokenizer.add_tokens(cls.wisdoms)  # treat wisdoms as single tokens
+        cls.wiskeys_builder = WisKeysBuilder(cls.tokenizer, cls.device)
+
     def test_build_wiskeys_dim(self):
-        # this should be added someday.
-        wiskeys = TensorBuilder.build_wiskeys(self.tokenizer, WISDOMS)
-        self.assertEqual(len(WISDOMS), wiskeys.shape[0])
+        wiskeys = self.wiskeys_builder(self.wisdoms)
+        self.assertEqual(len(self.wisdoms), wiskeys.shape[0])
         self.assertEqual(1, len(wiskeys.shape))  # should be a vector
 
-    def test_build_y_dim(self):
-        y = TensorBuilder.build_y(self.get_wisdom2sent(), WISDOMS)  # should be (N,)
-        self.assertEqual(len(self.get_wisdom2sent()), y.shape[0])
-        self.assertEqual(1, len(y.shape))  # should be a 1-dim vector
+    def test_build_wiskeys_semantics(self):
+        #  the wiskeys must not contain the unknown token
+        wiskeys = self.wiskeys_builder(self.wisdoms)
+        wiskeys = wiskeys != self.tokenizer.unk_token_id
+        self.assertTrue(torch.all(wiskeys, dim=0))
 
 
-class TestBuilderZero(TestBuilder):
-
+class TestXBuilder(TestTensorBuilder):
     @classmethod
-    def setUpClass(cls) -> None:
-        conf = load_conf()['versions']['0']
-        bert_model = conf['bert_model']
-        cls.tokenizer = BertTokenizerFast.from_pretrained(bert_model)
-        cls.k = conf['k']
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.X_builder = XBuilder(cls.tokenizer, cls.k, cls.device)
 
     def test_build_X_dim(self):
-        X = BuilderAlpha.build_X(self.get_wisdom2sent(), self.tokenizer, self.k)  # should be (N, 3, L)
+        X = self.X_builder(self.get_wisdom2sent())  # should be (N, 3, L)
         self.assertEqual(len(self.get_wisdom2sent()), X.shape[0])
-        self.assertEqual(3, X.shape[1])
-        self.assertEqual(31, X.shape[2])  # the max length.. what is it?
+        self.assertEqual(3, X.shape[1])  # input_ids, token_type_ids, attention_mask
+        self.assertEqual(28, X.shape[2])  # the max length.. what is it?
 
 
-class TestBuilderOne(TestBuilder):
-
+class TestXWithWisdomMaskBuilder(TestTensorBuilder):
     @classmethod
-    def setUpClass(cls) -> None:
-        conf = load_conf()['versions']['4']
-        bert_model = conf['bert_model']
-        cls.tokenizer = BertTokenizerFast.from_pretrained(bert_model)
-        cls.k = conf['k']
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.X_with_wisdom_mask_builder = XWithWisdomMaskBuilder(cls.tokenizer, cls.k, cls.device)
 
     @classmethod
     def get_wisdom2sent(cls) -> List[Tuple[str, str]]:
@@ -77,16 +103,19 @@ class TestBuilderOne(TestBuilder):
         ]  # data to test against
 
     def test_build_X_dim(self):
-        X = BuilderBeta.build_X(self.get_wisdom2sent(), self.tokenizer, self.k)  # should be (N, 4, L)
+        X = self.X_with_wisdom_mask_builder(self.get_wisdom2sent())  # should be (N, 4, L)
         self.assertEqual(len(self.get_wisdom2sent()), X.shape[0])
         self.assertEqual(4, X.shape[1])
-        self.assertEqual(15, X.shape[2])  # the max length.. what is it?
+        self.assertEqual(41, X.shape[2])
 
-    def test_build_wisdom_mask(self):
-        X = BuilderBeta.build_X(self.get_wisdom2sent(), self.tokenizer, self.k)[0]  # should be (N, 4, L)
-        mask_from_input_ids = X[0] == self.tokenizer.mask_token_id
-        mask_from_wisdom_mask = X[3] == 1
 
-        is_equal = torch.all(mask_from_input_ids.eq(mask_from_wisdom_mask))
+class TestYBuilder(TestTensorBuilder):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.y_builder = YBuilder(cls.device)
 
-        self.assertEqual(is_equal, True)
+    def test_build_y_dim(self):
+        y = self.y_builder(self.get_wisdom2sent(), self.wisdoms)  # should be (N,)
+        self.assertEqual(len(self.get_wisdom2sent()), y.shape[0])
+        self.assertEqual(1, len(y.shape))  # should be a 1-dim vector

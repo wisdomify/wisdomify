@@ -2,7 +2,6 @@ import unittest
 import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, AutoModelForMaskedLM
-from wisdomify.builders import build_vocab2subwords, build_X_with_wisdom_mask, build_y
 from wisdomify.rds import RD
 from wisdomify.loaders import load_conf
 from wisdomify.classes import WISDOMS

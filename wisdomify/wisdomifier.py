@@ -1,8 +1,8 @@
 from typing import List, Tuple
 from wisdomify.builders import XBuilder
-from wisdomify.rds import RD
+from wisdomify.models import RD
 from transformers import BertTokenizer
-from wisdomify.utils import Experiment
+from wisdomify.experiment import Experiment
 
 
 class Wisdomifier:

@@ -1,18 +1,19 @@
 """
 The reverse dictionary models below are based off of: https://github.com/yhcc/BertForRD/blob/master/mono/model/bert.py
 """
+from wisdomify.metrics import RDMetric
 from argparse import Namespace
 from typing import Tuple, List
 import pytorch_lightning as pl
 from transformers.models.bert.modeling_bert import BertForMaskedLM
-import torch
 from torch.nn import functional as F
-from wisdomify.metrics import RDMetric
+import torch
 
 
 class RD(pl.LightningModule):
     """
-    superclass of all reverse-dictionaries.
+    The superclass of all the reverse-dictionaries. This class houses any methods that are required by
+    whatever reverse-dictionaries we define.
     """
     def __init__(self, bert_mlm: BertForMaskedLM,
                  wisdom2subwords: torch.Tensor, k: int, lr: float, device: torch.device):
@@ -163,6 +164,12 @@ class RDBeta(RD):
         super().__init__(bert_mlm, wisdom2subwords, k, lr, device)
         self.wiskeys = wiskeys   # (|W|,)
 
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
+        H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
+        H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, H) -> (N, K, H)
+        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_cls, H_k)  # (N, |W|) + (N, |W|) -> (N, |W|)
+        return S_wisdom
+
     def S_wisdom_figurative(self, H_cls: torch.Tensor, H_k: torch.Tensor) -> torch.Tensor:
         """
         param: H_cls (N, H)
@@ -170,25 +177,20 @@ class RDBeta(RD):
         return: S_wisdom_figurative (N, |W|)
         """
         # 속담의 임베딩은 여기에 있습니다!
+        # 참고: wisdomify/examples/explore_bert_embeddings.py
         W_embed = self.bert_mlm.bert.embeddings.word_embeddings(self.wiskeys)  # (|W|,) -> (|W|, H)
 
         # TODO 다음을 계산해주세요!
         S_wisdom_figurative: torch.Tensor = ...
         return S_wisdom_figurative
 
-    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
-        H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
-        H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, H) -> (N, K, H)
-        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_cls, H_k)  # (N, |W|) + (N, |W|) -> (N, |W|)
-        return S_wisdom
-
 
 class RDGamma(RD):
     """
     The third prototype.
     S_wisdom = S_wisdom_literal + S_wisdom_figurative
-    trained on = wisdom2def & wisdom2eg.
-    This is not implemented yet.
+    trained on = wisdom2def & wisdom2eg with two-stage training.
+    This is to be implemented after experimenting with RDAlpha & RDBeta is done.
     """
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError

@@ -1,8 +1,8 @@
 from wisdomify.builders import Wisdom2SubWordsBuilder, XBuilder, XWithWisdomMaskBuilder, YBuilder, WisKeysBuilder
-from wisdomify.rds import RD, RDAlpha, RDBeta
+from wisdomify.models import RD, RDAlpha, RDBeta
 from wisdomify.data import WisdomDataModule
 from wisdomify.paths import WISDOMIFIER_CKPT, WISDOMIFIER_TOKENIZER_DIR
-from wisdomify.loaders import load_conf_json
+from wisdomify.loaders import load_conf
 from transformers import BertForMaskedLM, BertConfig, BertTokenizer, AutoModelForMaskedLM
 import torch
 
@@ -21,7 +21,7 @@ class Experiment:
         """
         load an experiment that has already been done.
         """
-        conf_json = load_conf_json()
+        conf_json = load_conf()
         config = conf_json['versions'][ver]
         bert_model = config['bert_model']
         k = config['k']
@@ -53,7 +53,7 @@ class Experiment:
         """
         build an experiment for training a RD.
         """
-        conf_json = load_conf_json()
+        conf_json = load_conf()
         config = conf_json['versions'][ver]
         bert_model = config['bert_model']
         wisdoms = config['wisdoms']

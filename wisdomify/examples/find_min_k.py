@@ -1,10 +1,10 @@
 from transformers import BertTokenizer
-from wisdomify.loaders import load_conf_json, load_device
+from wisdomify.loaders import load_conf, load_device
 from wisdomify.builders import Wisdom2SubWordsBuilder
 
 
 def main():
-    conf = load_conf_json()['versions']['0']
+    conf = load_conf()['versions']['0']
     device = load_device()
     bert_model = conf['bert_model']
     wisdoms = conf['wisdoms']

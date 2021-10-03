@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from wisdomify.builders import XWithWisdomMaskBuilder
-from wisdomify.loaders import load_conf_json, load_device
+from wisdomify.loaders import load_conf, load_device
 from transformers import BertTokenizer
 
 # 예시 문장.
@@ -13,7 +13,7 @@ VER: str = "0"
 
 
 def main():
-    conf = load_conf_json()
+    conf = load_conf()
     device = load_device()
     vers = conf['versions']
     selected_ver = vers[VER]
