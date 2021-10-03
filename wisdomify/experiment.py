@@ -15,6 +15,7 @@ class Experiment:
         self.rd = rd
         self.tokenizer = tokenizer
         self.data_module = data_module
+        self.wandb_support = ...
 
     @classmethod
     def load(cls, ver: str, device: torch.device) -> 'Experiment':

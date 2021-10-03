@@ -20,9 +20,6 @@ def main():
     args = parser.parse_args()
     ver: str = args.ver
 
-    # --- initialise WandB object --- #
-    wandb_support = WandBSupport(job_type=job_name, notes=desc)
-
     # --- build an experiment instance --- #
     exp = Experiment.build(ver, device)
     model_name = "wisdomifier"
