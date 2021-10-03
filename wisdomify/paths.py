@@ -24,6 +24,7 @@ CONF_JSON = path.join(PROJECT_ROOT, "conf.json")
 # the directories in which each version is stored
 # use WISDOMIFIER_CKPT.format(ver=SOME_NUMBER) to set version num.
 # use WISDOMIFIER_HPARAMS_YAML.format(ver=SOME_NUMBER) to set version num.
-WISDOMIFIER = path.join(LIGHTNING_LOGS_DIR, "version_{ver}")
-WISDOMIFIER_CKPT = path.join(WISDOMIFIER, "checkpoints", "wisdomifier.ckpt")
-WISDOMIFIER_HPARAMS_YAML = path.join(WISDOMIFIER, "hparams.yaml")
+VERSION_DIR = path.join(LIGHTNING_LOGS_DIR, "version_{ver}")
+WISDOMIFIER_CKPT = path.join(VERSION_DIR, "checkpoints", "wisdomifier.ckpt")
+WISDOMIFIER_HPARAMS_YAML = path.join(VERSION_DIR, "hparams.yaml")
+WISDOMIFIER_TOKENIZER_DIR = path.join(VERSION_DIR, "tokenizer")

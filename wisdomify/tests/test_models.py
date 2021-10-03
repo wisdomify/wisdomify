@@ -1,63 +1,195 @@
 import unittest
+from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoConfig
+from wisdomify.models import *
+from wisdomify.loaders import load_conf, load_device
+from wisdomify.builders import Wisdom2SubWordsBuilder, WisKeysBuilder, XBuilder, YBuilder
 import torch
-from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModelForMaskedLM
-from wisdomify.builders import build_vocab2subwords, build_X, build_y
-from wisdomify.models import RD
-from wisdomify.loaders import load_conf
-from wisdomify.vocab import VOCAB
-from wisdomify.datasets import WisdomDataset
 
 
-class TestRD(unittest.TestCase):
-    rd: RD
-    X: torch.Tensor
-    y: torch.Tensor
-    S: int  # the number of possible subwords in total
-    V: int  # the number of vocab (wisdom)
+class CommonTest:
+    class RDTest(unittest.TestCase):
+        X: torch.Tensor
+        y: torch.LongTensor
+        H: int
+        W: int
+        k: int
+        rd: RD
 
-    @staticmethod
-    def get_base_data_set():
-        return [('가는 날이 장날', '어떤 일을 하려고 하는데 뜻하지 않은 일을 공교롭게 당함')]
+        @staticmethod
+        def get_wisdom2sent():
+            return [
+                ('가는 날이 장날', '어떤 일을 하려고 하는데 뜻하지 않은 일을 공교롭게 당함'),
+                ('산 넘어 산', '어려움을 해결했더니 또 어려움에 닥침')
+            ]
+
+        @classmethod
+        def initialize(cls, X_builder: XBuilder, y_builder: YBuilder,
+                       wisdoms: List[str],
+                       H: int, W: int, k: int):
+            cls.X = X_builder(cls.get_wisdom2sent())
+            cls.y = y_builder(cls.get_wisdom2sent(), wisdoms)
+            cls.H = H
+            cls.W = W
+            cls.k = k
+
+        # all RD classes must implement these tests.
+        def test_forward_dim(self):
+            H_all = self.rd.forward(self.X)
+            self.assertEqual(self.X.shape[0], H_all.shape[0])  # N
+            self.assertEqual(self.X.shape[2], H_all.shape[1])  # L
+            self.assertEqual(self.H, H_all.shape[2])  # H
+
+        def test_S_wisdom_dim(self):
+            H_all = self.rd.forward(self.X)
+            S_wisdom = self.rd.S_wisdom(H_all)
+            self.assertEqual(self.X.shape[0], S_wisdom.shape[0])  # N
+            self.assertEqual(self.W, S_wisdom.shape[1])  # |W|
+
+        def test_S_wisdom_literal_dim(self):
+            H_all = self.rd.forward(self.X)
+            H_k = H_all[:, 1:self.k + 1]
+            S_wisdom_literal = self.rd.S_wisdom_literal(H_k)
+            self.assertEqual(self.X.shape[0], S_wisdom_literal.shape[0])  # N
+            self.assertEqual(self.W, S_wisdom_literal.shape[1])  # |W|
+
+        def test_P_wisdom_dim(self):
+            P_wisdom = self.rd.P_wisdom(self.X)
+            self.assertEqual(self.X.shape[0], P_wisdom.shape[0])  # N
+            self.assertEqual(self.W, P_wisdom.shape[1])  # |W|
+
+
+class RDAlphaTest(CommonTest.RDTest):
+
+    rd: RDAlpha
 
     @classmethod
-    def setUpClass(cls) -> None:
-        # set up the mono rd
-        k = 11
-        batch_size = 10
-        lr = 0.001
-        bert_model = load_conf()['versions']['0']['bert_model']
-        bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
+    def setUpClass(cls):
+        # version - 0 and 1
+        super().setUpClass()
+        device = load_device()
+        conf = load_conf()['versions']['0']
+        bert_model = conf['bert_model']
+        wisdoms = conf['wisdoms']
+        k = conf['k']
+        lr = conf['lr']
+        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
-        wisdom2sent = cls.get_base_data_set()
-        vocab2subwords = build_vocab2subwords(tokenizer, k=k, vocab=VOCAB)
-        X = build_X(wisdom2sent, tokenizer, k)
-        y = build_y(wisdom2sent, VOCAB)
-        cls.rd = RD(bert_mlm, vocab2subwords, k=k, lr=lr)
-        cls.S = tokenizer.vocab_size
-        # load a single batch
-        dataset = WisdomDataset(X, y)
-        loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-        X, y = next(iter(loader))  # just get the first batch.
-        cls.X = X
-        cls.y = y
-        cls.V = len(VOCAB)
+        wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
+        cls.rd = RDAlpha(bert_mlm, wisdom2subwords, k, lr, device)
+        cls.initialize(XBuilder(tokenizer, k, device), YBuilder(device),
+                       wisdoms, bert_mlm.config.hidden_size, len(wisdoms), k)
 
     def test_forward_dim(self):
-        # (N, 3, L) -> (N, K, |S|)
-        S_subword = self.rd.forward(self.X)
-        self.assertEqual(S_subword.shape[0], self.X.shape[0])
-        self.assertEqual(S_subword.shape[1], self.rd.hparams['k'])
-        self.assertEqual(S_subword.shape[2], self.S)
+        super(RDAlphaTest, self).test_forward_dim()
 
-    def test_S_word_dim(self):
-        S_subword = self.rd.forward(self.X)
-        # (N, 3, L) -> (N, |V|)
-        S_word = self.rd.S_word(S_subword)
-        self.assertEqual(S_word.shape[0], self.X.shape[0])
-        self.assertEqual(S_word.shape[1], self.V)
+    def test_S_wisdom_dim(self):
+        super(RDAlphaTest, self).test_S_wisdom_dim()
 
-    def test_training_step_dim(self):
-        # (N, 3, L) -> scalar
-        loss = self.rd.training_step((self.X, self.y), 0)['loss']
-        self.assertEqual(len(loss.shape), 0)  # should be a scalar
+    def test_S_wisdom_literal_dim(self):
+        super(RDAlphaTest, self).test_S_wisdom_literal_dim()
+
+    def test_P_wisdom_dim(self):
+        super(RDAlphaTest, self).test_P_wisdom_dim()
+
+
+class RDBetaTest(CommonTest.RDTest):
+
+    rd: RDBeta
+
+    @classmethod
+    def setUpClass(cls):
+        # version - 2
+        super().setUpClass()
+        device = load_device()
+        conf = load_conf()['versions']['2']
+        bert_model = conf['bert_model']
+        wisdoms = conf['wisdoms']
+        k = conf['k']
+        lr = conf['lr']
+        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
+        tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        # need to add the wisdoms to the tokenizer, and resize the embedding table as well
+        tokenizer.add_tokens(wisdoms)
+        bert_mlm.resize_token_embeddings(len(tokenizer))
+        wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
+        wiskeys = WisKeysBuilder(tokenizer, device)(wisdoms)
+        cls.rd = RDBeta(bert_mlm, wisdom2subwords, wiskeys, k, lr, device)
+        cls.initialize(XBuilder(tokenizer, k, device), YBuilder(device),
+                       wisdoms, bert_mlm.config.hidden_size, len(wisdoms), k)
+
+    def test_forward_dim(self):
+        super(RDBetaTest, self).test_forward_dim()
+
+    @unittest.expectedFailure
+    def test_S_wisdom_dim(self):
+        super(RDBetaTest, self).test_S_wisdom_dim()
+
+    def test_S_wisdom_literal_dim(self):
+        super(RDBetaTest, self).test_S_wisdom_literal_dim()
+
+    @unittest.expectedFailure
+    def test_S_wisdom_figurative_dim(self):
+        H_all = self.rd.forward(self.X)
+        H_cls = H_all[:, 0]
+        H_k = H_all[:, 1:self.k + 1]
+        S_wisdom_figurative = self.rd.S_wisdom_figurative(H_cls, H_k)
+        self.assertEqual(self.X.shape[0], S_wisdom_figurative.shape[0])  # N
+        self.assertEqual(self.W, S_wisdom_figurative.shape[1])  # |W|
+
+    @unittest.expectedFailure
+    def test_P_wisdom_dim(self):
+        super(RDBetaTest, self).test_P_wisdom_dim()
+
+
+# class TestRD(unittest.TestCase):
+#     rd: RD
+#     X: torch.Tensor
+#     y: torch.Tensor
+#     S: int  # the number of possible subwords in total
+#     V: int  # the number of vocab (wisdom)
+#
+#     @staticmethod
+#     def get_wisdom2sent():
+#         return [('가는 날이 장날', '어떤 일을 하려고 하는데 뜻하지 않은 일을 공교롭게 당함')]
+#
+#     @classmethod
+#     def setUpClass(cls) -> None:
+#         # set up the mono rd
+#         k = 11
+#         batch_size = 10
+#         lr = 0.001
+#         bert_model = load_conf()['versions']['0']['bert_model']
+#         bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
+#         tokenizer = AutoTokenizer.from_pretrained(bert_model)
+#         wisdom2sent = cls.get_wisdom2sent()
+#         vocab2subwords = build_vocab2subwords(tokenizer, k=k, vocab=WISDOMS)
+#         X = build_X_with_wisdom_mask(wisdom2sent, tokenizer, k)
+#         y = build_y(wisdom2sent, WISDOMS)
+#         cls.rd = RD(bert_mlm, vocab2subwords, k=k, lr=lr)
+#         cls.S = tokenizer.vocab_size
+#         # load a single batch
+#         dataset = WisdomDataset(X, y)
+#         loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+#         X, y = next(iter(loader))  # just get the first batch.
+#         cls.X = X
+#         cls.y = y
+#         cls.V = len(WISDOMS)
+#
+#     def test_forward_dim(self):
+#         # (N, 3, L) -> (N, K, |S|)
+#         S_subword = self.rd.forward(self.X)
+#         self.assertEqual(S_subword.shape[0], self.X.shape[0])
+#         self.assertEqual(S_subword.shape[1], self.rd.hparams['k'])
+#         self.assertEqual(S_subword.shape[2], self.S)
+#
+#     def test_S_word_dim(self):
+#         S_subword = self.rd.forward(self.X)
+#         # (N, 3, L) -> (N, |V|)
+#         S_word = self.rd.S_word(S_subword)
+#         self.assertEqual(S_word.shape[0], self.X.shape[0])
+#         self.assertEqual(S_word.shape[1], self.V)
+#
+#     def test_training_step_dim(self):
+#         # (N, 3, L) -> scalar
+#         loss = self.rd.training_step((self.X, self.y), 0)['loss']
+#         self.assertEqual(len(loss.shape), 0)  # should be a scalar
