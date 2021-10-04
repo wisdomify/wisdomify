@@ -81,6 +81,15 @@ class RD(pl.LightningModule):
         H_all = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, H)
         return H_all
 
+    def H_k(self, H_all: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+        """
+        You may want to override this. (e.g. RDGamma - the k's could be anywhere)
+        :param H_all (N, L, H)
+        :return H_k (N, K, H)
+        """
+        H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, H) -> (N, K, H)
+        return H_k
+
     def S_wisdom_literal(self, H_k: torch.Tensor) -> torch.Tensor:
         """
         To be used for both RDAlpha & RDBeta
@@ -150,8 +159,9 @@ class RDAlpha(RD):
     S_wisdom = S_wisdom_literal
     trained on: wisdom2def
     """
+
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
-        H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, H) -> (N, K, H)
+        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
         S_wisdom = self.S_wisdom_literal(H_k)  # (N, K, H) -> (N, |W|)
         return S_wisdom
 
@@ -169,7 +179,7 @@ class RDBeta(RD):
         self.wiskeys = wiskeys   # (|W|,)
 
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
-        H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, H) -> (N, K, H)
+        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H
         S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
         return S_wisdom
 
@@ -192,8 +202,9 @@ class RDGamma(RD):
     The third prototype.
     S_wisdom = S_wisdom_literal + S_wisdom_figurative
     trained on = wisdom2def & wisdom2eg with two-stage training.
-    This is to be implemented after experimenting with RDAlpha & RDBeta is done.
+    This is to be implemented & experimented after experimenting with RDAlpha & RDBeta is done.
     """
+
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
