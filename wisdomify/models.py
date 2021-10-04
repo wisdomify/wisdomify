@@ -3,7 +3,7 @@ The reverse dictionary models below are based off of: https://github.com/yhcc/Be
 """
 from wisdomify.metrics import RDMetric
 from argparse import Namespace
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 import pytorch_lightning as pl
 from transformers.models.bert.modeling_bert import BertForMaskedLM
 from torch.nn import functional as F
@@ -23,10 +23,12 @@ class RD(pl.LightningModule):
         :return: (N, K, |V|); (num samples, k, the size of the vocabulary of subwords)
         """
         super().__init__()
-        # -- the only network we need -- #
+        # -- the only neural network we need -- #
         self.bert_mlm = bert_mlm
-        # -- to be used to compute S_word -- #
+        # -- to be used to compute S_wisdom -- #
         self.wisdom2subwords = wisdom2subwords  # (|W|, K)
+        # --- to be used for getting H_k --- #
+        self.wisdom_mask: Optional[torch.Tensor] = None  # (N, L)
         # -- to be used to evaluate the model -- #
         self.rd_metric = RDMetric()
         # -- hyper params --- #
@@ -34,6 +36,45 @@ class RD(pl.LightningModule):
         # https://github.com/PyTorchLightning/pytorch-lightning/issues/4390#issue-730493746
         self.save_hyperparameters(Namespace(k=k, lr=lr))
         self.to(device)  # always make sure to do this.
+
+    def forward(self, X: torch.Tensor) -> torch.Tensor:
+        """
+        :param X: (N, 4, L);
+         (num samples, 0=input_ids/1=token_type_ids/2=attention_mask/3=wisdom_mask, the maximum length)
+        :return: (N, L, H); (num samples, k, the size of the vocabulary of subwords)
+        """
+        input_ids = X[:, 0]  # (N, 4, L) -> (N, L)
+        token_type_ids = X[:, 1]  # (N, 4, L) -> (N, L)
+        attention_mask = X[:, 2]  # (N, 4, L) -> (N, L)
+        self.wisdom_mask = X[:, 3]  # (N, 4, L) -> (N, L)
+        H_all = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, H)
+        return H_all
+
+    def H_k(self, H_all: torch.Tensor) -> torch.Tensor:
+        """
+        You may want to override this. (e.g. RDGamma - the k's could be anywhere)
+        :param H_all (N, L, H)
+        :return H_k (N, K, H)
+        """
+        N, _, H = H_all.size()
+        # refer to: wisdomify/examples/explore_masked_select.py
+        wisdom_mask = self.wisdom_mask.unsqueeze(2).expand(H_all.shape)  # (N, L) -> (N, L, 1) -> (N, L, H)
+        H_k = torch.masked_select(H_all, wisdom_mask.bool())  # (N, L, H), (N, L, H) -> (N * K * H)
+        H_k = H_k.reshape(N, self.hparams['k'], H)  # (N * K * H) -> (N, K, H)
+        self.wisdom_mask = None  # clear wisdom_mask after it is used.
+        return H_k
+
+    def S_wisdom_literal(self, H_k: torch.Tensor) -> torch.Tensor:
+        """
+        To be used for both RDAlpha & RDBeta
+        :param H_k: (N, K, H)
+        :return: S_wisdom_literal (N, |W|)
+        """
+        S_vocab = self.bert_mlm.cls(H_k)  # bmm; (N, K, H) * (H, |V|) ->  (N, K, |V|)
+        indices = self.wisdom2subwords.T.repeat(S_vocab.shape[0], 1, 1)  # (|W|, K) -> (N, K, |W|)
+        S_wisdom_literal = S_vocab.gather(dim=-1, index=indices)  # (N, K, |V|) -> (N, K, |W|)
+        S_wisdom_literal = S_wisdom_literal.sum(dim=1)  # (N, K, |W|) -> (N, |W|)
+        return S_wisdom_literal
 
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
         """
@@ -47,8 +88,8 @@ class RD(pl.LightningModule):
         :param X: (N, 3, L)
         :return P_wisdom: (N, |W|), normalized over dim 1.
         """
-        S_vocab = self.forward(X)
-        S_wisdom = self.S_wisdom(S_vocab)
+        H_all = self.forward(X)
+        S_wisdom = self.S_wisdom(H_all)
         P_wisdom = F.softmax(S_wisdom, dim=1)
         return P_wisdom
 
@@ -69,29 +110,6 @@ class RD(pl.LightningModule):
             'top10': top10,
             'top100': top100
         }
-
-    def forward(self, X: torch.Tensor) -> torch.Tensor:
-        """
-        :param X: (N, 3, L) (num samples, 0=input_ids/1=token_type_ids/2=attention_mask, the maximum length)
-        :return: (N, L, H); (num samples, k, the size of the vocabulary of subwords)
-        """
-        input_ids = X[:, 0]
-        token_type_ids = X[:, 1]
-        attention_mask = X[:, 2]
-        H_all = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, H)
-        return H_all
-
-    def S_wisdom_literal(self, H_k: torch.Tensor) -> torch.Tensor:
-        """
-        To be used for both RDAlpha & RDBeta
-        :param H_k: (N, K, H)
-        :return: S_wisdom_literal (N, |W|)
-        """
-        S_vocab = self.bert_mlm.cls(H_k)  # (N, K, H) ->  (N, K, |V|)
-        indices = self.wisdom2subwords.T.repeat(S_vocab.shape[0], 1, 1)  # (|W|, K) -> (N, K, |W|)
-        S_wisdom_literal = S_vocab.gather(dim=-1, index=indices)  # (N, K, |V|) -> (N, K, |W|)
-        S_wisdom_literal = S_wisdom_literal.sum(dim=1)  # (N, K, |W|) -> (N, |W|)
-        return S_wisdom_literal
 
     def training_epoch_end(self, outputs: List[dict]) -> None:
         # reset the metric every epoch
@@ -153,8 +171,9 @@ class RDAlpha(RD):
     S_wisdom = S_wisdom_literal
     trained on: wisdom2def
     """
+
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
-        H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, H) -> (N, K, H)
+        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
         S_wisdom = self.S_wisdom_literal(H_k)  # (N, K, H) -> (N, |W|)
         return S_wisdom
 
@@ -172,15 +191,13 @@ class RDBeta(RD):
         self.wiskeys = wiskeys   # (|W|,)
 
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
-        H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
-        H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, H) -> (N, K, H)
-        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_cls, H_k)  # (N, |W|) + (N, |W|) -> (N, |W|)
+        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H
+        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
         return S_wisdom
 
-    def S_wisdom_figurative(self, H_cls: torch.Tensor, H_k: torch.Tensor) -> torch.Tensor:
+    def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
         """
-        param: H_cls (N, H)
-        param: H_k (N, K, H)
+        param: H_all (N, L, H)
         return: S_wisdom_figurative (N, |W|)
         """
         # 속담의 임베딩은 여기에 있습니다!
@@ -197,8 +214,9 @@ class RDGamma(RD):
     The third prototype.
     S_wisdom = S_wisdom_literal + S_wisdom_figurative
     trained on = wisdom2def & wisdom2eg with two-stage training.
-    This is to be implemented after experimenting with RDAlpha & RDBeta is done.
+    This is to be implemented & experimented after experimenting with RDAlpha & RDBeta is done.
     """
+
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 

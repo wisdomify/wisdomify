@@ -9,7 +9,7 @@ from typing import Tuple, List
 import torch
 
 
-class TestTensorBuilder(unittest.TestCase):
+class TensorBuilderTest(unittest.TestCase):
 
     tokenizer: BertTokenizerFast
     k: int
@@ -33,7 +33,7 @@ class TestTensorBuilder(unittest.TestCase):
         ]  # data to test.
 
 
-class TestWisdom2SubwordsBuilder(TestTensorBuilder):
+class Wisdom2SubwordsBuilderTest(TensorBuilderTest):
 
     wisdom2subwords_builder: Wisdom2SubWordsBuilder
 
@@ -57,7 +57,7 @@ class TestWisdom2SubwordsBuilder(TestTensorBuilder):
         self.assertIn(torch.ones(wisdom2subwords.shape[1]), wisdom2subwords)
 
 
-class TestWiskeysBuilder(TestTensorBuilder):
+class WiskeysBuilderTest(TensorBuilderTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -76,24 +76,24 @@ class TestWiskeysBuilder(TestTensorBuilder):
         self.assertTrue(torch.all(wiskeys, dim=0))
 
 
-class TestXBuilder(TestTensorBuilder):
+class Wisdom2DefXBuilderTest(TensorBuilderTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.X_builder = XBuilder(cls.tokenizer, cls.k, cls.device)
+        cls.wisdom2def_X_builder = Wisdom2DefXBuilder(cls.tokenizer, cls.k, cls.device)
 
     def test_build_X_dim(self):
-        X = self.X_builder(self.get_wisdom2sent())  # should be (N, 3, L)
+        X = self.wisdom2def_X_builder(self.get_wisdom2sent())  # should be (N, 3, L)
         self.assertEqual(len(self.get_wisdom2sent()), X.shape[0])
-        self.assertEqual(3, X.shape[1])  # input_ids, token_type_ids, attention_mask
+        self.assertEqual(4, X.shape[1])  # input_ids, token_type_ids, attention_mask, wisdom_mask
         self.assertEqual(28, X.shape[2])  # the max length.. what is it?
 
 
-class TestXWithWisdomMaskBuilder(TestTensorBuilder):
+class Wisdom2EgXBuilderTest(TensorBuilderTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.X_with_wisdom_mask_builder = XWithWisdomMaskBuilder(cls.tokenizer, cls.k, cls.device)
+        cls.wisdom2eg_X_builder = Wisdom2EgXBuilder(cls.tokenizer, cls.k, cls.device)
 
     @classmethod
     def get_wisdom2sent(cls) -> List[Tuple[str, str]]:
@@ -103,13 +103,13 @@ class TestXWithWisdomMaskBuilder(TestTensorBuilder):
         ]  # data to test against
 
     def test_build_X_dim(self):
-        X = self.X_with_wisdom_mask_builder(self.get_wisdom2sent())  # should be (N, 4, L)
+        X = self.wisdom2eg_X_builder(self.get_wisdom2sent())  # should be (N, 4, L)
         self.assertEqual(len(self.get_wisdom2sent()), X.shape[0])
         self.assertEqual(4, X.shape[1])
         self.assertEqual(41, X.shape[2])
 
 
-class TestYBuilder(TestTensorBuilder):
+class YBuilderTest(TensorBuilderTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

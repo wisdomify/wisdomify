@@ -15,8 +15,7 @@ def main():
 
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ver", type=str,
-                        default="0")
+    parser.add_argument("--ver", type=str, default="0")
     args = parser.parse_args()
     ver: str = args.ver
 
@@ -45,7 +44,7 @@ def main():
                          logger=logger)
 
     # --- start training --- #
-    trainer.fit(model=exp.rd, datamodule=exp.data_module)
+    trainer.fit(model=exp.rd, datamodule=exp.datamodule)
 
     # --- saving model --- #
     wandb_support.models.push_mlm(exp.rd.bert_mlm)      # TODO: 유빈님 이거 저장하는 거 맞아요?

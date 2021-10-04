@@ -4,7 +4,7 @@ builders must accept device as one of the parameters.
 """
 from typing import List, Tuple
 import torch
-from transformers import BertTokenizerFast
+from transformers import BertTokenizerFast, BatchEncoding
 
 
 class TensorBuilder:
@@ -61,9 +61,30 @@ class XBuilder(TensorBuilder):
         self.device = device
 
     def __call__(self, wisdom2sent: List[Tuple[str, str]]) -> torch.Tensor:
-        sents = [sent for _, sent in wisdom2sent]
-        lefts = [" ".join(["[MASK]"] * self.k)] * len(sents)
-        rights = sents
+        encodings = self.encode(wisdom2sent)
+        input_ids: torch.Tensor = encodings['input_ids']
+        mask_id: int = self.tokenizer.mask_token_id
+        wisdom_mask = torch.where(input_ids == mask_id, 1, 0)
+        return torch.stack([input_ids,
+                            # token type for the padded tokens? -> they are masked with the
+                            # attention mask anyways
+                            # https://github.com/google-research/bert/issues/635#issuecomment-491485521
+                            encodings['token_type_ids'],
+                            encodings['attention_mask'],
+                            wisdom_mask], dim=1).to(self.device)
+
+    def encode(self, wisdom2sent: List[Tuple[str, str]]) -> BatchEncoding:
+        raise NotImplementedError
+
+
+class Wisdom2DefXBuilder(XBuilder):
+    def encode(self, wisdom2def: List[Tuple[str, str]]) -> BatchEncoding:
+        """
+        param wisdom2def: (가는 날이 장날, 어떤 일을 하려고 하는데 뜻하지 않은 일을 공교롭게 당하는 것을 비유적으로 이르는 말)
+        """
+        defs = [sent for _, sent in wisdom2def]
+        lefts = [" ".join(["[MASK]"] * self.k)] * len(defs)
+        rights = defs
         encodings = self.tokenizer(text=lefts,
                                    text_pair=rights,
                                    return_tensors="pt",
@@ -71,19 +92,13 @@ class XBuilder(TensorBuilder):
                                    truncation=True,
                                    padding=True,
                                    verbose=True)
-        return torch.stack([encodings['input_ids'],
-                            # token type for the padded tokens? -> they are masked with the
-                            # attention mask anyways
-                            # https://github.com/google-research/bert/issues/635#issuecomment-491485521
-                            encodings['token_type_ids'],
-                            encodings['attention_mask']], dim=1).to(self.device)
+        return encodings
 
 
-class XWithWisdomMaskBuilder(XBuilder):
-
-    def __call__(self, wisdom2sent: List[Tuple[str, str]]) -> torch.Tensor:
+class Wisdom2EgXBuilder(XBuilder):
+    def encode(self, wisdom2eg: List[Tuple[str, str]]) -> BatchEncoding:
         """
-        param wisdom2sent: 아이고... [WISDOM]이라더니, 오늘 하필 비가 오네.
+        param wisdom2eg: (가는 날이 장날, 아이고... [WISDOM]이라더니, 오늘 하필 비가 오네.)
         return: (N, 4, L)
         (N, 1) - input_ids
         (N, 2) - token_type_ids
@@ -92,27 +107,17 @@ class XWithWisdomMaskBuilder(XBuilder):
         아이고, 가는 날이 장날이라더니, 오늘 하필 비가 오네.
         -> [CLS], ... 아, ##이고, [MASK] * K, 이라더니, 오늘, ..., [SEP].
         """
-        sents = [sent for _, sent in wisdom2sent]
-        sents = [
-            sent.replace("[WISDOM]", " ".join(["[MASK]"] * self.k))
-            for sent in sents
+        egs = [
+            eg.replace("[WISDOM]", " ".join(["[MASK]"] * self.k))
+            for _, eg in wisdom2eg
         ]
-        encodings = self.tokenizer(text=sents,
+        encodings = self.tokenizer(text=egs,
                                    return_tensors="pt",
                                    add_special_tokens=True,
                                    truncation=True,
                                    padding=True,
                                    verbose=True)
-        mask_id: int = self.tokenizer.mask_token_id
-        input_ids: torch.Tensor = encodings['input_ids']
-        token_type_ids: torch.Tensor = encodings['token_type_ids']
-        attention_mask: torch.Tensor = encodings['attention_mask']
-        # wisdom_mask is added.
-        wisdom_mask = torch.where(input_ids == mask_id, 1, 0)
-        return torch.stack([input_ids,
-                            token_type_ids,
-                            attention_mask,
-                            wisdom_mask], dim=1).to(self.device)
+        return encodings
 
 
 class YBuilder(TensorBuilder):

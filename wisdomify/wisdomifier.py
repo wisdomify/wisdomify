@@ -17,7 +17,7 @@ class Wisdomifier:
         exp = Experiment.load(ver, device, wandb_support)
         exp.rd.eval()
 
-        return Wisdomifier(exp.rd, exp.tokenizer, exp.data_module.X_builder, exp.config['wisdoms'])
+        return Wisdomifier(exp.rd, exp.tokenizer, exp.datamodule.X_builder, exp.config['wisdoms'])
 
     def __call__(self, sents: List[str]) -> List[List[Tuple[str, float]]]:
         # get the X

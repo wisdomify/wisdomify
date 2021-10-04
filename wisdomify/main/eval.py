@@ -26,7 +26,7 @@ def main():
                          # do not save checkpoints to a file.
                          logger=logger)
 
-    trainer.test(model=exp.rd, datamodule=exp.data_module, verbose=True)
+    trainer.test(model=exp.rd, datamodule=exp.datamodule, verbose=True)
 
     wandb_support.push()
 
