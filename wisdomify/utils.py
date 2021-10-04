@@ -96,11 +96,15 @@ class WandBModels:
     # TODO: implement training ckpt load logic
     def __init__(self, wandb_support: WandBSupport):
         self.wandb_support = wandb_support
+        self.mlm = str()
+        self.tokenizer = str()
 
     def get_mlm(self,
                 name: str,
                 ver: str = 'latest'):
+
         dl_info = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver if len(ver) > 1 else 'latest')
+        self.mlm = f"{name}"
 
         return AutoModelForMaskedLM.from_pretrained(dl_info['download_dir'])
 
@@ -108,6 +112,10 @@ class WandBModels:
                  model: BertForMaskedLM,
                  name: str,
                  desc: str):
+        if len(name) == 0:
+            # No name is passed => not going to upload this artifact
+            pass
+
         file_name = f'{name}'
         mlm_artifact = self.wandb_support.create_artifact(name=file_name, dtype='model', desc=desc)
 
@@ -122,6 +130,7 @@ class WandBModels:
                       name: str,
                       ver: str = 'latest'):
         dl_info = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver if len(ver) > 1 else 'latest')
+        self.tokenizer = f"{name}"
 
         return AutoTokenizer.from_pretrained(dl_info['download_dir'])
 
@@ -129,6 +138,10 @@ class WandBModels:
                        model: BertTokenizer,
                        name: str,
                        desc: str):
+        if len(name) == 0:
+            # No name is passed => not going to upload this artifact
+            pass
+
         file_name = f'{name}'
         tokenizer_artifact = self.wandb_support.create_artifact(name=file_name, dtype='model', desc=desc)
 
