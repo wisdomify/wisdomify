@@ -46,18 +46,11 @@ def main():
     # --- start training --- #
     trainer.fit(model=exp.rd, datamodule=exp.data_module)
 
-    # --- save the tokenizer --- #
-    exp.tokenizer.save_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))
+    # --- saving model --- #
+    wandb_support.models.push_mlm(exp.rd.bert_mlm)      # TODO: 유빈님 이거 저장하는 거 맞아요?
+    wandb_support.models.push_tokenizer(exp.tokenizer)  # TODO: tokenizer는 이게 맞는 거 같은데
 
-    # --- saving and logging model --- #
-    wandb_support.models.push_mlm(model=rd.bert_mlm,
-                                  name=out_mlm_name,
-                                  desc=out_mlm_desc)
-
-    wandb_support.models.push_tokenizer(model=tokenizer,
-                                        name=out_tokenizer_name,
-                                        desc=out_tokenizer_desc)
-
+    # --- uploading wandb logs and other files --- #
     wandb_support.push()
 
 
