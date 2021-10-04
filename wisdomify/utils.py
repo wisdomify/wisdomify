@@ -16,19 +16,22 @@ from wisdomify.loaders import load_conf
 class WandBSupport:
     def __init__(self,
                  ver: str,
-                 job_name: str,
-                 notes: str,
                  entity: str = 'wisdomify',
                  project: str = 'wisdomify'):
-        self.config = load_conf()['versions'][ver]['wandb']
+        self.conf_json = load_conf()['versions'][ver]
+        self.config = self.conf_json['wandb']
+
+        self.job_name = self.conf_json['exp_name']
+        self.job_desc = self.conf_json['exp_desc']
 
         # initialise wandb connection object.
         self.wandb_obj = wandb.init(
             entity=entity,
             project=project,
-            name=job_name,
-            notes=notes
+            name=self.job_name,
+            notes=self.job_desc
         )
+
         self.models = WandBModels(self)
         self.tmp_files = list()
 
@@ -102,6 +105,18 @@ class WandBModels:
         self.mlm = str()
         self.tokenizer = str()
 
+    @staticmethod
+    def _name_check(name: str, model_type: str) -> int:
+        if len(name) == 0:
+            # No name is passed => not going to upload this artifact
+            return 1
+
+        if name.split('_')[0] != model_type:
+            raise ValueError(f"Invalid name: {model_type} model name must start with '{model_type}_'. "
+                             f"(current: {name})")
+
+        return 0
+
     def get_rd_ckpt_path(self):
         name = self.wandb_support.config['load']['rd_name']
         ver = self.wandb_support.config['load']['rd_ver']
@@ -118,9 +133,8 @@ class WandBModels:
         name = self.wandb_support.config['save']['rd_name']
         desc = self.wandb_support.config['save']['rd_desc']
 
-        if len(name) == 0:
-            # No name is passed => not going to upload this artifact
-            pass
+        if self._name_check(name=name, model_type='rd') == 1:
+            return None
 
         rd_ckpt_artifact = self.wandb_support.create_artifact(name=name, dtype='model', desc=desc)
 
@@ -144,9 +158,8 @@ class WandBModels:
         name = self.wandb_support.config['save']['mlm_name']
         desc = self.wandb_support.config['save']['mlm_desc']
 
-        if len(name) == 0:
-            # No name is passed => not going to upload this artifact
-            pass
+        if self._name_check(name=name, model_type='mlm') == 1:
+            return None
 
         mlm_artifact = self.wandb_support.create_artifact(name=name, dtype='model', desc=desc)
 
@@ -171,9 +184,8 @@ class WandBModels:
         name = self.wandb_support.config['save']['tokenizer_name']
         desc = self.wandb_support.config['save']['tokenizer_desc']
 
-        if len(name) == 0:
-            # No name is passed => not going to upload this artifact
-            pass
+        if self._name_check(name=name, model_type='tokenizer') == 1:
+            return None
 
         tokenizer_artifact = self.wandb_support.create_artifact(name=name, dtype='model', desc=desc)
 

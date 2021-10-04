@@ -2,6 +2,7 @@
   "versions": {
     "_실험 버전": {
       "_주의사항!": "추후 버전 추가에 따라 파라미터가 추가되면 해당 파라미터를 아래 설명 추가해주세요",
+      "exp_name": "(Str) 해당 실험의 간략한 이름을 적어주세요.",
       "exp_desc": "(Str) 해당 실험에 대한 정보를 간결하지만 명확하게 적어주세요.",
       "wandb": {
         "_주의사항!": "이 곳의 명세는 반드시 W&B 페이지에 접속하여 사용할 아티펙트의 이름, 명세를 정확하게 확인하세요.",
@@ -43,6 +44,7 @@
       "wisdoms": "(List[Str]) - 검색할 속담 리스트"
     },
     "0": {
+      "exp_name": "version_0",
       "exp_desc": "[version_0]: The first minimal-viable-product of wisdomify. S_wisdom = S_wisdom_literal",
       "wandb": {
         "load": {
@@ -90,6 +92,7 @@
       ]
     },
     "1": {
+      "exp_name": "version_1",
       "exp_desc": "[version_1]: Trained on a very few examples. S_wisdom = S_wisdom_literal",
       "wandb": {
         "load": {
@@ -137,6 +140,7 @@
       ]
     },
     "2": {
+      "exp_name": "version_2",
       "exp_desc": "[version_2]: Trained on a very tiny examples",
       "wandb": {
         "load": {
