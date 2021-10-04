@@ -6,8 +6,8 @@ from wisdomify.builders import Wisdom2SubWordsBuilder, WisKeysBuilder, XBuilder,
 import torch
 
 
-class CommonTest:
-    class RDTest(unittest.TestCase):
+class RDCommonTest:
+    class Test(unittest.TestCase):
         X: torch.Tensor
         y: torch.LongTensor
         N: int
@@ -70,7 +70,7 @@ class CommonTest:
             self.assertEqual(self.W, P_wisdom.shape[1])  # |W|
 
 
-class RDAlphaTest(CommonTest.RDTest):
+class RDAlphaTest(RDCommonTest.Test):
     rd: RDAlpha
 
     @classmethod
@@ -106,7 +106,7 @@ class RDAlphaTest(CommonTest.RDTest):
         super(RDAlphaTest, self).test_P_wisdom_dim()
 
 
-class RDBetaTest(CommonTest.RDTest):
+class RDBetaTest(RDCommonTest.Test):
     rd: RDBeta
 
     @classmethod
