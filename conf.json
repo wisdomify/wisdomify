@@ -6,6 +6,7 @@
       "wandb": {
         "_주의사항!": "이 곳의 명세는 반드시 W&B 페이지에 접속하여 사용할 아티펙트의 이름, 명세를 정확하게 확인하세요.",
         "load": {
+          "_주의 (RD)!": "RD 관련 명세는 infer와 eval에만 사용됩니다. Train시 빈칸으로 두어도 무방합니다. (특별한 케이스가 아니면 동일하게 해주세요.)",
           "rd_name": "(Str) WandB에서 로드할 RD 아티펙트의 이름을 적어주세요.",
           "rd_ver": "(Str) WandB에서 로드할 RD 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
           "mlm_name": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 이름을 적어주세요.",
@@ -17,7 +18,7 @@
           "data_type": "(Str) 해당 모델 트레이닝에 사용된 데이터의 타입 (definition, example)"
         },
         "save": {
-          "_주의 1": "mlm과 tokenizer의 이름은 반드시 'mlm_' / 'tokenizer_' 로 시작해야합니다.",
+          "_주의 1": "mlm, tokenizer 그리고 rd의 이름은 반드시 'mlm_' / 'tokenizer_' / 'rd_' 로 시작해야합니다.",
           "_주의 2": "mlm 혹은 tokenizer를 W&B에 저장하지 않을 시, 빈 string으로 이름을 설정하면됩니다.",
           "rd_name": "(Str) WandB에서 로드할 RD 아티펙트의 이름을 적어주세요.",
           "rd_desc": "(Str) WandB에서 로드할 RD 아티펙트의 설명을 적어주세요. (default: None)",
@@ -45,6 +46,8 @@
       "exp_desc": "[version_0]: The first minimal-viable-product of wisdomify. S_wisdom = S_wisdom_literal",
       "wandb": {
         "load": {
+          "rd_name": "rd_tiny_def_data",
+          "rd_ver": "",
           "mlm_name": "mlm_init_kcbert",
           "mlm_ver": "",
           "tokenizer_name": "tokenizer_init_kcbert",
@@ -54,8 +57,10 @@
           "data_type": "definition"
         },
         "save": {
+          "rd_name": "rd_tiny_def_data",
+          "rd_desc": "이 RD 모델은 50여개의 정의 데이터만을 사용해서 학습되었습니다.",
           "mlm_name": "mlm_tiny_def_data",
-          "mlm_desc": "이 모델은 50여개의 정의 데이터만을 사용해서 학습되었습니다.",
+          "mlm_desc": "이 mlm 모델은 50여개의 정의 데이터만을 사용해서 학습되었습니다.",
           "tokenizer_name": "",
           "tokenizer_desc": ""
         }
@@ -88,6 +93,8 @@
       "exp_desc": "[version_1]: Trained on a very few examples. S_wisdom = S_wisdom_literal",
       "wandb": {
         "load": {
+          "rd_name": "rd_tiny_eg_data",
+          "rd_ver": "",
           "mlm_name": "mlm_init_kcbert",
           "mlm_ver": "",
           "tokenizer_name": "tokenizer_init_kcbert",
@@ -97,8 +104,10 @@
           "data_type": "example"
         },
         "save": {
+          "rd_name": "rd_tiny_eg_data",
+          "rd_desc": "이 RD 모델은 직접 작성한 10개의 속담의 용례 데이터만을 사용해서 학습되었습니다.",
           "mlm_name": "mlm_tiny_eg_data",
-          "mlm_desc": "이 모델은 직접 작성한 10개의 속담의 용례 데이터만을 사용해서 학습되었습니다.",
+          "mlm_desc": "이 mlm 모델은 직접 작성한 10개의 속담의 용례 데이터만을 사용해서 학습되었습니다.",
           "tokenizer_name": "",
           "tokenizer_desc": ""
         }
@@ -131,6 +140,8 @@
       "exp_desc": "[version_2]: Trained on a very tiny examples",
       "wandb": {
         "load": {
+          "rd_name": "rd_tiny_kuniv_eg_data",
+          "rd_ver": "",
           "mlm_name": "mlm_init_kcbert",
           "mlm_ver": "",
           "tokenizer_name": "tokenizer_init_kcbert",
@@ -140,8 +151,10 @@
           "data_type": "example"
         },
         "save": {
+          "rd_name": "rd_tiny_kuniv_eg_data",
+          "rd_desc": "이 RD 모델은 고려대 코퍼스로 수집한 10개의 속담의 용례 데이터를 사용해서 학습되었습니다.",
           "mlm_name": "mlm_tiny_kuniv_eg_data",
-          "mlm_desc": "이 모델은 고려대 코퍼스로 수집한 10개의 속담의 용례 데이터를 사용해서 학습되었습니다.",
+          "mlm_desc": "이 mlm 모델은 고려대 코퍼스로 수집한 10개의 속담의 용례 데이터를 사용해서 학습되었습니다.",
           "tokenizer_name": "",
           "tokenizer_desc": ""
         }
