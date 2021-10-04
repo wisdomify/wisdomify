@@ -28,7 +28,7 @@ def main():
 
     # --- init callbacks --- #
     checkpoint_callback = ModelCheckpoint(
-        filename=model_name,
+        filename=f"{model_name}",
         save_last=True,
         verbose=False
     )

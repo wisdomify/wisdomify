@@ -33,7 +33,7 @@ class Experiment:
         model_configs = config['model']
         k = model_configs['k']
         rd_model = model_configs['rd_model']
-        data_name = config['data_name']         # TODO: data_type으로 바꿔야함.
+        data_type = config['wandb']['load']['data_type']
         # --- load a bert_mlm model (from W&B) --- #
         bert_mlm = wandb_support.models.get_mlm()
         tokenizer = wandb_support.models.get_tokenizer()
@@ -56,7 +56,7 @@ class Experiment:
         else:
             raise NotImplementedError
 
-        data_module = cls.build_datamodule(config, data_name, tokenizer, k, device, wandb_support)
+        data_module = cls.build_datamodule(config, data_type, tokenizer, k, device, wandb_support)
         return Experiment(ver, config, rd, tokenizer, data_module)
 
     @classmethod
@@ -72,7 +72,7 @@ class Experiment:
         k = model_configs['k']
         lr = model_configs['lr']
         rd_model = model_configs['rd_model']
-        data_name = config['data_name']         # TODO: data_type으로 바꿔야함.
+        data_type = config['wandb']['load']['data_type']
 
         # --- load a bert_mlm model (from W&B) --- #
         bert_mlm = wandb_support.models.get_mlm()
@@ -92,7 +92,7 @@ class Experiment:
             raise NotImplementedError
 
         # --- load a data module --- #
-        data_module = cls.build_datamodule(config, data_name, tokenizer, k, device, wandb_support)
+        data_module = cls.build_datamodule(config, data_type, tokenizer, k, device, wandb_support)
         return Experiment(ver, config, rd, tokenizer, data_module)
 
     @classmethod
