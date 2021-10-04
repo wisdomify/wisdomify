@@ -97,11 +97,38 @@ class WandBSupport:
 
 
 class WandBModels:
-    # TODO: implement training ckpt load logic
     def __init__(self, wandb_support: WandBSupport):
         self.wandb_support = wandb_support
         self.mlm = str()
         self.tokenizer = str()
+
+    def get_rd_ckpt_path(self):
+        name = self.wandb_support.config['load']['rd_name']
+        ver = self.wandb_support.config['load']['rd_ver']
+        dl_dir = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver if len(ver) > 1 else 'latest')
+        model_files = list(filter(lambda f: '.ckpt' in f, dl_dir['download_files']))
+
+        # Error handle
+        if len(model_files) != 1:
+            raise FileExistsError("Only 1 .ckpt model file must be exist in this directory. (Contact W&B maintainer)")
+
+        return os.path.join(dl_dir['download_dir'], model_files[0])
+
+    def push_rd_ckpt(self, ckpt_path: str):
+        name = self.wandb_support.config['save']['rd_name']
+        desc = self.wandb_support.config['save']['rd_desc']
+
+        if len(name) == 0:
+            # No name is passed => not going to upload this artifact
+            pass
+
+        rd_ckpt_artifact = self.wandb_support.create_artifact(name=name, dtype='model', desc=desc)
+
+        rd_ckpt_artifact.add_file(ckpt_path)
+        wandb.save(name)
+
+        self.wandb_support.tmp_files.append(name)
+        self.wandb_support.wandb_obj.log_artifact(rd_ckpt_artifact)
 
     def get_mlm(self):
         name = self.wandb_support.config['load']['mlm_name']
@@ -121,14 +148,13 @@ class WandBModels:
             # No name is passed => not going to upload this artifact
             pass
 
-        file_name = f'{name}'
-        mlm_artifact = self.wandb_support.create_artifact(name=file_name, dtype='model', desc=desc)
+        mlm_artifact = self.wandb_support.create_artifact(name=name, dtype='model', desc=desc)
 
-        model.save_pretrained(file_name)
-        mlm_artifact.add_dir(file_name)
-        wandb.save(file_name)
+        model.save_pretrained(name)
+        mlm_artifact.add_dir(name)
+        wandb.save(name)
 
-        self.wandb_support.tmp_files.append(file_name)
+        self.wandb_support.tmp_files.append(name)
         self.wandb_support.wandb_obj.log_artifact(mlm_artifact)
 
     def get_tokenizer(self):
@@ -149,14 +175,13 @@ class WandBModels:
             # No name is passed => not going to upload this artifact
             pass
 
-        file_name = f'{name}'
-        tokenizer_artifact = self.wandb_support.create_artifact(name=file_name, dtype='model', desc=desc)
+        tokenizer_artifact = self.wandb_support.create_artifact(name=name, dtype='model', desc=desc)
 
-        model.save_pretrained(file_name)
-        tokenizer_artifact.add_dir(file_name)
-        wandb.save(file_name)
+        model.save_pretrained(name)
+        tokenizer_artifact.add_dir(name)
+        wandb.save(name)
 
-        self.wandb_support.tmp_files.append(file_name)
+        self.wandb_support.tmp_files.append(name)
         self.wandb_support.wandb_obj.log_artifact(tokenizer_artifact)
 
 

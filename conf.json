@@ -6,6 +6,8 @@
       "wandb": {
         "_주의사항!": "이 곳의 명세는 반드시 W&B 페이지에 접속하여 사용할 아티펙트의 이름, 명세를 정확하게 확인하세요.",
         "load": {
+          "rd_name": "(Str) WandB에서 로드할 RD 아티펙트의 이름을 적어주세요.",
+          "rd_ver": "(Str) WandB에서 로드할 RD 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
           "mlm_name": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 이름을 적어주세요.",
           "mlm_ver": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
           "tokenizer_name": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
@@ -17,6 +19,8 @@
         "save": {
           "_주의 1": "mlm과 tokenizer의 이름은 반드시 'mlm_' / 'tokenizer_' 로 시작해야합니다.",
           "_주의 2": "mlm 혹은 tokenizer를 W&B에 저장하지 않을 시, 빈 string으로 이름을 설정하면됩니다.",
+          "rd_name": "(Str) WandB에서 로드할 RD 아티펙트의 이름을 적어주세요.",
+          "rd_desc": "(Str) WandB에서 로드할 RD 아티펙트의 설명을 적어주세요. (default: None)",
           "mlm_name": "(Str) WandB에 저장할 BERT mlm 아티펙트의 이름을 적어주세요.",
           "mlm_desc": "(Str) WandB에 저장할 BERT mlm 아티펙트의 설명을 적어주세요. (default: None)",
           "tokenizer_name": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 이름을 적어주세요.",

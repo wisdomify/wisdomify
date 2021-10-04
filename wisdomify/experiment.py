@@ -31,24 +31,31 @@ class Experiment:
         y_mode = config['y_mode']
         k = config['k']
         rd_model = config['rd_model']
+
+        # --- load a bert_mlm model (from W&B) --- #
         bert_mlm = wandb_support.models.get_mlm()
         tokenizer = wandb_support.models.get_tokenizer()
-        # bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))  # loading the skeleton
-        # tokenizer = AutoTokenizer.from_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))  # from local
+
         wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
+
+        # --- RD .ckpt download (from W&B) --- #
+        rd_dl_path = wandb_support.models.get_rd_ckpt()
+
         # --- choose an appropriate rd version --- #
         if rd_model == "RDAlpha":
-            rd = RDAlpha.load_from_checkpoint(WISDOMIFIER_CKPT.format(ver=ver),
+            rd = RDAlpha.load_from_checkpoint(rd_dl_path,
                                               bert_mlm=bert_mlm, wisdom2subwords=wisdom2subwords,
                                               device=device)
         elif rd_model == "RDBeta":
             wiskeys = WisKeysBuilder(tokenizer, device)(wisdoms)
-            rd = RDBeta.load_from_checkpoint(WISDOMIFIER_CKPT.format(ver=ver),
+            rd = RDBeta.load_from_checkpoint(rd_dl_path,
                                              bert_mlm=bert_mlm, wisdom2subwords=wisdom2subwords,
                                              wiskeys=wiskeys, device=device)
         else:
             raise NotImplementedError
+
         data_module = cls.get_data_module(config, X_mode, y_mode, tokenizer, k, device)
+
         return Experiment(ver, config, rd, tokenizer, data_module)
 
     @classmethod
@@ -64,13 +71,13 @@ class Experiment:
         k = config['k']
         lr = config['lr']
         rd_model = config['rd_model']
-        # --- load a bert_mlm model --- #
-        bert_mlm = wandb_support.models.get_mlm(name=..., ver=...)
-        tokenizer = wandb_support.models.get_tokenizer(name=..., ver=...)
 
-        # bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
-        # tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        # --- load a bert_mlm model (from W&B) --- #
+        bert_mlm = wandb_support.models.get_mlm()
+        tokenizer = wandb_support.models.get_tokenizer()
+
         wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
+
         # --- choose an appropriate rd version --- #
         if rd_model == "RDAlpha":
             rd = RDAlpha(bert_mlm, wisdom2subwords, k, lr, device)
@@ -81,8 +88,10 @@ class Experiment:
             rd = RDBeta(bert_mlm, wisdom2subwords, wiskeys, k, lr, device)
         else:
             raise NotImplementedError
+
         # --- load a data module --- #
         data_module = cls.get_data_module(config, X_mode, y_mode, tokenizer, k, device)
+
         return Experiment(ver, config, rd, tokenizer, data_module)
 
     @classmethod
