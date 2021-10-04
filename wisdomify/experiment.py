@@ -27,10 +27,12 @@ class Experiment:
         conf_json = load_conf()
         config = conf_json['versions'][ver]
         wisdoms = config['wisdoms']
-        X_mode = config['X_mode']
-        y_mode = config['y_mode']
-        k = config['k']
-        rd_model = config['rd_model']
+
+        model_configs = config['model']
+        X_mode = model_configs['X_mode']
+        y_mode = model_configs['y_mode']
+        k = model_configs['k']
+        rd_model = model_configs['rd_model']
 
         # --- load a bert_mlm model (from W&B) --- #
         bert_mlm = wandb_support.models.get_mlm()
@@ -54,7 +56,7 @@ class Experiment:
         else:
             raise NotImplementedError
 
-        data_module = cls.get_data_module(config, X_mode, y_mode, tokenizer, k, device)
+        data_module = cls.get_data_module(config, X_mode, y_mode, tokenizer, k, device, wandb_support)
 
         return Experiment(ver, config, rd, tokenizer, data_module)
 
@@ -66,11 +68,13 @@ class Experiment:
         conf_json = load_conf()
         config = conf_json['versions'][ver]
         wisdoms = config['wisdoms']
-        X_mode = config['X_mode']
-        y_mode = config['y_mode']
-        k = config['k']
-        lr = config['lr']
-        rd_model = config['rd_model']
+
+        model_configs = config['model']
+        X_mode = model_configs['X_mode']
+        y_mode = model_configs['y_mode']
+        k = model_configs['k']
+        lr = model_configs['lr']
+        rd_model = model_configs['rd_model']
 
         # --- load a bert_mlm model (from W&B) --- #
         bert_mlm = wandb_support.models.get_mlm()
@@ -90,16 +94,17 @@ class Experiment:
             raise NotImplementedError
 
         # --- load a data module --- #
-        data_module = cls.get_data_module(config, X_mode, y_mode, tokenizer, k, device)
+        data_module = cls.get_data_module(config, X_mode, y_mode, tokenizer, k, device, wandb_support)
 
         return Experiment(ver, config, rd, tokenizer, data_module)
 
     @classmethod
     def get_data_module(cls, config: dict, X_mode: str, y_mode: str,
-                        tokenizer: BertTokenizerFast, k: int, device: torch.optim) -> WisdomDataModule:
+                        tokenizer: BertTokenizerFast, k: int, device: torch.optim,
+                        wandb_support: WandBSupport) -> WisdomDataModule:
         X_builder = cls.get_X_builder(X_mode, tokenizer, k, device)
         y_builder = cls.get_y_builder(y_mode, device)
-        return WisdomDataModule(config, X_builder, y_builder, tokenizer, device)
+        return WisdomDataModule(config, X_builder, y_builder, tokenizer, device, wandb_support)
 
     @staticmethod
     def get_X_builder(X_mode: str, tokenizer: BertTokenizerFast, k: int, device: torch.device) -> XBuilder:

@@ -2,10 +2,10 @@ import pytorch_lightning as pl
 import torch
 import argparse
 from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger
+
 from wisdomify.loaders import load_device
 from wisdomify.wisdomifier import Experiment
-from wisdomify.paths import DATA_DIR, WISDOMIFIER_TOKENIZER_DIR
+from wisdomify.paths import DATA_DIR
 from wisdomify.utils import WandBSupport
 
 
@@ -30,6 +30,7 @@ def main():
     # --- init callbacks --- #
     checkpoint_callback = ModelCheckpoint(
         filename=model_name,
+        save_last=True,
         verbose=True
     )
 
@@ -38,7 +39,7 @@ def main():
 
     # --- instantiate the trainer --- #
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
-                         max_epochs=exp.config['max_epochs'],
+                         max_epochs=exp.config['model']['max_epochs'],
                          callbacks=[checkpoint_callback],
                          default_root_dir=DATA_DIR,
                          logger=logger)
@@ -49,6 +50,7 @@ def main():
     # --- saving model --- #
     wandb_support.models.push_mlm(exp.rd.bert_mlm)      # TODO: 유빈님 이거 저장하는 거 맞아요?
     wandb_support.models.push_tokenizer(exp.tokenizer)  # TODO: tokenizer는 이게 맞는 거 같은데
+    wandb_support.models.push_rd_ckpt()
 
     # --- uploading wandb logs and other files --- #
     wandb_support.push()

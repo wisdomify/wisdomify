@@ -31,6 +31,7 @@ class WandBSupport:
             name=self.job_name,
             notes=self.job_desc
         )
+        self.logger = None
 
         self.models = WandBModels(self)
         self.tmp_files = list()
@@ -40,6 +41,8 @@ class WandBSupport:
                       dtype: str,
                       ver: str = 'latest'):
         # this function returns existing artifact object.
+        ver = ver if len(ver) > 1 else 'latest'
+
         return self.wandb_obj.use_artifact(f"{name}:{ver}", type=dtype)
 
     def download_artifact(self,
@@ -86,10 +89,10 @@ class WandBSupport:
         # This function is used when user trying to add already saved file directly with file path
         return artifact.add_file(file_path)
 
-    @staticmethod
-    def get_model_logger(log_name: str):
+    def get_model_logger(self, log_name: str):
         # this function returns model logger
-        return WandbLogger(project='wisdomify', entity='wisdomify', name=log_name)
+        self. logger = WandbLogger(project='wisdomify', entity='wisdomify', name=log_name)
+        return self.logger
 
     def push(self) -> None:
         self.wandb_obj.finish()
@@ -129,7 +132,7 @@ class WandBModels:
 
         return os.path.join(dl_dir['download_dir'], model_files[0])
 
-    def push_rd_ckpt(self, ckpt_path: str):
+    def push_rd_ckpt(self):
         name = self.wandb_support.config['save']['rd_name']
         desc = self.wandb_support.config['save']['rd_desc']
 
@@ -138,10 +141,17 @@ class WandBModels:
 
         rd_ckpt_artifact = self.wandb_support.create_artifact(name=name, dtype='model', desc=desc)
 
-        rd_ckpt_artifact.add_file(ckpt_path)
+        rd_ckpt_artifact.add_file(
+            os.path.join(
+                self.wandb_support.logger.save_dir,
+                self.wandb_support.logger.name,
+                self.wandb_support.logger.version,
+                'checkpoints',
+                'wisdomifier.ckpt'
+            )
+        )
         wandb.save(name)
 
-        self.wandb_support.tmp_files.append(name)
         self.wandb_support.wandb_obj.log_artifact(rd_ckpt_artifact)
 
     def get_mlm(self):

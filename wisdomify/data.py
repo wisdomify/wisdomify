@@ -48,14 +48,17 @@ class WisdomDataModule(LightningDataModule):
                  wandb_support: WandBSupport):
       
         super().__init__()
-        self.data_version: str = config['data_version']
-        self.data_name: str = config['data_name']
-        self.data_type: str = config['data_type']
-        self.k: int = config['k']
         self.wisdoms: List[str] = config['wisdoms']
-        self.batch_size: int = config['batch_size']
-        self.num_workers: int = config['num_workers']
-        self.shuffle: bool = config['shuffle']
+
+        self.data_version: str = config['wandb']['load']['data_version']
+        self.data_name: str = config['wandb']['load']['data_name']
+        self.data_type: str = config['wandb']['load']['data_type']
+
+        self.k: int = config['model']['k']
+        self.batch_size: int = config['model']['batch_size']
+        self.num_workers: int = config['model']['num_workers']
+        self.shuffle: bool = config['model']['shuffle']
+
         self.X_builder = X_builder
         self.y_builder = y_builder
         self.tokenizer = tokenizer
