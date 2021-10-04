@@ -87,7 +87,7 @@ class RD(pl.LightningModule):
         :param H_k: (N, K, H)
         :return: S_wisdom_literal (N, |W|)
         """
-        S_vocab = self.bert_mlm.cls(H_k)  # (N, K, H) ->  (N, K, |V|)
+        S_vocab = self.bert_mlm.cls(H_k)  # bmm; (N, K, H) * (H, |V|) ->  (N, K, |V|)
         indices = self.wisdom2subwords.T.repeat(S_vocab.shape[0], 1, 1)  # (|W|, K) -> (N, K, |W|)
         S_wisdom_literal = S_vocab.gather(dim=-1, index=indices)  # (N, K, |V|) -> (N, K, |W|)
         S_wisdom_literal = S_wisdom_literal.sum(dim=1)  # (N, K, |W|) -> (N, |W|)
@@ -169,15 +169,13 @@ class RDBeta(RD):
         self.wiskeys = wiskeys   # (|W|,)
 
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
-        H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
         H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, H) -> (N, K, H)
-        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_cls, H_k)  # (N, |W|) + (N, |W|) -> (N, |W|)
+        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
         return S_wisdom
 
-    def S_wisdom_figurative(self, H_cls: torch.Tensor, H_k: torch.Tensor) -> torch.Tensor:
+    def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
         """
-        param: H_cls (N, H)
-        param: H_k (N, K, H)
+        param: H_all (N, L, H)
         return: S_wisdom_figurative (N, |W|)
         """
         # 속담의 임베딩은 여기에 있습니다!
