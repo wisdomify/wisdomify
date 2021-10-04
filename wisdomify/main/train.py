@@ -14,8 +14,7 @@ def main():
 
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ver", type=str,
-                        default="0")
+    parser.add_argument("--ver", type=str, default="0")
     args = parser.parse_args()
     ver: str = args.ver
 
@@ -40,7 +39,7 @@ def main():
                          logger=logger)
 
     # --- start training --- #
-    trainer.fit(model=exp.rd, datamodule=exp.data_module)
+    trainer.fit(model=exp.rd, datamodule=exp.datamodule)
 
     # --- save the tokenizer --- #
     exp.tokenizer.save_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))

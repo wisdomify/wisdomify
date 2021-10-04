@@ -16,7 +16,7 @@ class Wisdomifier:
     def from_pretrained(ver: str, device) -> 'Wisdomifier':
         exp = Experiment.load(ver, device)
         exp.rd.eval()
-        wisdomifier = Wisdomifier(exp.rd, exp.tokenizer, exp.data_module.X_builder,
+        wisdomifier = Wisdomifier(exp.rd, exp.tokenizer, exp.datamodule.X_builder,
                                   exp.config['wisdoms'])
         return wisdomifier
 

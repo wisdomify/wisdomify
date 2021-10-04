@@ -17,7 +17,7 @@ def main():
                          # do not save checkpoints to a file.
                          logger=False)
 
-    trainer.test(model=exp.rd, datamodule=exp.data_module, verbose=True)
+    trainer.test(model=exp.rd, datamodule=exp.datamodule, verbose=True)
 
 
 if __name__ == '__main__':
