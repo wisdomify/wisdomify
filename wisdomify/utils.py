@@ -16,12 +16,13 @@ from wisdomify.loaders import load_conf
 class WandBSupport:
     def __init__(self,
                  ver: str,
+                 run_type: str,
                  entity: str = 'wisdomify',
                  project: str = 'wisdomify'):
         self.conf_json = load_conf()['versions'][ver]
         self.config = self.conf_json['wandb']
 
-        self.job_name = self.conf_json['exp_name']
+        self.job_name = f"{run_type}_{self.conf_json['exp_name']}"
         self.job_desc = self.conf_json['exp_desc']
 
         # initialise wandb connection object.

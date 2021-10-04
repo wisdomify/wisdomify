@@ -19,8 +19,7 @@ def main():
     desc: str = args.desc
 
     # --- W&B support object init --- #
-    wandb_support = WandBSupport(job_name=...,
-                                 notes=...)
+    wandb_support = WandBSupport(ver=ver, run_type='infer')
 
     wisdomifier = Wisdomifier.from_pretrained(ver, device, wandb_support)
 
@@ -30,6 +29,7 @@ def main():
             print("{}: ({}, {:.4f})".format(idx, res[0], res[1]))
 
     wandb_support.push()
+
 
 if __name__ == '__main__':
     main()

@@ -1,12 +1,17 @@
 from flask import Flask, jsonify, request, render_template_string
 from wisdomify.loaders import load_device
+from wisdomify.utils import WandBSupport
 from wisdomify.wisdomifier import Wisdomifier
 
 
 class WisdomifierAPI:
     def __init__(self, ver: str):
         device = load_device()
-        self.wisdomifier = Wisdomifier.from_pretrained(ver, device)
+
+        # --- W&B support object init --- #
+        wandb_support = WandBSupport(ver=ver, run_type='deploy')
+
+        self.wisdomifier = Wisdomifier.from_pretrained(ver, device, wandb_support)
         print(f'wisdomifier loaded -> ver: {ver}')
 
 

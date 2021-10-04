@@ -21,7 +21,7 @@ def main():
     ver: str = args.ver
 
     # --- W&B support object init --- #
-    wandb_support = WandBSupport(ver)
+    wandb_support = WandBSupport(ver=ver, run_type='train')
 
     # --- build an experiment instance --- #
     exp = Experiment.build(ver, device, wandb_support)
@@ -31,7 +31,7 @@ def main():
     checkpoint_callback = ModelCheckpoint(
         filename=model_name,
         save_last=True,
-        verbose=True
+        verbose=False
     )
 
     # --- instantiate the training logger --- #
