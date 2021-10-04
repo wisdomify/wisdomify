@@ -8,6 +8,9 @@ import torch
 
 
 # --- an experiment --- #
+from wisdomify.utils import WandBSupport
+
+
 class Experiment:
     def __init__(self, ver: str, config: dict, rd: RD, tokenizer: BertTokenizerFast, data_module: WisdomDataModule):
         self.ver = ver
@@ -15,23 +18,24 @@ class Experiment:
         self.rd = rd
         self.tokenizer = tokenizer
         self.data_module = data_module
-        self.wandb_support = ...
 
     @classmethod
-    def load(cls, ver: str, device: torch.device) -> 'Experiment':
+    def load(cls, ver: str, device: torch.device, wandb_support: WandBSupport) -> 'Experiment':
         """
         load an experiment that has already been done.
         """
         conf_json = load_conf()
         config = conf_json['versions'][ver]
         bert_model = config['bert_model']
-        k = config['k']
         wisdoms = config['wisdoms']
-        rd_model = config['rd_model']
         X_mode = config['X_mode']
         y_mode = config['y_mode']
-        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))  # loading the skeleton
-        tokenizer = AutoTokenizer.from_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))  # from local
+        k = config['k']
+        rd_model = config['rd_model']
+        bert_mlm = wandb_support.models.get_mlm(name=..., ver=...)
+        tokenizer = wandb_support.models.get_tokenizer(name=..., ver=...)
+        # bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))  # loading the skeleton
+        # tokenizer = AutoTokenizer.from_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))  # from local
         wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
         # --- choose an appropriate rd version --- #
         if rd_model == "RDAlpha":
@@ -49,7 +53,7 @@ class Experiment:
         return Experiment(ver, config, rd, tokenizer, data_module)
 
     @classmethod
-    def build(cls, ver: str, device: torch.device) -> 'Experiment':
+    def build(cls, ver: str, device: torch.device, wandb_support: WandBSupport) -> 'Experiment':
         """
         build an experiment for training a RD.
         """
@@ -63,8 +67,11 @@ class Experiment:
         lr = config['lr']
         rd_model = config['rd_model']
         # --- load a bert_mlm model --- #
-        bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
-        tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        bert_mlm = wandb_support.models.get_mlm(name=..., ver=...)
+        tokenizer = wandb_support.models.get_tokenizer(name=..., ver=...)
+
+        # bert_mlm = AutoModelForMaskedLM.from_pretrained(bert_model)
+        # tokenizer = AutoTokenizer.from_pretrained(bert_model)
         wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
         # --- choose an appropriate rd version --- #
         if rd_model == "RDAlpha":

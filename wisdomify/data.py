@@ -1,3 +1,4 @@
+import pandas as pd
 import torch
 from typing import Tuple, Optional, List
 from datasets import load_dataset
@@ -7,6 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
 from transformers import BertTokenizerFast
 from wisdomify.builders import XBuilder, YBuilder
+from wisdomify.utils import WandBSupport
 
 
 class WisdomDataset(Dataset):
@@ -42,11 +44,13 @@ class WisdomDataModule(LightningDataModule):
                  X_builder: XBuilder,
                  y_builder: YBuilder,
                  tokenizer: BertTokenizerFast,
-                 device: torch.device):
+                 device: torch.device,
+                 wandb_support: WandBSupport):
       
         super().__init__()
         self.data_version: str = config['data_version']
         self.data_name: str = config['data_name']
+        self.data_type: str = config['data_type']
         self.k: int = config['k']
         self.wisdoms: List[str] = config['wisdoms']
         self.batch_size: int = config['batch_size']
@@ -56,6 +60,8 @@ class WisdomDataModule(LightningDataModule):
         self.y_builder = y_builder
         self.tokenizer = tokenizer
         self.device = device
+        self.wandb_support = wandb_support
+
         self.story: Optional[DatasetDict] = None
         self.dataset_train: Optional[WisdomDataset] = None
         self.dataset_val: Optional[WisdomDataset] = None
@@ -65,16 +71,26 @@ class WisdomDataModule(LightningDataModule):
         """
         prepare the data needed. (eg. downloading)
         """
-        self.story = load_dataset(path="wisdomify/story",
-                                  name=self.data_name,
-                                  script_version=f"version_{self.data_version}")
+        dl_spec = self.wandb_support.download_artifact(
+            name=self.data_name,
+            ver=self.data_version,
+            dtype='dataset'
+        )
+
+        wandb_artifact_dir = dl_spec['download_dir']
+
+        self.story = {
+            'train': self.read_wandb_artifact(wandb_artifact_dir, 'training.tsv'),
+            'validation': self.read_wandb_artifact(wandb_artifact_dir, 'validation.tsv'),
+            'test': self.read_wandb_artifact(wandb_artifact_dir, 'test.tsv'),
+        }
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
         convert dataset to desired form. (eg. pre-process)
         """
         x_col = 'wisdom'
-        y_col = 'def' if self.data_name == 'definition' else 'eg' if self.data_name == 'example' else None
+        y_col = 'def' if self.data_type == 'definition' else 'eg' if self.data_type == 'example' else None
 
         if y_col is None:
             raise ValueError("Invalid data_name")
@@ -115,3 +131,21 @@ class WisdomDataModule(LightningDataModule):
         y = self.y_builder(wisdom2sent, self.wisdoms)
         dataset = WisdomDataset(X, y)
         return dataset
+
+    @staticmethod
+    def read_wandb_artifact(dl_dir: str, file: str) -> dict:
+        """
+        :param dl_dir: directory of wandb artifact downloaded
+        :param file: exact file want to load
+        :return: dictionary of data oriented in records
+        '''
+        {
+            'wisdom': '속담입니다',
+            'eg': '예제 문장입니다',
+            ...
+        }
+        '''
+        """
+        return pd \
+            .read_csv(f"{dl_dir}/{file}", sep='\t' if file.split('.')[-1] == 'tsv' else ',') \
+            .to_dict(orient='records')

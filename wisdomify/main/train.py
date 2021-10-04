@@ -20,8 +20,12 @@ def main():
     args = parser.parse_args()
     ver: str = args.ver
 
+    # --- W&B support object init --- #
+    wandb_support = WandBSupport(job_type=...,
+                                 notes=...)
+
     # --- build an experiment instance --- #
-    exp = Experiment.build(ver, device)
+    exp = Experiment.build(ver, device, wandb_support)
     model_name = "wisdomifier"
 
     # --- init callbacks --- #
@@ -31,14 +35,14 @@ def main():
     )
 
     # --- instantiate the training logger --- #
-    wandb_logger = wandb_support.get_model_logger('training_log')
+    logger = wandb_support.get_model_logger('training_log')
 
     # --- instantiate the trainer --- #
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          max_epochs=exp.config['max_epochs'],
                          callbacks=[checkpoint_callback],
                          default_root_dir=DATA_DIR,
-                         logger=wandb_logger)
+                         logger=logger)
 
     # --- start training --- #
     trainer.fit(model=exp.rd, datamodule=exp.data_module)

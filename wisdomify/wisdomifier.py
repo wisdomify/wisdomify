@@ -13,8 +13,8 @@ class Wisdomifier:
         self.wisdoms = wisdoms
 
     @staticmethod
-    def from_pretrained(ver: str, device) -> 'Wisdomifier':
-        exp = Experiment.load(ver, device)
+    def from_pretrained(ver: str, device, wandb_support) -> 'Wisdomifier':
+        exp = Experiment.load(ver, device, wandb_support)
         exp.rd.eval()
         wisdomifier = Wisdomifier(exp.rd, exp.tokenizer, exp.data_module.X_builder,
                                   exp.config['wisdoms'])

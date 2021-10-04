@@ -14,11 +14,13 @@ from transformers import AutoModelForMaskedLM, AutoTokenizer, BertForMaskedLM, B
 class WandBSupport:
     def __init__(self,
                  job_type: str,
-                 notes: str):
+                 notes: str,
+                 entity: str = 'wisdomify',
+                 project: str = 'wisdomify'):
         # initialise wandb connection object.
         self.wandb_obj = wandb.init(
-            entity='wisdomify',
-            project='wisdomify',
+            entity=entity,
+            project=project,
             job_type=job_type,
             notes=notes
         )
@@ -91,6 +93,7 @@ class WandBSupport:
 
 
 class WandBModels:
+    # TODO: implement training ckpt load logic
     def __init__(self, wandb_support: WandBSupport):
         self.wandb_support = wandb_support
 

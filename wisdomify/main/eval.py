@@ -3,6 +3,7 @@ import torch
 import argparse
 from wisdomify.loaders import load_device
 from wisdomify.experiment import Experiment
+from wisdomify.utils import WandBSupport
 
 
 def main():
@@ -12,12 +13,23 @@ def main():
     device = load_device()
     args = parser.parse_args()
     ver: str = args.ver
-    exp = Experiment.load(ver, device)
+
+    # --- W&B support object init --- #
+    wandb_support = WandBSupport(job_type=...,
+                                 notes=...)
+
+    exp = Experiment.load(ver, device, wandb_support)
+
+    # --- instantiate the training logger --- #
+    logger = wandb_support.get_model_logger('eval_log')
+
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          # do not save checkpoints to a file.
-                         logger=False)
+                         logger=logger)
 
     trainer.test(model=exp.rd, datamodule=exp.data_module, verbose=True)
+
+    wandb_support.push()
 
 
 if __name__ == '__main__':
