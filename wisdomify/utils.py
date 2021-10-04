@@ -10,22 +10,26 @@ from os.path import join
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 from transformers import AutoModelForMaskedLM, AutoTokenizer, BertForMaskedLM, BertTokenizer
 
+from wisdomify.loaders import load_conf
+
 
 class WandBSupport:
     def __init__(self,
-                 job_type: str,
+                 ver: str,
+                 job_name: str,
                  notes: str,
                  entity: str = 'wisdomify',
                  project: str = 'wisdomify'):
+        self.config = load_conf()['versions'][ver]['wandb']
+
         # initialise wandb connection object.
         self.wandb_obj = wandb.init(
             entity=entity,
             project=project,
-            job_type=job_type,
+            name=job_name,
             notes=notes
         )
         self.models = WandBModels(self)
-
         self.tmp_files = list()
 
     def _get_artifact(self,
@@ -99,9 +103,9 @@ class WandBModels:
         self.mlm = str()
         self.tokenizer = str()
 
-    def get_mlm(self,
-                name: str,
-                ver: str = 'latest'):
+    def get_mlm(self):
+        name = self.wandb_support.config['load']['mlm_name']
+        ver = self.wandb_support.config['load']['mlm_ver']
 
         dl_info = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver if len(ver) > 1 else 'latest')
         self.mlm = f"{name}"
@@ -109,9 +113,10 @@ class WandBModels:
         return AutoModelForMaskedLM.from_pretrained(dl_info['download_dir'])
 
     def push_mlm(self,
-                 model: BertForMaskedLM,
-                 name: str,
-                 desc: str):
+                 model: BertForMaskedLM):
+        name = self.wandb_support.config['save']['mlm_name']
+        desc = self.wandb_support.config['save']['mlm_desc']
+
         if len(name) == 0:
             # No name is passed => not going to upload this artifact
             pass
@@ -126,18 +131,20 @@ class WandBModels:
         self.wandb_support.tmp_files.append(file_name)
         self.wandb_support.wandb_obj.log_artifact(mlm_artifact)
 
-    def get_tokenizer(self,
-                      name: str,
-                      ver: str = 'latest'):
+    def get_tokenizer(self):
+        name = self.wandb_support.config['load']['tokenizer_name']
+        ver = self.wandb_support.config['load']['tokenizer_ver']
+
         dl_info = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver if len(ver) > 1 else 'latest')
         self.tokenizer = f"{name}"
 
         return AutoTokenizer.from_pretrained(dl_info['download_dir'])
 
     def push_tokenizer(self,
-                       model: BertTokenizer,
-                       name: str,
-                       desc: str):
+                       model: BertTokenizer):
+        name = self.wandb_support.config['save']['tokenizer_name']
+        desc = self.wandb_support.config['save']['tokenizer_desc']
+
         if len(name) == 0:
             # No name is passed => not going to upload this artifact
             pass

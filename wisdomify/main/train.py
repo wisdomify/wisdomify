@@ -21,7 +21,7 @@ def main():
     ver: str = args.ver
 
     # --- W&B support object init --- #
-    wandb_support = WandBSupport(job_type=...,
+    wandb_support = WandBSupport(job_name=...,
                                  notes=...)
 
     # --- build an experiment instance --- #

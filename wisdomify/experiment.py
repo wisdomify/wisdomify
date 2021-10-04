@@ -26,14 +26,13 @@ class Experiment:
         """
         conf_json = load_conf()
         config = conf_json['versions'][ver]
-        bert_model = config['bert_model']
         wisdoms = config['wisdoms']
         X_mode = config['X_mode']
         y_mode = config['y_mode']
         k = config['k']
         rd_model = config['rd_model']
-        bert_mlm = wandb_support.models.get_mlm(name=..., ver=...)
-        tokenizer = wandb_support.models.get_tokenizer(name=..., ver=...)
+        bert_mlm = wandb_support.models.get_mlm()
+        tokenizer = wandb_support.models.get_tokenizer()
         # bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))  # loading the skeleton
         # tokenizer = AutoTokenizer.from_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))  # from local
         wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
@@ -59,7 +58,6 @@ class Experiment:
         """
         conf_json = load_conf()
         config = conf_json['versions'][ver]
-        bert_model = config['bert_model']
         wisdoms = config['wisdoms']
         X_mode = config['X_mode']
         y_mode = config['y_mode']

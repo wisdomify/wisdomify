@@ -34,7 +34,7 @@ class TestWisdomDataModule(TestCase):
             'shuffle': False,
         }
         device = torch.device('cpu')
-        wandb_support = WandBSupport(job_type='test_datamodule', notes='TestCase for datamodule',
+        wandb_support = WandBSupport(job_name='test_datamodule', notes='TestCase for datamodule',
                                      entity='artemisdicotiar', project='wisdomify')
 
         # tokenizer = wandb_support.models.get_tokenizer(name='...', ver=...)

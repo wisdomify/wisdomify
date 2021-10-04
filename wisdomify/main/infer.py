@@ -19,7 +19,7 @@ def main():
     desc: str = args.desc
 
     # --- W&B support object init --- #
-    wandb_support = WandBSupport(job_type=...,
+    wandb_support = WandBSupport(job_name=...,
                                  notes=...)
 
     wisdomifier = Wisdomifier.from_pretrained(ver, device, wandb_support)
