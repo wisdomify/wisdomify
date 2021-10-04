@@ -1,12 +1,11 @@
 from wisdomify.models import RD, RDAlpha, RDBeta
 from wisdomify.data import WisdomDataModule
-from wisdomify.paths import WISDOMIFIER_CKPT, WISDOMIFIER_TOKENIZER_DIR
 from wisdomify.loaders import load_conf
 from wisdomify.builders import (
     Wisdom2SubWordsBuilder, Wisdom2EgXBuilder,
     YBuilder, WisKeysBuilder, Wisdom2DefXBuilder
 )
-from transformers import AutoTokenizer, AutoConfig, AutoModelForMaskedLM, BertTokenizerFast
+from transformers import BertTokenizerFast
 import torch
 
 
@@ -98,7 +97,8 @@ class Experiment:
 
     @classmethod
     def build_datamodule(cls, config: dict, data_name: str,
-                         tokenizer: BertTokenizerFast, k: int, device: torch.optim) -> WisdomDataModule:
+                         tokenizer: BertTokenizerFast, k: int, device: torch.optim,
+                         wandb_support) -> WisdomDataModule:
         if data_name == "definition":
             X_builder = Wisdom2DefXBuilder(tokenizer, k, device)
         elif data_name == "example":
@@ -106,4 +106,4 @@ class Experiment:
         else:
             raise ValueError(f"Invalid data_name: {data_name}")
         y_builder = YBuilder(device)
-        return WisdomDataModule(config, X_builder, y_builder, tokenizer, device)
+        return WisdomDataModule(config, X_builder, y_builder, tokenizer, device, wandb_support)

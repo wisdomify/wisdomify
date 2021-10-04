@@ -3,8 +3,14 @@ at the moment, the tests test for version_0 only.
 """
 import unittest
 from wisdomify.loaders import load_conf, load_device
-from wisdomify.builders import *
-from transformers import AutoTokenizer
+from wisdomify.builders import (
+    Wisdom2SubWordsBuilder,
+    WisKeysBuilder,
+    Wisdom2DefXBuilder,
+    Wisdom2EgXBuilder,
+    YBuilder
+)
+from transformers import AutoTokenizer, BertTokenizerFast
 from typing import Tuple, List
 import torch
 

@@ -1,6 +1,12 @@
 import unittest
+from typing import List
+
 from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoConfig
-from wisdomify.models import *
+from wisdomify.models import (
+    RD,
+    RDAlpha,
+    RDBeta
+)
 from wisdomify.loaders import load_conf, load_device
 from wisdomify.builders import Wisdom2SubWordsBuilder, WisKeysBuilder, XBuilder, Wisdom2DefXBuilder, YBuilder
 import torch
