@@ -78,6 +78,7 @@ class WisdomDataModule(LightningDataModule):
             ver=self.data_version,
             dtype='dataset'
         )
+        self.wandb_support.tmp_files.append(self.data_name)
 
         wandb_artifact_dir = dl_spec['download_dir']
 

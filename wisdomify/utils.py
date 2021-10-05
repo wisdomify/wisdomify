@@ -105,8 +105,6 @@ class WandBSupport:
 class WandBModels:
     def __init__(self, wandb_support: WandBSupport):
         self.wandb_support = wandb_support
-        self.mlm = str()
-        self.tokenizer = str()
 
     @staticmethod
     def _name_check(name: str, model_type: str) -> int:
@@ -159,7 +157,6 @@ class WandBModels:
         ver = self.wandb_support.config['load']['mlm_ver']
 
         dl_info = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver if len(ver) > 1 else 'latest')
-        self.mlm = f"{name}"
 
         return AutoModelForMaskedLM.from_pretrained(dl_info['download_dir'])
 
@@ -185,7 +182,6 @@ class WandBModels:
         ver = self.wandb_support.config['load']['tokenizer_ver']
 
         dl_info = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver if len(ver) > 1 else 'latest')
-        self.tokenizer = f"{name}"
 
         return AutoTokenizer.from_pretrained(dl_info['download_dir'])
 
