@@ -34,7 +34,7 @@ class WandBSupport:
         self.logger = None
 
         self.models = WandBModels(self)
-        self.tmp_files = list()
+        self.tmp_files = ['./wandb', './artifacts']
 
     def _get_artifact(self,
                       name: str,
