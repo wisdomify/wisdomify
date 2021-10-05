@@ -73,8 +73,8 @@
         "y_mode": "YBuilder",
         "k": 11,
         "lr": 0.00001,
-        "max_epochs": 60,
-        "batch_size": 40,
+        "max_epochs": 40,
+        "batch_size": 30,
         "num_workers": 0,
         "shuffle": true
       },
