@@ -28,10 +28,10 @@ def main():
 
     # --- init callbacks --- #
     checkpoint_callback = ModelCheckpoint(
-        filename=model_name,
-        save_top_k=1,
+        save_last=True,
         verbose=False
     )
+    checkpoint_callback.CHECKPOINT_NAME_LAST = model_name
 
     # --- instantiate the training logger --- #
     logger = wandb_support.get_model_logger('training_log')
