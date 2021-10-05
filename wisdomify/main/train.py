@@ -24,12 +24,13 @@ def main():
 
     # --- build an experiment instance --- #
     exp = Experiment.build(ver, device, wandb_support)
-    model_name = "wisdomifier"
+    model_name = "wisdom"
 
     # --- init callbacks --- #
     checkpoint_callback = ModelCheckpoint(
         # f-string으로 적지 않으면 무조건 model_name-v1.ckpt로 저장된다. (v1을 없애기 위해서는 이렇게 작성해야한다.
-        filename=f"{model_name}",
+        filename=f"{model_name}ifier",
+        monitor=None,
         verbose=False
     )
 
