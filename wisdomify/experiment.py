@@ -41,7 +41,7 @@ class Experiment:
         wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
 
         # --- RD .ckpt download (from W&B) --- #
-        rd_dl_path = wandb_support.models.get_rd_ckpt()
+        rd_dl_path = wandb_support.models.get_rd_ckpt_path()
 
         # --- choose an appropriate rd version --- #
         if rd_model == "RDAlpha":
