@@ -25,9 +25,9 @@ class TensorBuilderTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         conf = load_conf()['versions']['0']
-        cls.tokenizer = AutoTokenizer.from_pretrained(conf['bert_model'])
+        cls.tokenizer = AutoTokenizer.from_pretrained('beomi/kcbert-base')
         cls.tokenizer.add_tokens(conf['wisdoms'])
-        cls.k = conf['k']
+        cls.k = conf['model']['k']
         cls.wisdoms = conf['wisdoms']
         cls.device = load_device()
 

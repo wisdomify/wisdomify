@@ -3,7 +3,6 @@ from transformers import AutoTokenizer
 
 import torch
 
-from wisdomify.data import WisdomDataModule
 from wisdomify.experiment import Experiment
 from wisdomify.utils import WandBSupport
 
@@ -34,24 +33,15 @@ class TestWisdomDataModule(TestCase):
             'shuffle': False,
         }
         device = torch.device('cpu')
-        wandb_support = WandBSupport(job_name='test_datamodule', notes='TestCase for datamodule',
-                                     entity='artemisdicotiar', project='wisdomify')
+        wandb_support = WandBSupport(ver='0', run_type='test_dataset', entity='artemisdicotiar')
 
-        # tokenizer = wandb_support.models.get_tokenizer(name='...', ver=...)
         tokenizer = AutoTokenizer.from_pretrained('beomi/kcbert-base')
 
-        X_builder = Experiment.get_X_builder(X_mode='XBuilder',
-                                             tokenizer=tokenizer,
-                                             k=11,
-                                             device=device)
-        y_builder = Experiment.get_y_builder(y_mode='YBuilder',
-                                             device=device)
-
-        cls.data_module = WisdomDataModule(
+        cls.data_module = Experiment.build_datamodule(
             config=config,
-            X_builder=X_builder,
-            y_builder=y_builder,
+            data_name='definition',
             tokenizer=tokenizer,
+            k=11,
             device=device,
             wandb_support=wandb_support
         )
