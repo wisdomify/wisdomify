@@ -1,3 +1,4 @@
+import unittest
 from unittest import TestCase
 from transformers import AutoTokenizer
 
@@ -7,6 +8,9 @@ from wisdomify.experiment import Experiment
 from wisdomify.utils import WandBSupport
 
 
+@unittest.skip("이 테스트는 로컬에서 실행시켜주세요. "
+               "WandB 로그인 권한이 필요하기 때문에 Github Action에서는 skip됩니다."
+               "로컬에서 실행시 이 데코레이터를 주석처리 해주시고, git push시 원상복구 해주세요!")
 class TestWisdomDataModule(TestCase):
 
     @classmethod
