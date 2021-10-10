@@ -5,7 +5,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 from wisdomify.loaders import load_device
 from wisdomify.wisdomifier import Experiment
-from wisdomify.paths import DATA_DIR, WISDOMIFIER_TOKENIZER_DIR
+from wisdomify.paths import DATA_DIR, WISDOMIFIER_TOKENIZER_DIR, WISDOMIFIER_CKPT
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
 
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ver", type=str, default="0")
+    parser.add_argument("--ver", type=str, default="2")
     args = parser.parse_args()
     ver: str = args.ver
 
@@ -27,6 +27,7 @@ def main():
         filename=model_name,
         verbose=True
     )
+    
     # --- instantiate the logger --- #
     logger = TensorBoardLogger(save_dir=DATA_DIR,
                                name="lightning_logs")
@@ -36,10 +37,12 @@ def main():
                          max_epochs=exp.config['max_epochs'],
                          callbacks=[checkpoint_callback],
                          default_root_dir=DATA_DIR,
-                         logger=logger)
+                         logger=logger
+                        )
 
     # --- start training --- #
     trainer.fit(model=exp.rd, datamodule=exp.datamodule)
+    trainer.save_checkpoint(WISDOMIFIER_CKPT.format(ver=ver))
 
     # --- save the tokenizer --- #
     exp.tokenizer.save_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))
