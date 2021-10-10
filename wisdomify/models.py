@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 from transformers.models.bert.modeling_bert import BertForMaskedLM
 from torch.nn import functional as F
 import torch
+import torch.nn as nn
 
 
 class RD(pl.LightningModule):
@@ -53,7 +54,7 @@ class RD(pl.LightningModule):
     def H_k(self, H_all: torch.Tensor) -> torch.Tensor:
         """
         You may want to override this. (e.g. RDGamma - the k's could be anywhere)
-        :param H_all (N, L, H)
+        :param H_all (N, L, H)R
         :return H_k (N, K, H)
         """
         N, _, H = H_all.size()
@@ -61,7 +62,7 @@ class RD(pl.LightningModule):
         wisdom_mask = self.wisdom_mask.unsqueeze(2).expand(H_all.shape)  # (N, L) -> (N, L, 1) -> (N, L, H)
         H_k = torch.masked_select(H_all, wisdom_mask.bool())  # (N, L, H), (N, L, H) -> (N * K * H)
         H_k = H_k.reshape(N, self.hparams['k'], H)  # (N * K * H) -> (N, K, H)
-        self.wisdom_mask = None  # clear wisdom_mask after it is used.
+        #self.wisdom_mask = None  # clear wisdom_mask after it is used.
         return H_k
 
     def S_wisdom_literal(self, H_k: torch.Tensor) -> torch.Tensor:
@@ -75,8 +76,8 @@ class RD(pl.LightningModule):
         S_wisdom_literal = S_vocab.gather(dim=-1, index=indices)  # (N, K, |V|) -> (N, K, |W|)
         S_wisdom_literal = S_wisdom_literal.sum(dim=1)  # (N, K, |W|) -> (N, |W|)
         return S_wisdom_literal
-
-    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
+    
+    def S_wisdom(self, X: torch.Tensor, H_all: torch.Tensor) -> torch.Tensor:
         """
         :param H_all: (N, L, H)
         :return S_wisdom: (N, |W|)
@@ -89,14 +90,14 @@ class RD(pl.LightningModule):
         :return P_wisdom: (N, |W|), normalized over dim 1.
         """
         H_all = self.forward(X)
-        S_wisdom = self.S_wisdom(H_all)
+        S_wisdom = self.S_wisdom(X, H_all)
         P_wisdom = F.softmax(S_wisdom, dim=1)
         return P_wisdom
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
         X, y = batch
         H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
-        S_wisdom = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
+        S_wisdom = self.S_wisdom(X, H_all)  # (N, L, H) -> (N, |W|)
         loss = F.cross_entropy(S_wisdom, y)  # (N, |W|), (N,) -> (N,)
         loss = loss.sum()  # (N,) -> (1,)
         P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)
@@ -174,7 +175,28 @@ class RDAlpha(RD):
         S_wisdom = self.S_wisdom_literal(H_k)  # (N, K, H) -> (N, |W|)
         return S_wisdom
 
+    
+'''
+Reference:
+    https://github.com/monologg/R-BERT
+'''
+class FCLayer(nn.Module):
+    def __init__(self, input_dim, output_dim, dropout_rate=0.0, use_activation=True):
+        super(FCLayer, self).__init__()
+        self.use_activation = use_activation
+        self.dropout = nn.Dropout(dropout_rate)
+        self.linear = nn.Linear(input_dim, output_dim)
+        self.tanh = nn.Tanh()
+        
+        torch.nn.init.xavier_uniform_(self.linear.weight)
 
+    def forward(self, x):
+        x = self.dropout(x)
+        if self.use_activation:
+            x = self.tanh(x)
+        return self.linear(x)
+
+    
 class RDBeta(RD):
     """
     The second prototype.
@@ -186,25 +208,58 @@ class RDBeta(RD):
                  k: int, lr: float, device: torch.device):
         super().__init__(bert_mlm, wisdom2subwords, k, lr, device)
         self.wiskeys = wiskeys   # (|W|,)
+        
+        # ===================
+        self.len_wisdom = k
+        self.hidden_size = bert_mlm.config.hidden_size
+        self.dr_rate = 0.0
+        
+        self.cls_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
+        self.wisdom_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
+        self.example_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
+        self.final_fc = FCLayer(self.hidden_size, self.hidden_size, self.dr_rate, False)
 
-    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
-        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H
-        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
+    def S_wisdom(self, X: torch.Tensor, H_all: torch.Tensor) -> torch.Tensor:
+        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
+        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(X, H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
         return S_wisdom
 
-    def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
+    def S_wisdom_figurative(self, X: torch.Tensor, H_all: torch.Tensor) -> torch.Tensor:
         """
         param: H_all (N, L, H)
         return: S_wisdom_figurative (N, |W|)
         """
-        # 속담의 임베딩은 여기에 있습니다!
-        # 참고: wisdomify/examples/explore_bert_embeddings.py
         W_embed = self.bert_mlm.bert.embeddings.word_embeddings(self.wiskeys)  # (|W|,) -> (|W|, H)
-
-        # TODO 다음을 계산해주세요!
-        S_wisdom_figurative: torch.Tensor = ...
-        return S_wisdom_figurative
-
+        
+        H_cls = H_all[:, 0, :] # (N, H)
+        H_wisdom = torch.mean(self.H_k(H_all), axis=1) # (N, L, H) -> (N, K, H) -> (N, H)
+        # ==== H_ex ====
+        X_copy = X.clone().detach()
+        input_ids_temp = X_copy[:, 0] # (N, L)
+        input_ids_temp = input_ids_temp.unsqueeze(2).expand(H_all.shape) # (N, L, H)
+        input_ids = input_ids_temp.clone().detach() # to avoid UserWarning
+        wisdom_positions = torch.where(self.wisdom_mask == 1)
+        input_ids[wisdom_positions] = 0
+        ex_positions = torch.where((input_ids != 0) & (input_ids != 2) & (input_ids != 3))
+        ex_mask = torch.zeros_like(H_all)
+        ex_mask[ex_positions] = 1
+        H_ex = H_all.clone().detach()
+        H_ex[ex_mask == 0] = 0
+        H_ex = torch.mean(H_ex, axis=1) # (N, H)
+        # ==== H_ex ====
+        
+        # Dropout -> tanh -> fc_layer
+        cls_embedding = self.cls_fc(H_cls) # (N, H) -> (N, H//3)
+        wisdom_embedding = self.wisdom_fc(H_wisdom) # (N, H) -> (N, H//3)
+        ex_embedding = self.example_fc(H_ex) # (N, H) -> (N, H//3)
+        
+        # Concat -> fc_layer
+        H_concat = torch.cat([cls_embedding, wisdom_embedding, ex_embedding], dim=-1) # (N, H)
+        H_final = self.final_fc(H_concat) # (N, H) -> (N, H) 
+        
+        S_wisdom_figurative = torch.matmul(H_final, W_embed.transpose(0, 1)) # (N, H) * (H, |W|)-> (N, |W|)
+        return S_wisdom_figurative # (N, |W|)
+    
 
 class RDGamma(RD):
     """
