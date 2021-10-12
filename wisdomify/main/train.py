@@ -37,8 +37,7 @@ def main():
                          max_epochs=exp.config['max_epochs'],
                          callbacks=[checkpoint_callback],
                          default_root_dir=DATA_DIR,
-                         logger=logger
-                        )
+                         logger=logger)
 
     # --- start training --- #
     trainer.fit(model=exp.rd, datamodule=exp.datamodule)

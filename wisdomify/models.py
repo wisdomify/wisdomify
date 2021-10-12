@@ -73,8 +73,7 @@ class RD(pl.LightningModule):
         :return H_eg (N, L, H)
         """
         eg_mask = self.eg_mask.unsqueeze(2).expand(H_all.shape)
-        H_eg = H_all.clone().detach()
-        H_eg[eg_mask == 0] = 0
+        H_eg = torch.masked_fill(H_all, eg_mask == 0, 0)
         return H_eg
 
     def S_wisdom_literal(self, H_k: torch.Tensor) -> torch.Tensor:
@@ -240,19 +239,19 @@ class RDBeta(RD):
         """
         W_embed = self.bert_mlm.bert.embeddings.word_embeddings(self.wiskeys)  # (|W|,) -> (|W|, H)
         
-        H_cls = H_all[:, 0, :] # (N, H)
-        H_wisdom = torch.mean(self.H_k(H_all), axis=1) # (N, L, H) -> (N, K, H) -> (N, H)
-        H_eg = torch.mean(self.H_eg(H_all), axis=1) # (N, L, H) -> (N, L, H) -> (N, H)
+        H_cls = H_all[:, 0]  # (N, H)
+        H_wisdom = torch.mean(self.H_k(H_all), dim=1)  # (N, L, H) -> (N, K, H) -> (N, H)
+        H_eg = torch.mean(self.H_eg(H_all), dim=1)  # (N, L, H) -> (N, L, H) -> (N, H)
         
         # Dropout -> tanh -> fc_layer
-        H_cls = self.cls_fc(H_cls) # (N, H) -> (N, H//3)
-        H_wisdom = self.wisdom_fc(H_wisdom) # (N, H) -> (N, H//3)
-        H_eg = self.example_fc(H_eg) # (N, H) -> (N, H//3)
+        H_cls = self.cls_fc(H_cls)  # (N, H) -> (N, H//3)
+        H_wisdom = self.wisdom_fc(H_wisdom)  # (N, H) -> (N, H//3)
+        H_eg = self.example_fc(H_eg)  # (N, H) -> (N, H//3)
         
         # Concat -> fc_layer
-        H_concat = torch.cat([H_cls, H_wisdom, H_eg], dim=-1) # (N, H)
-        H_final = self.final_fc(H_concat) # (N, H) -> (N, H) 
-        S_wisdom_figurative = torch.einsum("nh,hw->nw", [H_final, W_embed.T]) # (N, H) * (H, |W|)-> (N, |W|)
+        H_concat = torch.cat([H_cls, H_wisdom, H_eg], dim=-1)  # (N, H)
+        H_final = self.final_fc(H_concat)  # (N, H) -> (N, H)
+        S_wisdom_figurative = torch.einsum("nh,hw->nw", H_final, W_embed.T)  # (N, H) * (H, |W|)-> (N, |W|)
         return S_wisdom_figurative
     
 
