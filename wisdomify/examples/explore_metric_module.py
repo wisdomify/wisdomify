@@ -1,15 +1,13 @@
 """
 https://torchmetrics.readthedocs.io/en/latest/?_ga=2.105837638.439472567.1625635601-345348531.1625635601
 """
+import torch
+import torchmetrics
 
 
 def main():
-    import torch
-    import torchmetrics
-
     # initialize metric
     metric = torchmetrics.Accuracy()
-
     n_batches = 10
     for i in range(n_batches):
         # simulate a classification problem

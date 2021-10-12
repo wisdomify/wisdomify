@@ -134,3 +134,6 @@ data/lightning_logs
 .idea
 /data
 /wisdomify.zip
+
+*/artifacts/*
+*/wandb/*

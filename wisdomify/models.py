@@ -1,85 +1,110 @@
 """
 The reverse dictionary models below are based off of: https://github.com/yhcc/BertForRD/blob/master/mono/model/bert.py
 """
+from wisdomify.metrics import RDMetric
 from argparse import Namespace
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 import pytorch_lightning as pl
-import torch
-import os
-from torch import Tensor
-from torch.optim import Optimizer
-from transformers import BertTokenizerFast, AutoModelForMaskedLM, AutoConfig, AutoTokenizer
 from transformers.models.bert.modeling_bert import BertForMaskedLM
 from torch.nn import functional as F
-from wisdomify.builders import build_X, build_vocab2subwords
-from wisdomify.loaders import load_conf
-from wisdomify.metrics import RDMetric
-from wisdomify.paths import WISDOMIFIER_CKPT, DATA_DIR
-from wisdomify.vocab import VOCAB
+import torch
+
 
 class RD(pl.LightningModule):
     """
-    A reverse-dictionary. The model is based on
+    The superclass of all the reverse-dictionaries. This class houses any methods that are required by
+    whatever reverse-dictionaries we define.
     """
 
-    def __init__(self, bert_mlm: BertForMaskedLM, vocab2subwords: Tensor, k: int, lr: float):
+    def __init__(self, bert_mlm: BertForMaskedLM,
+                 wisdom2subwords: torch.Tensor, k: int, lr: float, device: torch.device):
+        """
+        :param bert_mlm: a bert model for masked language modeling
+        :param wisdom2subwords: (|W|, K)
+        :return: (N, K, |V|); (num samples, k, the size of the vocabulary of subwords)
+        """
         super().__init__()
-        # -- the only network we need -- #
+        # -- the only neural network we need -- #
         self.bert_mlm = bert_mlm
-        # -- to be used to compute S_word -- #
-        self.vocab2subwords = vocab2subwords
+        # -- to be used to compute S_wisdom -- #
+        self.wisdom2subwords = wisdom2subwords  # (|W|, K)
+        # --- to be used for getting H_k --- #
+        self.wisdom_mask: Optional[torch.Tensor] = None  # (N, L)
         # -- to be used to evaluate the model -- #
         self.rd_metric = RDMetric()
         # -- hyper params --- #
         # should be saved to self.hparams
         # https://github.com/PyTorchLightning/pytorch-lightning/issues/4390#issue-730493746
         self.save_hyperparameters(Namespace(k=k, lr=lr))
+        self.to(device)  # always make sure to do this.
 
-    def forward(self, X: Tensor) -> Tensor:
+    def forward(self, X: torch.Tensor) -> torch.Tensor:
         """
-        :param X: (N, 3, L) (num samples, 0=input_ids/1=token_type_ids/2=attention_mask, the maximum length)
-        :return: (N, K, |V|); (num samples, k, the size of the vocabulary of subwords)
+        :param X: (N, 4, L);
+         (num samples, 0=input_ids/1=token_type_ids/2=attention_mask/3=wisdom_mask, the maximum length)
+        :return: (N, L, H); (num samples, k, the size of the vocabulary of subwords)
         """
-        input_ids = X[:, 0]
-        token_type_ids = X[:, 1]
-        attention_mask = X[:, 2]
-        H_all = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, 768)
-        H_k = H_all[:, 1: self.hparams['k'] + 1]  # (N, L, 768) -> (N, K, 768)
-        S_subword = self.bert_mlm.cls(H_k)  # (N, K, 768) ->  (N, K, |S|)
-        return S_subword
+        input_ids = X[:, 0]  # (N, 4, L) -> (N, L)
+        token_type_ids = X[:, 1]  # (N, 4, L) -> (N, L)
+        attention_mask = X[:, 2]  # (N, 4, L) -> (N, L)
+        self.wisdom_mask = X[:, 3]  # (N, 4, L) -> (N, L)
+        H_all = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, H)
+        return H_all
 
-    def S_word(self, S_subword: Tensor) -> Tensor:
-        # pineapple -> pine, ###apple, mask, mask, mask, mask, mask
-        # [ ...,
-        #   ...,
-        #   ...
-        #   [98, 122, 103, 103]]
-        # [
-        word2subs = self.vocab2subwords.T.repeat(S_subword.shape[0], 1, 1)  # (|V|, K) -> (N, K, |V|)
-        S_word = S_subword.gather(dim=-1, index=word2subs)  # (N, K, |S|) -> (N, K, |V|)
-        S_word = S_word.sum(dim=1)  # (N, K, |V|) -> (N, |V|)
-        return S_word
+    def H_k(self, H_all: torch.Tensor) -> torch.Tensor:
+        """
+        You may want to override this. (e.g. RDGamma - the k's could be anywhere)
+        :param H_all (N, L, H)
+        :return H_k (N, K, H)
+        """
+        N, _, H = H_all.size()
+        # refer to: wisdomify/examples/explore_masked_select.py
+        wisdom_mask = self.wisdom_mask.unsqueeze(2).expand(H_all.shape)  # (N, L) -> (N, L, 1) -> (N, L, H)
+        H_k = torch.masked_select(H_all, wisdom_mask.bool())  # (N, L, H), (N, L, H) -> (N * K * H)
+        H_k = H_k.reshape(N, self.hparams['k'], H)  # (N * K * H) -> (N, K, H)
+        self.wisdom_mask = None  # clear wisdom_mask after it is used.
+        return H_k
 
-    def training_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int) -> dict:
+    def S_wisdom_literal(self, H_k: torch.Tensor) -> torch.Tensor:
         """
-        :param batch: A tuple of X, y, subword_ids; ((N, 3, L), (N,),
-        :param batch_idx: the index of the batch
-        :return: (1,); the train_loss for this batch
+        To be used for both RDAlpha & RDBeta
+        :param H_k: (N, K, H)
+        :return: S_wisdom_literal (N, |W|)
         """
+        S_vocab = self.bert_mlm.cls(H_k)  # bmm; (N, K, H) * (H, |V|) ->  (N, K, |V|)
+        indices = self.wisdom2subwords.T.repeat(S_vocab.shape[0], 1, 1)  # (|W|, K) -> (N, K, |W|)
+        S_wisdom_literal = S_vocab.gather(dim=-1, index=indices)  # (N, K, |V|) -> (N, K, |W|)
+        S_wisdom_literal = S_wisdom_literal.sum(dim=1)  # (N, K, |W|) -> (N, |W|)
+        return S_wisdom_literal
+
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
+        """
+        :param H_all: (N, L, H)
+        :return S_wisdom: (N, |W|)
+        """
+        raise NotImplementedError("An RD class must implement S_wisdom")
+
+    def P_wisdom(self, X: torch.Tensor) -> torch.Tensor:
+        """
+        :param X: (N, 3, L)
+        :return P_wisdom: (N, |W|), normalized over dim 1.
+        """
+        H_all = self.forward(X)
+        S_wisdom = self.S_wisdom(H_all)
+        P_wisdom = F.softmax(S_wisdom, dim=1)
+        return P_wisdom
+
+    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
         X, y = batch
-        S_subword = self.forward(X)
-        S_word = self.S_word(S_subword)
-        # compute the loss
-        train_loss = F.cross_entropy(S_word, y).sum()  # (N, |V|) -> (N,) -> scalar
-        S_word_probs = F.softmax(S_word, dim=1)
-        self.rd_metric.update(preds=S_word_probs, targets=y)
+        H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
+        S_wisdom = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
+        loss = F.cross_entropy(S_wisdom, y)  # (N, |W|), (N,) -> (N,)
+        loss = loss.sum()  # (N,) -> (1,)
+        P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)
+        self.rd_metric.update(preds=P_wisdom, targets=y)
         median, var, top1, top10, top100 = self.rd_metric.compute()
-        # evaluate the model on the batch.
-        # we need this to check if the model is overfitting.
-        # return a batch dict.
-        #
         return {
-            'loss': train_loss,
+            'loss': loss,
             'median': median,
             'var': var,
             'top1': top1,
@@ -97,25 +122,34 @@ class RD(pl.LightningModule):
         avg_top10 = sum([x['top10'] for x in outputs]) / len(outputs)
         avg_top100 = sum([x['top100'] for x in outputs]) / len(outputs)
         # logging using tensorboard logger
-        self.logger.experiment.add_scalar("Train/Average Loss",
-                                          # y - coord
-                                          avg_train_loss,
-                                          # x - coord; you can choose th
-                                          self.current_epoch)
-        self.logger.experiment.add_scalar("Train/Average Median", avg_median, self.current_epoch)
-        self.logger.experiment.add_scalar("Train/Average Variance", avg_var, self.current_epoch)
-        self.logger.experiment.add_scalar("Train/Average Top 1 Acc", avg_top1, self.current_epoch)
-        self.logger.experiment.add_scalar("Train/Average Top 10 Acc", avg_top10, self.current_epoch)
-        self.logger.experiment.add_scalar("Train/Average Top 100 Acc", avg_top100, self.current_epoch)
 
-    def test_step(self, batch, batch_idx, *args, **kwargs):
+        self.log("Train/Average Loss", avg_train_loss)
+        self.log("Train/Average Median", avg_median)
+        self.log("Train/Average Variance", avg_var)
+        self.log("Train/Average Top 1 Acc", avg_top1)
+        self.log("Train/Average Top 10 Acc", avg_top10)
+        self.log("Train/Average Top 100 Acc", avg_top100)
+
+    def validation_step(self, *args, **kwargs):
+        # TODO: 나중에 구현하기. (이렇게 하면 워닝은 안뜨겠지)
+        pass
+
+    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor],
+                  batch_idx: int, *args, **kwargs):
+        self.rd_metric.reset()
         X, y = batch
-        S_subword = self.forward(X)
-        S_word = self.S_word(S_subword)
-        S_word_probs = F.softmax(S_word, dim=1)
+        P_wisdom = self.P_wisdom(X)
+        self.rd_metric.update(preds=P_wisdom, targets=y)
 
-        self.rd_metric.update(preds=S_word_probs, targets=y)
-        print("\nbatch:{}".format(batch_idx), self.rd_metric.compute())
+        median, var, top1, top10, top100 = self.rd_metric.compute()
+
+        self.log("Test Median", median)
+        self.log("Test Variance", var)
+        self.log("Test Top 1 Acc", top1)
+        self.log("Test Top 10 Acc", top10)
+        self.log("Test Top 100 Acc", top100)
+
+        print("batch:{}".format(batch_idx), (median, var, top1, top10, top100))
 
     def on_test_end(self):
         median, var, top1, top10, top100 = self.rd_metric.compute()
@@ -126,64 +160,105 @@ class RD(pl.LightningModule):
         print("top10:", top10)
         print("top100:", top100)
 
-    def validation_step(self, *args, **kwargs):
-        # TODO: 나중에 구현하기. (이렇게 하면 워닝은 안뜨겠지)
-        pass
-
-    def configure_optimizers(self) -> Optimizer:
+    def configure_optimizers(self) -> torch.optim.Optimizer:
         """
         Instantiates and returns the optimizer to be used for this model
         e.g. torch.optim.Adam
         """
-        # The authors used Adam, so we might as well use it
+        # The authors used Adam, so we might as well use it as well.
         return torch.optim.AdamW(self.parameters(), lr=self.hparams['lr'])
 
 
-class Wisdomifier:
-    def __init__(self, rd: RD, tokenizer: BertTokenizerFast):
-        self.rd = rd  # a trained reverse dictionary
-        self.tokenizer = tokenizer
+class RDAlpha(RD):
+    """
+    The first prototype.
+    S_wisdom = S_wisdom_literal
+    trained on: wisdom2def
+    """
 
-    # TODO: this should be a ... static method.
-    @staticmethod
-    def from_pretrained(ver: str, device) -> 'Wisdomifier':
-        conf = load_conf()
-        vers = conf['versions']
-        # error handling
-        if ver not in vers.keys():
-            raise NotImplementedError(
-                f"Cannot find version {ver}.\nWrite your setting and version properly on conf.json")
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
+        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
+        S_wisdom = self.S_wisdom_literal(H_k)  # (N, K, H) -> (N, |W|)
+        return S_wisdom
 
-        wisdomifier_path = WISDOMIFIER_CKPT.format(ver=ver)
-        k: int = conf['versions'][ver]['k']
-        bert_model: str = conf['versions'][ver]['bert_model']
-        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
 
-        tokenizer_path = os.path.join(DATA_DIR, f'lightning_logs/version_{ver}/checkpoints/')
-        # tokenizer = AutoTokenizer.from_pretrained(bert_model)
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-        vocab2subwords = build_vocab2subwords(tokenizer, k, VOCAB).to(device)
+class RDBeta(RD):
+    """
+    The second prototype.
+    S_wisdom = S_wisdom_literal + S_wisdom_figurative
+    trained on: wisdom2def
+    """
 
-        rd = RD.load_from_checkpoint(wisdomifier_path, bert_mlm=bert_mlm, vocab2subwords=vocab2subwords)
-        rd.to(device)
-        rd.eval()
-        wisdomifier = Wisdomifier(rd, tokenizer)
-        return wisdomifier
+    def __init__(self, bert_mlm: BertForMaskedLM,
+                 wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor,
+                 k: int, lr: float, device: torch.device):
+        super().__init__(bert_mlm, wisdom2subwords, k, lr, device)
+        self.wiskeys = wiskeys  # (|W|,)
 
-    def wisdomify(self, sents: List[str]) -> List[List[Tuple[str, float]]]:
-        # get the X
-        wisdom2sent = [("", desc) for desc in sents]
-        X = build_X(wisdom2sent, tokenizer=self.tokenizer, k=self.rd.hparams['k']).to(self.rd.device)
-        # get S_subword for this.
-        S_subword = self.rd.forward(X)
-        S_word = self.rd.S_word(S_subword)
-        S_word_probs = F.softmax(S_word, dim=1)
-        results = list()
-        for S_word_prob in S_word_probs.tolist():
-            wisdom2prob = [
-                (wisdom, prob)
-                for wisdom, prob in zip(VOCAB, S_word_prob)
-            ]
-            # sort and append
-            results.append(sorted(wisdom2prob, key=lambda x: x[1], reverse=True))
-        return results
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
+        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H
+        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
+        return S_wisdom
+
+    def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
+        """
+        param: H_all (N, L, H)
+        return: S_wisdom_figurative (N, |W|)
+        """
+        # 속담의 임베딩은 여기에 있습니다!
+        # 참고: wisdomify/examples/explore_bert_embeddings.py
+        W_embed = self.bert_mlm.bert.embeddings.word_embeddings(self.wiskeys)  # (|W|,) -> (|W|, H)
+
+        # TODO 다음을 계산해주세요!
+        S_wisdom_figurative: torch.Tensor = ...
+        return S_wisdom_figurative
+
+
+class RDGamma(RD):
+    """
+    The third prototype.
+    S_wisdom = S_wisdom_literal + S_wisdom_figurative
+    trained on = wisdom2def & wisdom2eg with two-stage training.
+    This is to be implemented & experimented after experimenting with RDAlpha & RDBeta is done.
+    """
+
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError
+
+    def forward(self, X: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        param X: (N, 4, L) - wisdom_mask 추가.
+        return: what should this return?
+        """
+        raise NotImplementedError
+        # input_ids = X[:, 0]
+        # token_type_ids = X[:, 1]
+        # attention_mask = X[:, 2]
+        # wisdom_mask = X[:, 3]  # this is new.  # (N, L).
+        # H_all = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 4, L) -> (N, L, 768)
+        # H_cls = H_all[:, 0]  # (N, L, 768) -> (N, 768)
+        # N = wisdom_mask.shape[0]  # get the batch size.
+        # H = H_all.shape[2]  # get the hidden size.
+        # wisdom_mask = wisdom_mask.unsqueeze(-1).expand(H_all.shape)
+        # H_k = torch.masked_select(H_all, wisdom_mask.bool())
+        # H_k = H_k.reshape(N, self.hparams['k'], H)  # (1, K * N) -> (N, K)
+        # return H_cls, H_k
+
+    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor],
+                      batch_idx: int) -> dict:
+        """
+        param: X (N, 4, L)
+        param:
+        """
+        raise NotImplementedError
+        # X, y = batch  # (N, 3, L), (N,)
+        # H_cls, H_k = self.forward(X)  # (N, 3, L) -> (N, H), (N, K, H)
+        # S_vocab = self.bert_mlm.cls(H_k)  # (N, K, 768) ->  (N, K, |V|)
+        # S_wisdom_literal = self.S_wisdom_literal(S_vocab)  # (N, K, |V|) -> (N, |W|)
+        # S_wisdom_figurative = self.S_wisdom_figurative(H_cls, H_k)  # (N, H),(N, K, H) -> (N, |W|)
+        # S_wisdom = S_wisdom_literal + S_wisdom_figurative  # (N, |W|) + (N, |W|) -> (N, |W|).
+        # loss = F.cross_entropy(S_wisdom, y)  # (N, |W|), (N,) -> (N,)
+        # loss = loss.sum()  # (N,) -> (1,) (scalar)
+        # return {
+        #     'loss': loss
+        # }
