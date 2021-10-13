@@ -70,12 +70,14 @@ class RD(pl.LightningModule):
     def H_eg(self, H_all: torch.Tensor) -> torch.Tensor:
         """
         :param H_all (N, L, H)
-        :return H_eg (N, L, H)
+        :return H_eg (N, L - (K + 3), H)
         """
+        N, L, H = H_all.size()
         eg_mask = self.eg_mask.unsqueeze(2).expand(H_all.shape)
-        H_eg = torch.masked_fill(H_all, eg_mask == 0, 0)
+        H_eg = torch.masked_select(H_all, eg_mask.bool())  # (N, L, H), (N, L, H) -> (N * (L - (K + 3)) * H)
+        H_eg = H_eg.reshape(N, L - (self.hparams['k']+3), H)  # (N * (L - (K + 3)) * H) -> (N, L - (K + 3), H)
         return H_eg
-
+    
     def S_wisdom_literal(self, H_k: torch.Tensor) -> torch.Tensor:
         """
         To be used for both RDAlpha & RDBeta
@@ -241,7 +243,7 @@ class RDBeta(RD):
         
         H_cls = H_all[:, 0]  # (N, H)
         H_wisdom = torch.mean(self.H_k(H_all), dim=1)  # (N, L, H) -> (N, K, H) -> (N, H)
-        H_eg = torch.mean(self.H_eg(H_all), dim=1)  # (N, L, H) -> (N, L, H) -> (N, H)
+        H_eg = torch.mean(self.H_eg(H_all), dim=1)  # (N, L, H) -> (N, L - (K + 3), H) -> (N, H)
         
         # Dropout -> tanh -> fc_layer
         H_cls = self.cls_fc(H_cls)  # (N, H) -> (N, H//3)

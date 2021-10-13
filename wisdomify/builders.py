@@ -69,8 +69,7 @@ class XBuilder(TensorBuilder):
         mask_id: int = self.tokenizer.mask_token_id
         
         wisdom_mask = torch.where(input_ids == mask_id, 1, 0)
-        eg_mask = torch.where(((input_ids != cls_id) & (input_ids != sep_id) &
-                               (input_ids != pad_id) & (input_ids != mask_id)), 1, 0)
+        eg_mask = torch.where(((input_ids != cls_id) & (input_ids != sep_id) & (input_ids != mask_id)), 1, 0)
         
         return torch.stack([input_ids,
                             # token type for the padded tokens? -> they are masked with the
