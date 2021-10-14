@@ -49,6 +49,7 @@ class Experiment:
                                               bert_mlm=bert_mlm, wisdom2subwords=wisdom2subwords,
                                               device=device)
         elif rd_model == "RDBeta":
+            bert_mlm.resize_token_embeddings(len(tokenizer))
             wiskeys = WisKeysBuilder(tokenizer, device)(wisdoms)
             rd = RDBeta.load_from_checkpoint(rd_dl_path,
                                              bert_mlm=bert_mlm, wisdom2subwords=wisdom2subwords,

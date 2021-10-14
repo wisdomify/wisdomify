@@ -11,7 +11,7 @@ class TensorBuilder:
 
     def __call__(self, *args, **kwargs) -> torch.Tensor:
         """
-        whatever it does,a bui;der outputs a Tensor.
+        whatever it does,a builder outputs a Tensor.
         """
         raise NotImplementedError
 
@@ -63,15 +63,22 @@ class XBuilder(TensorBuilder):
     def __call__(self, wisdom2sent: List[Tuple[str, str]]) -> torch.Tensor:
         encodings = self.encode(wisdom2sent)
         input_ids: torch.Tensor = encodings['input_ids']
+        cls_id: int = self.tokenizer.cls_token_id
+        sep_id: int = self.tokenizer.sep_token_id
+        pad_id: int = self.tokenizer.pad_token_id
         mask_id: int = self.tokenizer.mask_token_id
+        
         wisdom_mask = torch.where(input_ids == mask_id, 1, 0)
+        eg_mask = torch.where(((input_ids != cls_id) & (input_ids != sep_id) & (input_ids != mask_id)), 1, 0)
+        
         return torch.stack([input_ids,
                             # token type for the padded tokens? -> they are masked with the
                             # attention mask anyways
                             # https://github.com/google-research/bert/issues/635#issuecomment-491485521
                             encodings['token_type_ids'],
                             encodings['attention_mask'],
-                            wisdom_mask], dim=1).to(self.device)
+                            wisdom_mask,
+                            eg_mask], dim=1).to(self.device)
 
     def encode(self, wisdom2sent: List[Tuple[str, str]]) -> BatchEncoding:
         raise NotImplementedError

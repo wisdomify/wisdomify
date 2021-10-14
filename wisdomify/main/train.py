@@ -9,13 +9,14 @@ from wisdomify.paths import DATA_DIR
 from wisdomify.utils import WandBSupport
 
 
+
 def main():
     # --- setup the device --- #
     device = load_device()
 
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ver", type=str, default="0")
+    parser.add_argument("--ver", type=str, default="2")
     args = parser.parse_args()
     ver: str = args.ver
 
@@ -31,10 +32,10 @@ def main():
         save_last=True,
         verbose=False
     )
-    checkpoint_callback.CHECKPOINT_NAME_LAST = model_name
 
     # --- instantiate the training logger --- #
     logger = wandb_support.get_model_logger('training_log')
+
 
     # --- instantiate the trainer --- #
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
