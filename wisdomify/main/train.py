@@ -2,10 +2,12 @@ import pytorch_lightning as pl
 import torch
 import argparse
 from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger
+
 from wisdomify.loaders import load_device
 from wisdomify.wisdomifier import Experiment
-from wisdomify.paths import DATA_DIR, WISDOMIFIER_TOKENIZER_DIR, WISDOMIFIER_CKPT
+from wisdomify.paths import DATA_DIR
+from wisdomify.utils import WandBSupport
+
 
 
 def main():
@@ -18,33 +20,40 @@ def main():
     args = parser.parse_args()
     ver: str = args.ver
 
+    # --- W&B support object init --- #
+    wandb_support = WandBSupport(ver=ver, run_type='train')
+
     # --- build an experiment instance --- #
-    exp = Experiment.build(ver, device)
+    exp = Experiment.build(ver, device, wandb_support)
     model_name = "wisdomifier"
 
     # --- init callbacks --- #
     checkpoint_callback = ModelCheckpoint(
-        filename=model_name,
-        verbose=True
+        save_last=True,
+        verbose=False
     )
-    
-    # --- instantiate the logger --- #
-    logger = TensorBoardLogger(save_dir=DATA_DIR,
-                               name="lightning_logs")
+
+    # --- instantiate the training logger --- #
+    logger = wandb_support.get_model_logger('training_log')
+
 
     # --- instantiate the trainer --- #
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
-                         max_epochs=exp.config['max_epochs'],
+                         max_epochs=exp.config['model']['max_epochs'],
                          callbacks=[checkpoint_callback],
                          default_root_dir=DATA_DIR,
                          logger=logger)
 
     # --- start training --- #
     trainer.fit(model=exp.rd, datamodule=exp.datamodule)
-    trainer.save_checkpoint(WISDOMIFIER_CKPT.format(ver=ver))
 
-    # --- save the tokenizer --- #
-    exp.tokenizer.save_pretrained(WISDOMIFIER_TOKENIZER_DIR.format(ver=ver))
+    # --- saving model --- #
+    wandb_support.models.push_mlm(exp.rd.bert_mlm)      # TODO: 유빈님 이거 저장하는 거 맞아요?
+    wandb_support.models.push_tokenizer(exp.tokenizer)  # TODO: tokenizer는 이게 맞는 거 같은데
+    wandb_support.models.push_rd_ckpt()
+
+    # --- uploading wandb logs and other files --- #
+    wandb_support.push()
 
 
 if __name__ == '__main__':

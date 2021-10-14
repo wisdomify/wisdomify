@@ -3,8 +3,14 @@ at the moment, the tests test for version_0 only.
 """
 import unittest
 from wisdomify.loaders import load_conf, load_device
-from wisdomify.builders import *
-from transformers import AutoTokenizer
+from wisdomify.builders import (
+    Wisdom2SubWordsBuilder,
+    WisKeysBuilder,
+    Wisdom2DefXBuilder,
+    Wisdom2EgXBuilder,
+    YBuilder
+)
+from transformers import AutoTokenizer, BertTokenizerFast
 from typing import Tuple, List
 import torch
 
@@ -19,9 +25,9 @@ class TensorBuilderTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         conf = load_conf()['versions']['0']
-        cls.tokenizer = AutoTokenizer.from_pretrained(conf['bert_model'])
+        cls.tokenizer = AutoTokenizer.from_pretrained('beomi/kcbert-base')
         cls.tokenizer.add_tokens(conf['wisdoms'])
-        cls.k = conf['k']
+        cls.k = conf['model']['k']
         cls.wisdoms = conf['wisdoms']
         cls.device = load_device()
 

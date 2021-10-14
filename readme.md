@@ -25,6 +25,7 @@ Check the dependencies:
 ```text
 pytorch-lightning==1.3.7.post0
 transformers==4.8.1
+wandb==0.12.2
 ```
 Clone the project and set up a virtualenv for the project:
 ```bash
@@ -35,47 +36,20 @@ source wisdomifyenv/bin/activate  # activate the virtualenv
 pip3 install -r ./requirements.txt  # install the required libraries onto the virtualenv
 ```
 
-Download a pre-trained wisdomify and its related dataset with DVC.
+**[Requirement]: Weight and Bias Authentication**
 
-version | description 
---- | --- 
-version_0.zip (1.5GB) | the first minimal-viable-product of Wisdomify 
-version_1.zip (...) | to be added...
+This project uses "Weight and Bias (W&B)" for storing dataset and recording model experiment.
 
-Before downloading the model data and dataset, you must [install DVC](https://dvc.org/doc/install) depending on your OS.
-After installing the DVC, you can download data with following command.
+Therefore, if you try to whether 'train', 'eval' or 'infer' this model, you will be requested to authenticate via W&B login process.
 
-If your system is docker-like light OS, you can also install with pip.
-`pip install 'dvc[gs]'`
+The authentication process will be done only once when you run any script below 'main' directory.
 
 
-```bash
-gcloud auth application-default login   
-# as this repository uses google storage for dvc, please authenticate with your google account 
-dvc pull
-# follow the instruction from dvc after this command.
-```
-
-Make sure you have a directory structure like the following:
-```text
-data
-├── lightning_logs
-│   ├── readme.md
-│   └── version_0
-│       ├── checkpoints
-│       │   └── wisdomify_def_epoch=19_train_loss=0.00.ckpt
-│       ├── events.out.tfevents.1624691069.eubinCloud.57195.0
-│       └── hparams.yaml
-├── wisdomdata
-│   └── version_0
-|       ├── wisdom2eg.tsv
-|       └── wisdom2def.tsv
-└── torchServeModel
-```
 
 Wisdomify a sentence:
+
 ```text
-python3 -m wisdomify.main.infer --ver="version_0" --desc="까불지말고 침착하여라"
+python3 -m wisdomify.main.infer --ver="0" --desc="까불지말고 침착하여라"
 ```
 ```text
 ### desc: 까불지말고 침착하여라 ###
@@ -109,7 +83,7 @@ How did I end up with Wisdomify?:
 8. 로스함수를 이해했다. 한번 BERT로 간단한 reverse-dictionary를 구현해보자 - [Toy 프로젝트: fruitify - a reverse-dictionary of fruits!](https://github.com/eubinecto/fruitify) 
 9. fruitify: [성공적인 첫 데모!](https://github.com/eubinecto/fruitify/issues/7#issuecomment-867341908)
 10.  BERT로 reverse-dictionary를 구현하는 방법을 이해했고, 실재로 구현도 해보았다. 이제 생각해보아야 하는 것은 reverse-dictionary로 풀만한 가치가 있는 문제를
-찾는 것 - Wisdomify: 자기주도적으로 우리말 속담을 학습하는 것을 도와주는 reverse-dictionary.
+     찾는 것 - Wisdomify: 자기주도적으로 우리말 속담을 학습하는 것을 도와주는 reverse-dictionary.
      
 
 ## Methods
@@ -124,29 +98,88 @@ How did I end up with Wisdomify?:
 ![](.readme_images/fd7e409b.png) |
 
 
-### Hyper parameters
-The hyper parameters used for `version_0`:
+### `conf.json`
+The `conf.json` on project directory must have format as following. The value type and meaning are written as value of json.
+
+The hyper paramters for the model must be written below "_experiment version.model"
+
 ```json
-{
-  "bert_model": "beomi/kcbert-base",
-  "versions": {
-    "version_0": {
-      "desc": "The first minimal-viable-product of wisdomify",
-      "data": "wisdom2def",
-      "k": 11,
-      "lr": 0.00001,
-      "max_epochs": 20,
-      "batch_size": 40,
-      "repeat": 20,
-      "num_workers": 4,
-      "shuffle": true
-    }
-  }
-}
+"_experiment version": {
+      "_주의사항!": "추후 버전 추가에 따라 파라미터가 추가되면 해당 파라미터를 아래 설명 추가해주세요",
+      "exp_name": "(Str) 해당 실험의 간략한 이름을 적어주세요.",
+      "exp_desc": "(Str) 해당 실험에 대한 정보를 간결하지만 명확하게 적어주세요.",
+      "wandb": {
+        "_주의사항!": "이 곳의 명세는 반드시 W&B 페이지에 접속하여 사용할 아티펙트의 이름, 명세를 정확하게 확인하세요.",
+        "load": {
+          "_주의 (RD)!": "RD 관련 명세는 infer와 eval에만 사용됩니다. Train시 빈칸으로 두어도 무방합니다. (특별한 케이스가 아니면 동일하게 해주세요.)",
+          "rd_name": "(Str) WandB에서 로드할 RD 아티펙트의 이름을 적어주세요.",
+          "rd_ver": "(Str) WandB에서 로드할 RD 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
+          "mlm_name": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 이름을 적어주세요.",
+          "mlm_ver": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
+          "tokenizer_name": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
+          "tokenizer_ver": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
+          "data_name": "(Str) 해당 모델 트레이닝에 사용된 데이터 이름",
+          "data_version": "(Str) 해당 모델 트레이닝에 사용된 데이터 버전",
+          "data_type": "(Str) 해당 모델 트레이닝에 사용된 데이터의 타입 (definition, example)"
+        },
+        "save": {
+          "_주의 1": "mlm, tokenizer 그리고 rd의 이름은 반드시 'mlm_' / 'tokenizer_' / 'rd_' 로 시작해야합니다.",
+          "_주의 2": "mlm 혹은 tokenizer를 W&B에 저장하지 않을 시, 빈 string으로 이름을 설정하면됩니다.",
+          "rd_name": "(Str) WandB에서 로드할 RD 아티펙트의 이름을 적어주세요.",
+          "rd_desc": "(Str) WandB에서 로드할 RD 아티펙트의 설명을 적어주세요. (default: None)",
+          "mlm_name": "(Str) WandB에 저장할 BERT mlm 아티펙트의 이름을 적어주세요.",
+          "mlm_desc": "(Str) WandB에 저장할 BERT mlm 아티펙트의 설명을 적어주세요. (default: None)",
+          "tokenizer_name": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
+          "tokenizer_desc": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 설명을 적어주세요. (default: None)"
+        }
+      },
+      "model": {
+        "rd_model": "(Str) 사용할 RD_model 클래스 이름을 적어주세요. (해당 클래스가 작성되어 있지 않으면 NotImplementedError 발생합니다.)",
+        "X_mode": "(Str) 사용할 XBuilder 클래스 이름을 적어주세요. (해당 클래스가 작성되어 있지 않으면 NotImplementedError 발생합니다.)",
+        "y_mode": "(Str) 사용할 YBuilder 클래스 이름을 적어주세요. (해당 클래스가 작성되어 있지 않으면 NotImplementedError 발생합니다.)",
+        "k": "(Int) 최대 길이 설정",
+        "lr": "(Float) learning rate 설정",
+        "max_epochs": "(Int) 최대 에폭값",
+        "batch_size": "(Int) 배치사이즈",
+        "repeat": "(Int) 반복 횟수",
+        "num_workers": "(Int) 워커 개수 (해당 컴퓨터 사양에 맞춰 작성하세요. CPU의 경우 코어 개수이하여야합니다.)",
+        "shuffle": "(Bool) 셔플여부"
+      },
+      "wisdoms": "(List[Str]) - 검색할 속담 리스트"
+    },
 ```
+The hyper parameters used for `version_0` is:
+
+```json
+"model": {
+  "rd_model": "RDAlpha",
+  "X_mode": "XBuilder",
+  "y_mode": "YBuilder",
+  "k": 11,
+  "lr": 0.00001,
+  "max_epochs": 40,
+  "batch_size": 30,
+  "num_workers": 0,
+  "shuffle": true
+},
+"wisdoms": [
+  "가는 날이 장날",
+  "갈수록 태산",
+  "꿩 대신 닭",
+  "등잔 밑이 어둡다",
+  "소문난 잔치에 먹을 것 없다",
+  "핑계 없는 무덤 없다",
+  "고래 싸움에 새우 등 터진다",
+  "서당개 삼 년이면 풍월을 읊는다",
+  "원숭이도 나무에서 떨어진다",
+  "산 넘어 산"
+]
+```
+
 ### Training
+
 ```text
-wisdomify_def_epoch=19_train_loss=0.00.ckpt
+python3 -m wisdomify.main.train --ver="0"
 ```
 - 훈련셋에서 로스가 0에 수렴할 때 까지 훈련을 진행함. 가능한 빠른 시일 내에 프로토타입을 만들어보는것이 목표였으므로, 일단 validation/test set 구축을 스킵,
 오버피팅이 되더라도 훈련 셋에만 핏을 함.
@@ -155,6 +188,12 @@ wisdomify_def_epoch=19_train_loss=0.00.ckpt
 ### Dataset
 - 10개의 속담 별로 5개의 서로다른 정의를 구글링으로 손수 수집. 사이즈가 작으므로 그냥 repo에 업로드 함: [wisdom2def](https://github.com/eubinecto/wisdomify/blob/main/data/wisdom2def.tsv)
 - 추후 데이터를 더 수집하게 되면 kaggle이나 dropbox에 업로드 해서 접근하는 편이 나을 것.
+
+### Evaluation
+
+```text
+python3 -m wisdomify.main.eval --ver="0"
+```
 
 ## Examples
 

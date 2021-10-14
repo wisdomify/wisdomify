@@ -13,12 +13,11 @@ class Wisdomifier:
         self.wisdoms = wisdoms
 
     @staticmethod
-    def from_pretrained(ver: str, device) -> 'Wisdomifier':
-        exp = Experiment.load(ver, device)
+    def from_pretrained(ver: str, device, wandb_support) -> 'Wisdomifier':
+        exp = Experiment.load(ver, device, wandb_support)
         exp.rd.eval()
-        wisdomifier = Wisdomifier(exp.rd, exp.tokenizer, exp.datamodule.X_builder,
-                                  exp.config['wisdoms'])
-        return wisdomifier
+
+        return Wisdomifier(exp.rd, exp.tokenizer, exp.datamodule.X_builder, exp.config['wisdoms'])
 
     def __call__(self, sents: List[str]) -> List[List[Tuple[str, float]]]:
         # get the X
@@ -34,4 +33,5 @@ class Wisdomifier:
             ]
             # sort and append
             results.append(sorted(wisdom2prob, key=lambda x: x[1], reverse=True))
+
         return results

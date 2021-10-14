@@ -16,6 +16,7 @@ class RD(pl.LightningModule):
     The superclass of all the reverse-dictionaries. This class houses any methods that are required by
     whatever reverse-dictionaries we define.
     """
+
     def __init__(self, bert_mlm: BertForMaskedLM,
                  wisdom2subwords: torch.Tensor, k: int, lr: float, device: torch.device):
         """
@@ -135,25 +136,13 @@ class RD(pl.LightningModule):
         avg_top10 = sum([x['top10'] for x in outputs]) / len(outputs)
         avg_top100 = sum([x['top100'] for x in outputs]) / len(outputs)
         # logging using tensorboard logger
-        self.logger.experiment.add_scalar("Train/Average Loss",
-                                          # y - coord
-                                          avg_train_loss,
-                                          # x - coord; you can choose th
-                                          self.current_epoch)
-        self.logger.experiment.add_scalar("Train/Average Median", avg_median, self.current_epoch)
-        self.logger.experiment.add_scalar("Train/Average Variance", avg_var, self.current_epoch)
-        self.logger.experiment.add_scalar("Train/Average Top 1 Acc", avg_top1, self.current_epoch)
-        self.logger.experiment.add_scalar("Train/Average Top 10 Acc", avg_top10, self.current_epoch)
-        self.logger.experiment.add_scalar("Train/Average Top 100 Acc", avg_top100, self.current_epoch)
 
-    def on_test_end(self):
-        median, var, top1, top10, top100 = self.rd_metric.compute()
-        print("### final ###")
-        print("median:", median)
-        print("var:", var)
-        print("top1:", top1)
-        print("top10:", top10)
-        print("top100:", top100)
+        self.log("Train/Average Loss", avg_train_loss)
+        self.log("Train/Average Median", avg_median)
+        self.log("Train/Average Variance", avg_var)
+        self.log("Train/Average Top 1 Acc", avg_top1)
+        self.log("Train/Average Top 10 Acc", avg_top10)
+        self.log("Train/Average Top 100 Acc", avg_top100)
 
     def validation_step(self, *args, **kwargs):
         # TODO: 나중에 구현하기. (이렇게 하면 워닝은 안뜨겠지)
@@ -165,7 +154,25 @@ class RD(pl.LightningModule):
         X, y = batch
         P_wisdom = self.P_wisdom(X)
         self.rd_metric.update(preds=P_wisdom, targets=y)
-        print("batch:{}".format(batch_idx), self.rd_metric.compute())
+
+        median, var, top1, top10, top100 = self.rd_metric.compute()
+
+        self.log("Test Median", median)
+        self.log("Test Variance", var)
+        self.log("Test Top 1 Acc", top1)
+        self.log("Test Top 10 Acc", top10)
+        self.log("Test Top 100 Acc", top100)
+
+        print("batch:{}".format(batch_idx), (median, var, top1, top10, top100))
+
+    def on_test_end(self):
+        median, var, top1, top10, top100 = self.rd_metric.compute()
+        print("### final ###")
+        print("median:", median)
+        print("var:", var)
+        print("top1:", top1)
+        print("top10:", top10)
+        print("top100:", top100)
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """
@@ -216,10 +223,12 @@ class RDBeta(RD):
     S_wisdom = S_wisdom_literal + S_wisdom_figurative
     trained on: wisdom2def
     """
+
     def __init__(self, bert_mlm: BertForMaskedLM,
                  wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor,
                  k: int, lr: float, device: torch.device):
         super().__init__(bert_mlm, wisdom2subwords, k, lr, device)
+
         self.wiskeys = wiskeys   # (|W|,)
         self.hidden_size = bert_mlm.config.hidden_size
         self.dr_rate = 0.0

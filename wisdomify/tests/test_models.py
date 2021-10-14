@@ -1,6 +1,12 @@
 import unittest
+from typing import List
+
 from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoConfig
-from wisdomify.models import *
+from wisdomify.models import (
+    RD,
+    RDAlpha,
+    RDBeta
+)
 from wisdomify.loaders import load_conf, load_device
 from wisdomify.builders import Wisdom2SubWordsBuilder, WisKeysBuilder, XBuilder, Wisdom2DefXBuilder, YBuilder
 import torch
@@ -79,10 +85,10 @@ class RDAlphaTest(RDCommonTest.Test):
         super().setUpClass()
         device = load_device()
         conf = load_conf()['versions']['0']
-        bert_model = conf['bert_model']
+        bert_model = 'beomi/kcbert-base'
         wisdoms = conf['wisdoms']
-        K = conf['k']
-        LR = conf['lr']
+        K = conf['model']['k']
+        LR = conf['model']['lr']
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
         wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, K, device)(wisdoms)
@@ -115,10 +121,10 @@ class RDBetaTest(RDCommonTest.Test):
         super().setUpClass()
         device = load_device()
         conf = load_conf()['versions']['2']
-        bert_model = conf['bert_model']
+        bert_model = 'beomi/kcbert-base'
         wisdoms = conf['wisdoms']
-        k = conf['k']
-        lr = conf['lr']
+        k = conf['model']['k']
+        lr = conf['model']['lr']
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
         # need to add the wisdoms to the tokenizer, and resize the embedding table as well
