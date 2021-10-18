@@ -64,7 +64,7 @@ class TestWisdomDataModule(TestCase):
             ]
         }
         device = torch.device('cpu')
-        wandb_support = WandBSupport(ver='0', run_type='test_dataset', entity='artemisdicotiar')
+        wandb_support = WandBSupport(ver='0', run_type='test_dataset', entity='wisdomify')
 
         tokenizer = AutoTokenizer.from_pretrained('beomi/kcbert-base')
 

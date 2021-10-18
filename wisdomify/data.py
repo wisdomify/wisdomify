@@ -89,9 +89,8 @@ class WisdomDataModule(LightningDataModule):
         self.wandb_support.tmp_files.append('test_query')
 
         self.story = {
-            'train': self.read_wandb_artifact(wandb_artifact_dir, 'training.tsv')
-                     + self.read_wandb_artifact(wandb_artifact_dir, 'validation.tsv'),
-            'validation': self.read_wandb_artifact(wandb_artifact_dir, 'test.tsv'),
+            'train': self.read_wandb_artifact(wandb_artifact_dir, 'train.tsv'),
+            'validation': self.read_wandb_artifact(wandb_artifact_dir, 'validation.tsv'),
             'test': self.read_wandb_artifact(gold_test_spec['download_dir'], 'gold_test_queries.tsv'),
         }
 
