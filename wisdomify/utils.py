@@ -99,7 +99,8 @@ class WandBSupport:
         wandb.finish()
 
         for file in self.tmp_files:
-            shutil.rmtree(file)
+            if os.path.exists(file):
+                shutil.rmtree(file)
 
 
 class WandBModels:
