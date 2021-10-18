@@ -10,7 +10,7 @@ datasets==1.11.0
 dill==0.3.4
 enum-compat==0.0.3
 filelock==3.0.12
-Flask==2.0.1
+Flask==2.0.2
 fsspec==2021.6.1
 future==0.18.2
 google-auth==1.32.0
@@ -60,7 +60,7 @@ tqdm==4.61.1
 transformers==4.11.2
 typing-extensions==3.10.0.0
 urllib3==1.26.6
-wandb==0.12.2
+wandb==0.12.4
 Werkzeug==2.0.1
 xxhash==2.0.2
 yarl==1.6.3

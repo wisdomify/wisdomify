@@ -45,7 +45,6 @@ class WisdomDataModule(LightningDataModule):
                  tokenizer: BertTokenizerFast,
                  device: torch.device,
                  wandb_support: WandBSupport):
-      
         super().__init__()
         self.wisdoms: List[str] = config['wisdoms']
 
@@ -82,10 +81,17 @@ class WisdomDataModule(LightningDataModule):
 
         wandb_artifact_dir = dl_spec['download_dir']
 
+        gold_test_spec = self.wandb_support.download_artifact(
+            name='test_query',
+            ver='latest',
+            dtype='dataset'
+        )
+        self.wandb_support.tmp_files.append('test_query')
+
         self.story = {
-            'train': self.read_wandb_artifact(wandb_artifact_dir, 'training.tsv'),
+            'train': self.read_wandb_artifact(wandb_artifact_dir, 'train.tsv'),
             'validation': self.read_wandb_artifact(wandb_artifact_dir, 'validation.tsv'),
-            'test': self.read_wandb_artifact(wandb_artifact_dir, 'test.tsv'),
+            'test': self.read_wandb_artifact(gold_test_spec['download_dir'], 'gold_test_queries.tsv'),
         }
 
     def setup(self, stage: Optional[str] = None) -> None:
@@ -99,7 +105,7 @@ class WisdomDataModule(LightningDataModule):
             raise ValueError("Invalid data_name")
         self.dataset_train = self.build_dataset(self.story['train'], x_col, y_col)
         self.dataset_val = self.build_dataset(self.story['validation'], x_col, y_col)
-        self.dataset_test = self.build_dataset(self.story['test'], x_col, y_col)
+        self.dataset_test = self.build_dataset(self.story['test'], x_col, 'eg')
 
     def train_dataloader(self):
         return DataLoader(self.dataset_train, batch_size=self.batch_size,
