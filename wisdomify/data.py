@@ -106,7 +106,7 @@ class WisdomDataModule(LightningDataModule):
             raise ValueError("Invalid data_name")
         self.dataset_train = self.build_dataset(self.story['train'], x_col, y_col)
         self.dataset_val = self.build_dataset(self.story['validation'], x_col, y_col)
-        self.dataset_test = self.build_dataset(self.story['test'], x_col, y_col)
+        self.dataset_test = self.build_dataset(self.story['test'], x_col, 'eg')
 
     def train_dataloader(self):
         return DataLoader(self.dataset_train, batch_size=self.batch_size,
@@ -128,7 +128,7 @@ class WisdomDataModule(LightningDataModule):
         raw dataset from huggingface api (which has form of DatasetDict)
         to WisdomDataset.
 
-        :param raw_data: raw dataset from huggingface api
+        :param raw_data: raw dataset from hugzgingface api
         :param x_col: name of x column
         :param y_col: name of y column
         :return:
