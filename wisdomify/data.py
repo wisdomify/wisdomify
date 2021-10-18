@@ -128,7 +128,7 @@ class WisdomDataModule(LightningDataModule):
         raw dataset from huggingface api (which has form of DatasetDict)
         to WisdomDataset.
 
-        :param raw_data: raw dataset from hugzgingface api
+        :param raw_data: raw dataset from huggingface api
         :param x_col: name of x column
         :param y_col: name of y column
         :return:
