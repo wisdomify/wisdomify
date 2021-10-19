@@ -270,6 +270,63 @@ class RDGamma(RD):
     """
     The third prototype.
     S_wisdom = S_wisdom_literal + S_wisdom_figurative
+    trained on: wisdom2def
+    """
+
+    def __init__(self, bert_mlm: BertForMaskedLM,
+                 wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor,
+                 k: int, lr: float, device: torch.device):
+        super().__init__(bert_mlm, wisdom2subwords, k, lr, device)
+
+        self.wiskeys = wiskeys   # (|W|,)
+        self.hidden_size = bert_mlm.config.hidden_size
+        self.dr_rate = 0.0
+        
+        self.cls_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
+        self.wisdom_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
+        self.example_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
+        self.final_fc = FCLayer(self.hidden_size, self.hidden_size, self.dr_rate, False)
+
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
+        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
+        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
+        return S_wisdom
+
+    def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
+        """
+        param: H_all (N, L, H)
+        return: S_wisdom_figurative (N, |W|)
+        """
+        W_embed = self.bert_mlm.bert.embeddings.word_embeddings(self.wiskeys)  # (|W|,) -> (|W|, H)
+        
+        H_cls = H_all[:, 0]  # (N, H)
+
+        # Attention between H_cls & H_wisdom
+        H_wisdom = self.H_k(H_all) # (N, L, H) -> (N, K, H)
+        Attn_w = torch.einsum('nh,nqh -> nq', H_cls, H_wisdom) # (N, K, H) -> (N, K)
+        H_wisdom = torch.einsum('nq,nqh -> nh', Attn_w, H_wisdom)  # (N, K, H) * (N, K) -> (N, H)
+
+        # Attention between H_wisdom & H_eg
+        H_eg = self.H_eg(H_all) # (N, L, H) -> (N, L - (K + 3), H)
+        Attn_eg = torch.einsum('nh,nqh -> nq', H_wisdom, H_eg) # (N, L - (K + 3), H) -> (N, L - (K + 3))
+        H_eg = torch.einsum('nq,nqh -> nh', Attn_eg, H_eg)  # (N, L - (K + 3), H) * (N, L - (K + 3)) -> (N, H)
+
+        # Dropout -> tanh -> fc_layer
+        H_cls = self.cls_fc(H_cls)  # (N, H) -> (N, H//3)
+        H_wisdom = self.wisdom_fc(H_wisdom)  # (N, H) -> (N, H//3)
+        H_eg = self.example_fc(H_eg)  # (N, H) -> (N, H//3)
+        
+        # Concat -> fc_layer
+        H_concat = torch.cat([H_cls, H_wisdom, H_eg], dim=-1)  # (N, H)
+        H_final = self.final_fc(H_concat)  # (N, H) -> (N, H)
+        S_wisdom_figurative = torch.einsum("nh,hw->nw", H_final, W_embed.T)  # (N, H) * (H, |W|)-> (N, |W|)
+        return S_wisdom_figurative
+
+
+class RDZeta(RD):
+    """
+    The fourth prototype.
+    S_wisdom = S_wisdom_literal + S_wisdom_figurative
     trained on = wisdom2def & wisdom2eg with two-stage training.
     This is to be implemented & experimented after experimenting with RDAlpha & RDBeta is done.
     """
