@@ -52,9 +52,8 @@ class RD(pl.LightningModule):
         attention_mask = X[:, 2]  # (N, 4, L) -> (N, L)
         self.wisdom_mask = X[:, 3]  # (N, 4, L) -> (N, L)
         self.eg_mask = X[:, 4]
-        outputs = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, H)
-        H_all, Attentions = outputs.last_hidden_state, outputs.attentions
-        return H_all, Attentions
+        H_all = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, H)
+        return H_all
 
     def H_k(self, H_all: torch.Tensor) -> torch.Tensor:
         """
@@ -92,7 +91,7 @@ class RD(pl.LightningModule):
         S_wisdom_literal = S_wisdom_literal.sum(dim=1)  # (N, K, |W|) -> (N, |W|)
         return S_wisdom_literal
     
-    def S_wisdom(self, H_all: torch.Tensor, **kwargs) -> torch.Tensor:
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
         """
         :param H_all: (N, L, H)
         :return S_wisdom: (N, |W|)
@@ -104,15 +103,15 @@ class RD(pl.LightningModule):
         :param X: (N, 3, L)
         :return P_wisdom: (N, |W|), normalized over dim 1.
         """
-        H_all, Attentions = self.forward(X)
-        S_wisdom = self.S_wisdom(H_all, Attentions=Attentions)
+        H_all = self.forward(X)
+        S_wisdom = self.S_wisdom(H_all)
         P_wisdom = F.softmax(S_wisdom, dim=1)
         return P_wisdom
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
         X, y = batch
-        H_all, Attentions = self.forward(X)  # (N, 3, L) -> (N, L, H)
-        S_wisdom = self.S_wisdom(H_all, Attentions=Attentions)  # (N, L, H) -> (N, |W|)
+        H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
+        S_wisdom = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
         loss = F.cross_entropy(S_wisdom, y)  # (N, |W|), (N,) -> (N,)
         loss = loss.sum()  # (N,) -> (1,)
         P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)
@@ -191,7 +190,7 @@ class RDAlpha(RD):
     trained on: wisdom2def
     """
 
-    def S_wisdom(self, H_all: torch.Tensor, **kwargs) -> torch.Tensor:
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
         H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
         S_wisdom = self.S_wisdom_literal(H_k)  # (N, K, H) -> (N, |W|)
         return S_wisdom
@@ -239,12 +238,12 @@ class RDBeta(RD):
         self.example_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
         self.final_fc = FCLayer(self.hidden_size, self.hidden_size, self.dr_rate, False)
 
-    def S_wisdom(self, H_all: torch.Tensor, **kwargs) -> torch.Tensor:
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
         H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
-        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all, **kwargs)  # (N, |W|) + (N, |W|) -> (N, |W|)
+        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
         return S_wisdom
 
-    def S_wisdom_figurative(self, H_all: torch.Tensor, **kwargs) -> torch.Tensor:
+    def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
         """
         param: H_all (N, L, H)
         return: S_wisdom_figurative (N, |W|)
@@ -265,7 +264,7 @@ class RDBeta(RD):
         H_final = self.final_fc(H_concat)  # (N, H) -> (N, H)
         S_wisdom_figurative = torch.einsum("nh,hw->nw", H_final, W_embed.T)  # (N, H) * (H, |W|)-> (N, |W|)
         return S_wisdom_figurative
-
+    
 
 class RDGamma(RD):
     """
