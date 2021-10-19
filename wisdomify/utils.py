@@ -158,7 +158,7 @@ class WandBModels:
 
         dl_info = self.wandb_support.download_artifact(name=name, dtype='model', ver=ver if len(ver) > 1 else 'latest')
 
-        return AutoModelForMaskedLM.from_pretrained(dl_info['download_dir'])
+        return AutoModelForMaskedLM.from_pretrained(dl_info['download_dir'], output_attentions=True)
 
     def push_mlm(self,
                  model: BertForMaskedLM):
