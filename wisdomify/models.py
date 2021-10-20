@@ -284,6 +284,7 @@ class RDGamma(RD):
         
         self.cls_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
         self.wisdom_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
+        self.wisdom_pooler = FCLayer(k, 1, self.dr_rate)
         self.example_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
         self.final_fc = FCLayer(self.hidden_size, self.hidden_size, self.dr_rate, False)
 
@@ -300,15 +301,11 @@ class RDGamma(RD):
         W_embed = self.bert_mlm.bert.embeddings.word_embeddings(self.wiskeys)  # (|W|,) -> (|W|, H)
         
         H_cls = H_all[:, 0]  # (N, H)
-
-        # Attention between H_cls & H_wisdom
-        H_wisdom = self.H_k(H_all) # (N, L, H) -> (N, K, H)
-        Attn_w = torch.einsum('nh,nqh -> nq', H_cls, H_wisdom) # (N, K, H) -> (N, K)
-        H_wisdom = torch.einsum('nq,nqh -> nh', Attn_w, H_wisdom)  # (N, K, H) * (N, K) -> (N, H)
+        H_wisdom = self.wisdom_pooler(self.H_x(H_all).permute(0, 2, 1)).squeeze(-1)
 
         # Attention between H_wisdom & H_eg
         H_eg = self.H_eg(H_all) # (N, L, H) -> (N, L - (K + 3), H)
-        Attn_eg = torch.einsum('nh,nqh -> nq', H_wisdom, H_eg) # (N, L - (K + 3), H) -> (N, L - (K + 3))
+        Attn_eg = F.softmax(torch.einsum('nh,nqh -> nq', H_wisdom, H_eg), dim=1) # (N, L - (K + 3), H) -> (N, L - (K + 3)) 
         H_eg = torch.einsum('nq,nqh -> nh', Attn_eg, H_eg)  # (N, L - (K + 3), H) * (N, L - (K + 3)) -> (N, H)
 
         # Dropout -> tanh -> fc_layer
