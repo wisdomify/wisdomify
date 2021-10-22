@@ -142,21 +142,18 @@ class RDBetaTest(RDCommonTest.Test):
     def test_H_k_dim(self):
         super(RDBetaTest, self).test_H_k_dim()
 
-    @unittest.expectedFailure
     def test_S_wisdom_dim(self):
         super(RDBetaTest, self).test_S_wisdom_dim()
 
     def test_S_wisdom_literal_dim(self):
         super(RDBetaTest, self).test_S_wisdom_literal_dim()
 
-    @unittest.expectedFailure
     def test_S_wisdom_figurative_dim(self):
         H_all = self.rd.forward(self.X)
         S_wisdom_figurative = self.rd.S_wisdom_figurative(H_all)
         self.assertEqual(self.N, S_wisdom_figurative.shape[0])  # N
         self.assertEqual(self.W, S_wisdom_figurative.shape[1])  # |W|
 
-    @unittest.expectedFailure
     def test_P_wisdom_dim(self):
         super(RDBetaTest, self).test_P_wisdom_dim()
 

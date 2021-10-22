@@ -91,7 +91,7 @@ class Wisdom2DefXBuilderTest(TensorBuilderTest):
     def test_build_X_dim(self):
         X = self.wisdom2def_X_builder(self.get_wisdom2sent())  # should be (N, 3, L)
         self.assertEqual(len(self.get_wisdom2sent()), X.shape[0])
-        self.assertEqual(4, X.shape[1])  # input_ids, token_type_ids, attention_mask, wisdom_mask
+        self.assertEqual(5, X.shape[1])  # input_ids, token_type_ids, attention_mask, wisdom_mask
         self.assertEqual(28, X.shape[2])  # the max length.. what is it?
 
 
@@ -111,7 +111,7 @@ class Wisdom2EgXBuilderTest(TensorBuilderTest):
     def test_build_X_dim(self):
         X = self.wisdom2eg_X_builder(self.get_wisdom2sent())  # should be (N, 4, L)
         self.assertEqual(len(self.get_wisdom2sent()), X.shape[0])
-        self.assertEqual(4, X.shape[1])
+        self.assertEqual(5, X.shape[1])
         self.assertEqual(41, X.shape[2])
 
 
