@@ -65,7 +65,6 @@ class XBuilder(TensorBuilder):
         input_ids: torch.Tensor = encodings['input_ids']
         cls_id: int = self.tokenizer.cls_token_id
         sep_id: int = self.tokenizer.sep_token_id
-        pad_id: int = self.tokenizer.pad_token_id
         mask_id: int = self.tokenizer.mask_token_id
         
         wisdom_mask = torch.where(input_ids == mask_id, 1, 0)
