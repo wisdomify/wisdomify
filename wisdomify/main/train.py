@@ -18,12 +18,12 @@ def main():
     parser.add_argument("--ver", type=str, default="2")
     parser.add_argument("--wandb", type=int, default=0,
                         help="This parameter is set to use wandb only for data download."
-                             "(1: only data, 0: data and model logging)"
+                             "(0: only data, 1: data and model logging)"
                         )
     args = parser.parse_args()
 
     ver: str = args.ver
-    only_data: int = args.wandb
+    only_data: bool = True if not args.wandb else False
 
     # --- W&B support object init --- #
     wandb_support = WandBSupport(ver=ver, run_type='train', only_data=True if only_data else False)
