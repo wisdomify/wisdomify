@@ -17,7 +17,9 @@ class WandBSupport:
                  ver: str,
                  run_type: str,
                  entity: str = 'wisdomify',
-                 project: str = 'wisdomify'):
+                 project: str = 'wisdomify',
+                 only_data: bool = False):
+        self.only_data = only_data
         self.conf_json = load_conf()['versions'][ver]
         self.config = self.conf_json['wandb']
 
