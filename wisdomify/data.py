@@ -93,6 +93,8 @@ class WisdomDataModule(LightningDataModule):
             'validation': self.read_wandb_artifact(wandb_artifact_dir, 'validation.tsv'),
             'test': self.read_wandb_artifact(gold_test_spec['download_dir'], 'gold_test_queries.tsv'),
         }
+        if self.wandb_support.only_data:
+            self.wandb_support.push()
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
