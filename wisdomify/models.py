@@ -187,7 +187,7 @@ class RDAlpha(RD):
     """
     The first prototype.
     S_wisdom = S_wisdom_literal
-    trained on: wisdom2def
+    trained on: wisdom2def only.
     """
 
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
@@ -195,7 +195,7 @@ class RDAlpha(RD):
         S_wisdom = self.S_wisdom_literal(H_k)  # (N, K, H) -> (N, |W|)
         return S_wisdom
 
-    
+
 class FCLayer(nn.Module):
     """
     Reference:
@@ -221,7 +221,7 @@ class RDBeta(RD):
     """
     The second prototype.
     S_wisdom = S_wisdom_literal + S_wisdom_figurative
-    trained on: wisdom2def
+    trained on: wisdom2def only.
     """
 
     def __init__(self, bert_mlm: BertForMaskedLM,
@@ -250,7 +250,7 @@ class RDBeta(RD):
         """
         W_embed = self.bert_mlm.bert.embeddings.word_embeddings(self.wiskeys)  # (|W|,) -> (|W|, H)
         
-        H_cls = H_all[:, 0]  # (N, H)
+        H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
         H_wisdom = torch.mean(self.H_k(H_all), dim=1)  # (N, L, H) -> (N, K, H) -> (N, H)
         H_eg = torch.mean(self.H_eg(H_all), dim=1)  # (N, L, H) -> (N, L - (K + 3), H) -> (N, H)
         
@@ -260,7 +260,7 @@ class RDBeta(RD):
         H_eg = self.example_fc(H_eg)  # (N, H) -> (N, H//3)
         
         # Concat -> fc_layer
-        H_concat = torch.cat([H_cls, H_wisdom, H_eg], dim=-1)  # (N, H)
+        H_concat = torch.cat([H_cls, H_wisdom, H_eg], dim=-1)  # (N, H//3) X 3 -> (N, H)
         H_final = self.final_fc(H_concat)  # (N, H) -> (N, H)
         S_wisdom_figurative = torch.einsum("nh,hw->nw", H_final, W_embed.T)  # (N, H) * (H, |W|)-> (N, |W|)
         return S_wisdom_figurative

@@ -11,7 +11,7 @@ def main():
     device = load_device()
     parser = argparse.ArgumentParser()
     parser.add_argument("--ver", type=str,
-                        default="0")
+                        default="2")
     parser.add_argument("--desc", type=str,
                         default="왜 하필이면 오늘이야")
     args = parser.parse_args()

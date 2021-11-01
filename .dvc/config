@@ -1,4 +1,0 @@
-[core]
-    remote = wisdomify
-['remote "wisdomify"']
-    url = gs://wisdomify/wisdom/wisdomify
