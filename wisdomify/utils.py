@@ -1,15 +1,12 @@
 import os
 import shutil
-
 import wandb
-
 from os import path
 from os.path import join
-
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 from transformers import AutoModelForMaskedLM, AutoTokenizer, BertForMaskedLM, BertTokenizer
-
 from wisdomify.loaders import load_conf
+from wisdomify.paths import DATA_DIR
 
 
 class WandBSupport:
@@ -26,6 +23,7 @@ class WandBSupport:
 
         # initialise wandb connection object.
         self.wandb_obj = wandb.init(
+            dir=DATA_DIR,
             entity=entity,
             project=project,
             name=self.job_name,
@@ -91,7 +89,7 @@ class WandBSupport:
 
     def get_model_logger(self, log_name: str):
         # this function returns model logger
-        self. logger = WandbLogger(project='wisdomify', entity='wisdomify', name=log_name)
+        self.logger = WandbLogger(project='wisdomify', entity='wisdomify', name=log_name)
         return self.logger
 
     def push(self) -> None:

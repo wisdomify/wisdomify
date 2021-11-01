@@ -2,12 +2,10 @@ import pytorch_lightning as pl
 import torch
 import argparse
 from pytorch_lightning.callbacks import ModelCheckpoint
-
 from wisdomify.loaders import load_device
-from wisdomify.wisdomifier import Experiment
 from wisdomify.paths import DATA_DIR
+from wisdomify.wisdomifier import Experiment
 from wisdomify.utils import WandBSupport
-
 
 
 def main():
@@ -16,7 +14,7 @@ def main():
 
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ver", type=str, default="2")
+    parser.add_argument("--ver", type=str, default="0")
     args = parser.parse_args()
     ver: str = args.ver
 
@@ -36,12 +34,10 @@ def main():
     # --- instantiate the training logger --- #
     logger = wandb_support.get_model_logger('training_log')
 
-
     # --- instantiate the trainer --- #
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          max_epochs=exp.config['model']['max_epochs'],
                          callbacks=[checkpoint_callback],
-                         default_root_dir=DATA_DIR,
                          logger=logger)
 
     # --- start training --- #
