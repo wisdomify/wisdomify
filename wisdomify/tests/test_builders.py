@@ -4,7 +4,7 @@ at the moment, the tests test for version_0 only.
 import unittest
 from wisdomify.loaders import load_conf, load_device
 from wisdomify.builders import (
-    Wisdom2SubWordsBuilder,
+    Wisdom2SubwordsBuilder,
     WisKeysBuilder,
     Wisdom2DefXBuilder,
     Wisdom2EgXBuilder,
@@ -41,13 +41,13 @@ class TensorBuilderTest(unittest.TestCase):
 
 class Wisdom2SubwordsBuilderTest(TensorBuilderTest):
 
-    wisdom2subwords_builder: Wisdom2SubWordsBuilder
+    wisdom2subwords_builder: Wisdom2SubwordsBuilder
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.tokenizer.add_tokens(cls.wisdoms)  # treat wisdoms as single tokens
-        cls.wisdom2subwords_builder = Wisdom2SubWordsBuilder(cls.tokenizer, cls.k, cls.device)
+        cls.wisdom2subwords_builder = Wisdom2SubwordsBuilder(cls.tokenizer, cls.k, cls.device)
 
     def test_build_wisdom2subwords_dim(self):
         wisdom2subwords = self.wisdom2subwords_builder(self.wisdoms)  # should be (V,K)

@@ -8,7 +8,7 @@ from wisdomify.models import (
     RDBeta
 )
 from wisdomify.loaders import load_conf, load_device
-from wisdomify.builders import Wisdom2SubWordsBuilder, WisKeysBuilder, XBuilder, Wisdom2DefXBuilder, YBuilder
+from wisdomify.builders import Wisdom2SubwordsBuilder, WisKeysBuilder, XBuilder, Wisdom2DefXBuilder, YBuilder
 import torch
 
 
@@ -91,7 +91,7 @@ class RDAlphaTest(RDCommonTest.Test):
         LR = conf['model']['lr']
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
-        wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, K, device)(wisdoms)
+        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, K, device)(wisdoms)
         cls.rd = RDAlpha(bert_mlm, wisdom2subwords, K, LR, device)
         cls.initialize(Wisdom2DefXBuilder(tokenizer, K, device), YBuilder(device),
                        wisdoms, bert_mlm.config.hidden_size, len(wisdoms), K)
@@ -130,7 +130,7 @@ class RDBetaTest(RDCommonTest.Test):
         # need to add the wisdoms to the tokenizer, and resize the embedding table as well
         tokenizer.add_tokens(wisdoms)
         bert_mlm.resize_token_embeddings(len(tokenizer))
-        wisdom2subwords = Wisdom2SubWordsBuilder(tokenizer, k, device)(wisdoms)
+        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, device)(wisdoms)
         wiskeys = WisKeysBuilder(tokenizer, device)(wisdoms)
         cls.rd = RDBeta(bert_mlm, wisdom2subwords, wiskeys, k, lr, device)
         cls.initialize(Wisdom2DefXBuilder(tokenizer, k, device), YBuilder(device),

@@ -1,62 +1,57 @@
-import pytorch_lightning as pl
 import torch
 import argparse
-from pytorch_lightning.callbacks import ModelCheckpoint
+import wandb
+import pytorch_lightning as pl
+from pytorch_lightning.loggers import WandbLogger
+from wisdomify.builders import RDArtifactBuilder
 from wisdomify.loaders import load_device
-from wisdomify.paths import DATA_DIR
-from wisdomify.wisdomifier import Experiment
-from wisdomify.utils import WandBSupport
+from wisdomify.paths import ROOT_DIR
+from wisdomify.utils import Experiment
 
 
 def main():
     # --- setup the device --- #
     device = load_device()
-
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
-
-    parser.add_argument("--ver", type=str, default="2")
-    parser.add_argument("--wandb", type=int, default=0,
-                        help="This parameter is set to use wandb only for data download."
-                             "(0: only data, 1: data and model logging)")
+    parser.add_argument("--model", type=str, default="rd_beta")
+    parser.add_argument("--ver", type=str, default="v0")
+    parser.add_argument("--upload", type=int, default=1)  # set this to 0 if you don't want to upload the models.
     args = parser.parse_args()
-
+    model: str = args.model
     ver: str = args.ver
-    only_data: bool = True if not args.wandb else False
-
-    # --- W&B support object init --- #
-    wandb_support = WandBSupport(ver=ver, run_type='train', only_data=True if only_data else False)
-
+    upload: int = args.upload
+    # --- init run  --- #
+    run = wandb.init(name="wisdomify.main.train",
+                     tags=[f"{model}:{ver}"],
+                     dir=ROOT_DIR,
+                     project="wisdomify",
+                     entity="wisdomify")
     # --- build an experiment instance --- #
-    exp = Experiment.build(ver, device, wandb_support)
-    model_name = "wisdomifier"
-
-    # --- init callbacks --- #
-    checkpoint_callback = ModelCheckpoint(
-        save_last=True,
-        verbose=False
-    )
-
+    exp = Experiment.build(model, ver, run, device)
     # --- instantiate the training logger --- #
-    logger = wandb_support.get_model_logger('training_log') if not only_data else None
-
+    # A new W&B run will be created when training starts if you have not created one manually before with wandb.init().
+    logger = WandbLogger(log_model=False)
     # --- instantiate the trainer --- #
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
-                         max_epochs=exp.config['model']['max_epochs'],
-                         callbacks=[checkpoint_callback],
+                         max_epochs=exp.config['max_epochs'],
+                         default_root_dir=ROOT_DIR,
+                         # do not save checkpoints every epoch - we need this especially for sweeping
+                         # https://github.com/PyTorchLightning/pytorch-lightning/issues/5867#issuecomment-775223087
+                         checkpoint_callback=False,
+                         callbacks=[],  # TODO: implement early stopping
                          logger=logger)
-
-    # --- start training --- #
+    # --- start training with validation --- #
     trainer.fit(model=exp.rd, datamodule=exp.datamodule)
-
-    if not only_data:
-        # --- saving model --- #
-        wandb_support.models.push_mlm(exp.rd.bert_mlm)  # TODO: 유빈님 이거 저장하는 거 맞아요?
-        wandb_support.models.push_tokenizer(exp.tokenizer)  # TODO: tokenizer 는 이게 맞는 거 같은데
-        wandb_support.models.push_rd_ckpt()
-
-        # --- uploading wandb logs and other files --- #
-        wandb_support.push()
+    # --- upload the model as an artifact to wandb, after training is done --- #
+    if upload:
+        builder = RDArtifactBuilder(model, ver, exp.config)
+        # save rd & tokenizer to local
+        torch.save(exp.rd.state_dict(), builder.rd_bin_path)  # save the state dict only.
+        exp.tokenizer.save_pretrained(builder.tok_dir_path)
+        # upload them to wandb
+        rd_artifact = builder()
+        run.log_artifact(rd_artifact)
 
 
 if __name__ == '__main__':

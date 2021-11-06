@@ -2,9 +2,12 @@
 all the functions for building tensors are defined here.
 builders must accept device as one of the parameters.
 """
-from typing import List, Tuple
 import torch
+import wandb
+import os
+from typing import List, Tuple
 from transformers import BertTokenizerFast, BatchEncoding
+from wisdomify.paths import ARTIFACTS_DIR
 
 
 class TensorBuilder:
@@ -16,7 +19,7 @@ class TensorBuilder:
         raise NotImplementedError
 
 
-class Wisdom2SubWordsBuilder(TensorBuilder):
+class Wisdom2SubwordsBuilder(TensorBuilder):
     def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
         self.tokenizer = tokenizer
         self.k = k
@@ -60,26 +63,23 @@ class XBuilder(TensorBuilder):
         self.k = k
         self.device = device
 
-    def __call__(self, wisdom2sent: List[Tuple[str, str]]) -> torch.Tensor:
-        encodings = self.encode(wisdom2sent)
+    def __call__(self, wisdom2desc: List[Tuple[str, str]]) -> torch.Tensor:
+        encodings = self.encode(wisdom2desc)
         input_ids: torch.Tensor = encodings['input_ids']
         cls_id: int = self.tokenizer.cls_token_id
         sep_id: int = self.tokenizer.sep_token_id
         mask_id: int = self.tokenizer.mask_token_id
         
         wisdom_mask = torch.where(input_ids == mask_id, 1, 0)
-        eg_mask = torch.where(((input_ids != cls_id) & (input_ids != sep_id) & (input_ids != mask_id)), 1, 0)
+        desc_mask = torch.where(((input_ids != cls_id) & (input_ids != sep_id) & (input_ids != mask_id)), 1, 0)
         
         return torch.stack([input_ids,
-                            # token type for the padded tokens? -> they are masked with the
-                            # attention mask anyways
-                            # https://github.com/google-research/bert/issues/635#issuecomment-491485521
                             encodings['token_type_ids'],
                             encodings['attention_mask'],
                             wisdom_mask,
-                            eg_mask], dim=1).to(self.device)
+                            desc_mask], dim=1).to(self.device)
 
-    def encode(self, wisdom2sent: List[Tuple[str, str]]) -> BatchEncoding:
+    def encode(self, wisdom2desc: List[Tuple[str, str]]) -> BatchEncoding:
         raise NotImplementedError
 
 
@@ -88,9 +88,8 @@ class Wisdom2DefXBuilder(XBuilder):
         """
         param wisdom2def: (가는 날이 장날, 어떤 일을 하려고 하는데 뜻하지 않은 일을 공교롭게 당하는 것을 비유적으로 이르는 말)
         """
-        defs = [sent for _, sent in wisdom2def]
-        lefts = [" ".join(["[MASK]"] * self.k)] * len(defs)
-        rights = defs
+        rights = [sent for _, sent in wisdom2def]
+        lefts = [" ".join(["[MASK]"] * self.k)] * len(rights)
         encodings = self.tokenizer(text=lefts,
                                    text_pair=rights,
                                    return_tensors="pt",
@@ -131,13 +130,43 @@ class YBuilder(TensorBuilder):
     def __init__(self, device: torch.device):
         self.device = device
 
-    def __call__(self, wisdom2sent: List[Tuple[str, str]], wisdoms: List[str]) -> torch.LongTensor:
+    def __call__(self, wisdom2desc: List[Tuple[str, str]], wisdoms: List[str]) -> torch.LongTensor:
         """
-        :param wisdom2sent:
+        :param wisdom2desc:
         :param wisdoms:
         :return: (N, )
         """
         return torch.LongTensor([
             wisdoms.index(wisdom)
-            for wisdom in [wisdom for wisdom, _ in wisdom2sent]
+            for wisdom in [wisdom for wisdom, _ in wisdom2desc]
         ]).to(self.device)
+
+
+class RDArtifactBuilder:
+
+    def __init__(self, model: str, ver: str, config: dict):
+        self.model = model
+        self.ver = ver
+        self.config = config
+
+    def __call__(self) -> wandb.Artifact:
+        artifact = wandb.Artifact(self.model, metadata=self.config, type="model")
+        artifact.add_file(self.rd_bin_path)
+        artifact.add_dir(self.tok_dir_path, name="tokenizer")
+        return artifact
+
+    @property
+    def artifact_dir_path(self) -> str:
+        dir_path = os.path.join(ARTIFACTS_DIR, f"{self.model}:{self.ver}")
+        os.makedirs(dir_path, exist_ok=True)
+        return dir_path
+
+    @property
+    def rd_bin_path(self) -> str:
+        return os.path.join(self.artifact_dir_path, "rd.bin")
+
+    @property
+    def tok_dir_path(self) -> str:
+        tok_dir_path = os.path.join(self.artifact_dir_path, "tokenizer")
+        os.makedirs(tok_dir_path, exist_ok=True)
+        return tok_dir_path
