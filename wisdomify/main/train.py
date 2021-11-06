@@ -21,7 +21,7 @@ def main():
     model: str = args.model
     ver: str = args.ver
     upload: int = args.upload
-    # --- init run  --- #
+    # --- init a run  --- #
     run = wandb.init(name="wisdomify.main.train",
                      tags=[f"{model}:{ver}"],
                      dir=ROOT_DIR,
