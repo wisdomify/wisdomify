@@ -31,7 +31,7 @@ class RD(pl.LightningModule):
         self.wisdom2subwords = wisdom2subwords  # (|W|, K)
         # --- to be used for getting H_k --- #
         self.wisdom_mask: Optional[torch.Tensor] = None  # (N, L)
-        # --- to be used for getting H_eg --- #
+        # --- to be used for getting H_desc --- #
         self.desc_mask: Optional[torch.Tensor] = None  # (N, L)
         # --- to be used to evaluate the model --- #
         self.rd_metric = RDMetric()
@@ -72,13 +72,13 @@ class RD(pl.LightningModule):
     def H_desc(self, H_all: torch.Tensor) -> torch.Tensor:
         """
         :param H_all (N, L, H)
-        :return H_eg (N, L - (K + 3), H)
+        :return H_desc (N, L - (K + 3), H)
         """
         N, L, H = H_all.size()
         desc_mask = self.desc_mask.unsqueeze(2).expand(H_all.shape)
-        H_eg = torch.masked_select(H_all, desc_mask.bool())  # (N, L, H), (N, L, H) -> (N * (L - (K + 3)) * H)
-        H_eg = H_eg.reshape(N, L - (self.hparams['k']+3), H)  # (N * (L - (K + 3)) * H) -> (N, L - (K + 3), H)
-        return H_eg
+        H_desc = torch.masked_select(H_all, desc_mask.bool())  # (N, L, H), (N, L, H) -> (N * (L - (K + 3)) * H)
+        H_desc = H_desc.reshape(N, L - (self.hparams['k']+3), H)  # (N * (L - (K + 3)) * H) -> (N, L - (K + 3), H)
+        return H_desc
     
     def S_wisdom_literal(self, H_k: torch.Tensor) -> torch.Tensor:
         """
@@ -118,39 +118,25 @@ class RD(pl.LightningModule):
         P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)
         # so that the metrics accumulate over the course of this epoch
         self.rd_metric.update(preds=P_wisdom, targets=y)
-        # so that we know the performance of rd on this specific batch
-        median, var, top1, top10, top100 = self.rd_metric.compute()
+        # why dict? - just a boilerplate
         return {
-            'loss': loss,
-            'median': median,
-            'var': var,
-            'top1': top1,
-            'top10': top10,
-            'top100': top100
+            "loss": loss
         }
 
     def training_epoch_end(self, outputs: List[dict]) -> None:
         # to see an average performance over the batches in this specific epoch
-        avg_loss, rank_median, rank_var, avg_top1, avg_top10, avg_top100 = self.reduce_outputs(outputs)
+        avg_loss = torch.stack([output['loss'] for output in outputs]).mean()
         # log the metrics
+        rank_mean, rank_median, rank_std, top1, top3, top5 = self.rd_metric.compute()
         self.log("Train/Average Loss", avg_loss)
+        self.log("Train/Rank Mean", rank_mean)
         self.log("Train/Rank Median", rank_median)
-        self.log("Train/Rank Variance", rank_var)
-        self.log("Train/Average Top 1 Acc", avg_top1)
-        self.log("Train/Average Top 10 Acc", avg_top10)
-        self.log("Train/Average Top 100 Acc", avg_top100)
+        self.log("Train/Rank Standard Deviation", rank_std)
+        self.log("Train/Top 1 Accuracy", top1)
+        self.log("Train/Top 3 Accuracy", top3)
+        self.log("Train/Top 5 Accuracy", top5)
         # so that the metrics do not accumulate to the next epoch
         self.rd_metric.reset()
-
-    @staticmethod
-    def reduce_outputs(outputs: List[dict]) -> Tuple[float, float, float, float, float, float]:
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-        rank_median = sum([x['median'] for x in outputs]) / len(outputs)
-        rank_var = sum([x['var'] for x in outputs]) / len(outputs)
-        avg_top1 = sum([x['top1'] for x in outputs]) / len(outputs)
-        avg_top10 = sum([x['top10'] for x in outputs]) / len(outputs)
-        avg_top100 = sum([x['top100'] for x in outputs]) / len(outputs)
-        return avg_loss, rank_median, rank_var, avg_top1, avg_top10, avg_top100
 
     def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
         # just the same as the training step
@@ -158,37 +144,37 @@ class RD(pl.LightningModule):
 
     def validation_epoch_end(self, outputs: List[dict]) -> None:
         # to see an average performance over the batches in this specific epoch
-        avg_loss, rank_median, rank_var, avg_top1, avg_top10, avg_top100 = self.reduce_outputs(outputs)
+        avg_loss = torch.stack([output['loss'] for output in outputs]).mean()
         # log the metrics
+        rank_mean, rank_median, rank_std, top1, top3, top5 = self.rd_metric.compute()
         self.log("Validation/Average Loss", avg_loss)
+        self.log("Validation/Rank Mean", rank_mean)
         self.log("Validation/Rank Median", rank_median)
-        self.log("Validation/Rank Variance", rank_var)
-        self.log("Validation/Average Top 1 Acc", avg_top1)
-        self.log("Validation/Average Top 10 Acc", avg_top10)
-        self.log("Validation/Average Top 100 Acc", avg_top100)
+        self.log("Validation/Rank Standard Deviation", rank_std)
+        self.log("Validation/Top 1 Accuracy", top1)
+        self.log("Validation/Top 3 Accuracy", top3)
+        self.log("Validation/Top 5 Accuracy", top5)
         # so that the metrics do not accumulate to the next epoch
         self.rd_metric.reset()
 
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+        # so that
         self.rd_metric.reset()
         X, y = batch
         P_wisdom = self.P_wisdom(X)
         self.rd_metric.update(preds=P_wisdom, targets=y)
-        median, var, top1, top10, top100 = self.rd_metric.compute()
-        self.log("Test/Rank Median", median)
-        self.log("Test/Rank Variance", var)
-        self.log("Test/Top 1 Acc", top1)
-        self.log("Test/Top 10 Acc", top10)
-        self.log("Test/Top 100 Acc", top100)
 
-    def on_test_end(self):
-        median, var, top1, top10, top100 = self.rd_metric.compute()
-        print("### final ###")
-        print("median:", median)
-        print("var:", var)
-        print("top1:", top1)
-        print("top10:", top10)
-        print("top100:", top100)
+    def test_epoch_end(self, outputs: List[dict]) -> None:
+        # log the metrics
+        rank_mean, rank_median, rank_std, top1, top3, top5 = self.rd_metric.compute()
+        self.log("Test/Rank Mean", rank_mean)
+        self.log("Test/Rank Median", rank_median)
+        self.log("Test/Rank Standard Deviation", rank_std)
+        self.log("Test/Top 1 Accuracy", top1)
+        self.log("Test/Top 3 Accuracy", top3)
+        self.log("Test/Top 5 Accuracy", top5)
+        # so that the metrics do not accumulate to the next epoch
+        self.rd_metric.reset()
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """
