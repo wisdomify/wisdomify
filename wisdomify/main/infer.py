@@ -14,7 +14,7 @@ def main():
     parser.add_argument("--model", type=str,
                         default="rd_beta")
     parser.add_argument("--ver", type=str,
-                        default="v0")
+                        default="v1")
     parser.add_argument("--desc", type=str,
                         default="오전 내내 비가 안오길래 산책하러 밖을 나왔더니 갑자기 비가 쏟아지기 시작했다")
     args = parser.parse_args()

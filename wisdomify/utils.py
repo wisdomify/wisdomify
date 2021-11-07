@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from wisdomify.downloaders import WisdomsDownloader, RDAlphaDownloader, RDBetaDownloader
 from wisdomify.models import RD, RDAlpha, RDBeta
-from wisdomify.datamodules import Wisdom2DefDataModule, Wisdom2EgDataModule, Wisdom2DescDataModule
+from wisdomify.datamodules import Wisdom2DefDataModule, Wisdom2EgDataModule, WisdomifyDataModule
 from wisdomify.loaders import load_conf
 from wisdomify.builders import Wisdom2SubwordsBuilder, WisKeysBuilder
 from transformers import BertTokenizerFast, BertForMaskedLM
@@ -14,7 +14,7 @@ from wandb.wandb_run import Run
 # --- an experiment --- #
 class Experiment:
     def __init__(self, ver: str, config: dict, rd: RD,
-                 tokenizer: BertTokenizerFast, datamodule: Wisdom2DescDataModule):
+                 tokenizer: BertTokenizerFast, datamodule: WisdomifyDataModule):
         self.ver = ver
         self.config = config
         self.rd = rd
@@ -29,7 +29,7 @@ class Experiment:
         config = load_conf()[model][ver]
         seed = config["seed"]
         wisdoms_ver = config["wisdoms_ver"]
-        wisdom2desc_type = config["wisdom2desc_type"]
+        train_type = config["train_type"]
         # --- for reproducibility --- #
         cls.fix_seeds(seed)
         wisdoms = WisdomsDownloader(run)(wisdoms_ver)
@@ -41,9 +41,9 @@ class Experiment:
         else:
             raise ValueError
         # --- load a datamodule --- #
-        if wisdom2desc_type == "wisdom2def":
+        if train_type == "wisdom2def":
             datamodule = Wisdom2DefDataModule(config, tokenizer, wisdoms, run, device)
-        elif wisdom2desc_type == "wisdom2eg":
+        elif train_type == "wisdom2eg":
             datamodule = Wisdom2EgDataModule(config, tokenizer, wisdoms, run, device)
         else:
             raise ValueError
@@ -62,7 +62,7 @@ class Experiment:
         k = config["k"]
         lr = config["lr"]
         wisdoms_ver = config["wisdoms_ver"]
-        wisdom2desc_type = config["wisdom2desc_type"]
+        train_type = config["train_type"]
         # --- this is to ensure reproducibility, although not perfect --- #
         cls.fix_seeds(seed)
         # --- get the pretrained model with the pretrained tokenizer --- #
@@ -82,9 +82,9 @@ class Experiment:
         else:
             raise NotImplementedError
         # --- load a datamodule --- #
-        if wisdom2desc_type == "wisdom2def":
+        if train_type == "wisdom2def":
             datamodule = Wisdom2DefDataModule(config, tokenizer, wisdoms, run, device)
-        elif wisdom2desc_type == "wisdom2eg":
+        elif train_type == "wisdom2eg":
             datamodule = Wisdom2EgDataModule(config, tokenizer, wisdoms, run, device)
         else:
             raise ValueError
@@ -110,7 +110,8 @@ class Wisdomifier:
     def __call__(self, sents: List[str]) -> List[List[Tuple[str, float]]]:
         # get the X
         wisdom2sent = [("", desc) for desc in sents]
-        X = self.exp.datamodule.x_builder()(wisdom2sent)
+        x_builder, _ = self.exp.datamodule.tensor_builders()
+        X = x_builder(wisdom2sent)
         # get H_all for this.
         P_wisdom = self.exp.rd.P_wisdom(X)
         results = list()

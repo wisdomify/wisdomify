@@ -39,47 +39,31 @@ class WisdomsDownloader(Downloader):
         ]
 
 
-class Wisdom2TestDownloader(Downloader):
-
-    def __call__(self, ver: str) -> List[Tuple[str, str]]:
-        artifact = self.use_artifact(f"wisdom2test:{ver}")
-        table = cast(wandb.Table, artifact.get("wisdom2test"))
-        return [
-            (row[0], row[1])
-            for _, row in table.iterrows()
-        ]
-
-
-class Wisdom2DescDownloader(Downloader):
+class Wisdom2QueryDownloader(Downloader):
 
     def __call__(self, ver: str) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
-        """
-        returns the train & validation set
-        """
-        artifact = self.use_artifact(self.name(ver))
-        train_table = cast(wandb.Table, artifact.get("train"))
+        artifact = self.use_artifact(f"wisdom2query:{ver}")
         val_table = cast(wandb.Table, artifact.get("val"))
-        train = [(row[0], row[1]) for _, row in train_table.iterrows()]
+        test_table = cast(wandb.Table, artifact.get("test"))
         val = [(row[0], row[1]) for _, row in val_table.iterrows()]
-        return train, val
-
-    @staticmethod
-    def name(ver: str) -> str:
-        raise NotImplementedError
+        test = [(row[0], row[1]) for _, row in test_table.iterrows()]
+        return val, test
 
 
-class Wisdom2DefDownloader(Wisdom2DescDownloader):
+class Wisdom2DefDownloader(Downloader):
 
-    @staticmethod
-    def name(ver: str) -> str:
-        return f"wisdom2def:{ver}"
+    def __call__(self, ver: str) -> List[Tuple[str, str]]:
+        artifact = self.use_artifact(f"wisdom2def:{ver}")
+        all_table = cast(wandb.Table, artifact.get("all"))
+        return [(row[0], row[1]) for _, row in all_table.iterrows()]
 
 
-class Wisdom2EgDownloader(Wisdom2DescDownloader):
+class Wisdom2EgDownloader(Downloader):
 
-    @staticmethod
-    def name(ver: str) -> str:
-        return f"wisdom2eg:{ver}"
+    def __call__(self, ver: str) -> List[Tuple[str, str]]:
+        artifact = self.use_artifact(f"wisdom2eg:{ver}")
+        all_table = cast(wandb.Table, artifact.get("all"))
+        return [(row[0], row[1]) for _, row in all_table.iterrows()]
 
 
 # --- should be used with an experiment instance --- #

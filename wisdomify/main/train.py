@@ -2,6 +2,7 @@ import torch
 import argparse
 import wandb
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
 from wisdomify.builders import RDArtifactBuilder
 from wisdomify.loaders import load_device
@@ -14,13 +15,14 @@ def main():
     device = load_device()
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="rd_beta")
+    parser.add_argument("--model", type=str, default="rd_alpha")
     parser.add_argument("--ver", type=str, default="v0")
-    parser.add_argument("--upload", type=int, default=1)  # set this to 0 if you don't want to upload the models.
+    parser.add_argument("--upload", dest='upload', action='store_true',
+                        default=False)  # set this flag up if you want to save the logs & the model
     args = parser.parse_args()
     model: str = args.model
     ver: str = args.ver
-    upload: int = args.upload
+    upload: bool = args.upload
     # --- init a run  --- #
     run = wandb.init(name="wisdomify.main.train",
                      tags=[f"{model}:{ver}"],
@@ -39,17 +41,15 @@ def main():
                          # do not save checkpoints every epoch - we need this especially for sweeping
                          # https://github.com/PyTorchLightning/pytorch-lightning/issues/5867#issuecomment-775223087
                          checkpoint_callback=False,
-                         callbacks=[],  # TODO: implement early stopping
+                         callbacks=[],
                          logger=logger)
     # --- start training with validation --- #
     trainer.fit(model=exp.rd, datamodule=exp.datamodule)
     # --- upload the model as an artifact to wandb, after training is done --- #
     if upload:
         builder = RDArtifactBuilder(model, ver, exp.config)
-        # save rd & tokenizer to local
-        torch.save(exp.rd.state_dict(), builder.rd_bin_path)  # save the state dict only.
-        exp.tokenizer.save_pretrained(builder.tok_dir_path)
-        # upload them to wandb
+        torch.save(exp.rd.state_dict(), builder.rd_bin_path)  # saving stat_dict only
+        exp.tokenizer.save_pretrained(builder.tok_dir_path)  # save the tokenizer as well
         rd_artifact = builder()
         run.log_artifact(rd_artifact)
 

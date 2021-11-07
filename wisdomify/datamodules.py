@@ -6,9 +6,10 @@ from transformers import BertTokenizerFast
 from wisdomify.builders import XBuilder, YBuilder, Wisdom2DefXBuilder, Wisdom2EgXBuilder
 from wandb.wandb_run import Run
 from wisdomify.downloaders import (
-    Wisdom2TestDownloader,
+    Wisdom2QueryDownloader,
     Wisdom2DefDownloader,
-    Wisdom2EgDownloader, Wisdom2DescDownloader
+    Wisdom2EgDownloader,
+    Downloader
 )
 
 
@@ -35,7 +36,7 @@ class WisdomifyDataset(Dataset):
         return self.X[idx], self.y[idx]
 
 
-class Wisdom2DescDataModule(LightningDataModule):
+class WisdomifyDataModule(LightningDataModule):
     def __init__(self,
                  config: dict,
                  tokenizer: BertTokenizerFast,
@@ -48,7 +49,7 @@ class Wisdom2DescDataModule(LightningDataModule):
         self.wisdoms = wisdoms
         self.run = run
         self.device = device
-        self.wisdom2desc_type = config['wisdom2desc_type']
+        self.train_type = config['train_type']
         self.k = config["k"]
         self.batch_size = config['batch_size']
         self.shuffle = config['shuffle']
@@ -62,8 +63,8 @@ class Wisdom2DescDataModule(LightningDataModule):
         """
         prepare: download all data needed for this from wandb to local.
         """
-        self.wisdom2desc_downloader()(self.config["wisdom2desc_ver"])
-        Wisdom2TestDownloader(self.run)(self.config["wisdom2test_ver"])
+        self.train_downloader()(self.config["train_ver"])
+        self.val_test_downloader()(self.config["val_test_ver"])
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
@@ -71,8 +72,8 @@ class Wisdom2DescDataModule(LightningDataModule):
         """
         # --- set up the builders --- #
         # build the datasets
-        train, val = self.wisdom2desc_downloader()(self.config["wisdom2desc_ver"])
-        test = Wisdom2TestDownloader(self.run)(self.config["wisdom2test_ver"])
+        train = self.train_downloader()(self.config["train_ver"])
+        val, test = self.val_test_downloader()(self.config["val_test_ver"])
         self.train_dataset = self.build_dataset(train, self.wisdoms)
         self.val_dataset = self.build_dataset(val, self.wisdoms)
         self.test_dataset = self.build_dataset(test, self.wisdoms)
@@ -92,30 +93,34 @@ class Wisdom2DescDataModule(LightningDataModule):
     def build_dataset(self, wisdom2desc: List[Tuple[str, str]], wisdoms: List[str]) -> WisdomifyDataset:
         """
         """
-        X = self.x_builder()(wisdom2desc)
-        y = YBuilder(self.device)(wisdom2desc, wisdoms)
+        x_builder, y_builder = self.tensor_builders()
+        X = x_builder(wisdom2desc)
+        y = y_builder(wisdom2desc, wisdoms)
         return WisdomifyDataset(X, y)
 
-    # --- to be implemented --- #
-    def wisdom2desc_downloader(self) -> Wisdom2DescDownloader:
+    def train_downloader(self) -> Downloader:
         raise NotImplementedError
 
-    def x_builder(self) -> XBuilder:
+    def val_test_downloader(self) -> Downloader:
+        return Wisdom2QueryDownloader(self.run)
+
+    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
         raise NotImplementedError
 
 
-class Wisdom2DefDataModule(Wisdom2DescDataModule):
-    def wisdom2desc_downloader(self) -> Wisdom2DescDownloader:
+class Wisdom2DefDataModule(WisdomifyDataModule):
+
+    def train_downloader(self) -> Downloader:
         return Wisdom2DefDownloader(self.run)
 
-    def x_builder(self) -> XBuilder:
-        return Wisdom2DefXBuilder(self.tokenizer, self.k, self.device)
+    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
+        return Wisdom2DefXBuilder(self.tokenizer, self.k, self.device), YBuilder(self.device)
 
 
-class Wisdom2EgDataModule(Wisdom2DescDataModule):
+class Wisdom2EgDataModule(WisdomifyDataModule):
 
-    def wisdom2desc_downloader(self) -> Wisdom2DescDownloader:
+    def train_downloader(self) -> Downloader:
         return Wisdom2EgDownloader(self.run)
 
-    def x_builder(self) -> XBuilder:
-        return Wisdom2EgXBuilder(self.tokenizer, self.k, self.device)
+    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
+        return Wisdom2EgXBuilder(self.tokenizer, self.k, self.device), YBuilder(self.device)
