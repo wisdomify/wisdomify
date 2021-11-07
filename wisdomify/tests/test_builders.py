@@ -24,11 +24,11 @@ class TensorBuilderTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        conf = load_conf()['versions']['0']
+        config = load_conf()['rd_alpha']['v0']
         cls.tokenizer = AutoTokenizer.from_pretrained('beomi/kcbert-base')
-        cls.tokenizer.add_tokens(conf['wisdoms'])
-        cls.k = conf['model']['k']
-        cls.wisdoms = conf['wisdoms']
+        cls.wisdoms = cls.get_wisdoms_v0()
+        cls.tokenizer.add_tokens(cls.wisdoms)
+        cls.k = config['k']
         cls.device = load_device()
 
     @classmethod
@@ -37,6 +37,21 @@ class TensorBuilderTest(unittest.TestCase):
             ('가는 날이 장날', '어떤 일을 하려고 하는데 뜻하지 않은 일을 공교롭게 당함'),
             ('서당개 삼 년이면 풍월을 읊는다', '아무리 무지해도 오래오래 듣거나 보게 되면 자연히 잘하게 된다'),
         ]  # data to test.
+
+    @classmethod
+    def get_wisdoms_v0(cls) -> List[str]:
+        return [
+            "가는 날이 장날",
+            "갈수록 태산",
+            "꿩 대신 닭",
+            "등잔 밑이 어둡다",
+            "소문난 잔치에 먹을 것 없다",
+            "핑계 없는 무덤 없다",
+            "고래 싸움에 새우 등 터진다",
+            "서당개 삼 년이면 풍월을 읊는다",
+            "원숭이도 나무에서 떨어진다",
+            "산 넘어 산"
+        ]
 
 
 class Wisdom2SubwordsBuilderTest(TensorBuilderTest):

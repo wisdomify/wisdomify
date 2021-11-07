@@ -1,6 +1,5 @@
 import unittest
 from typing import List
-
 from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoConfig
 from wisdomify.models import (
     RD,
