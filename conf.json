@@ -63,6 +63,21 @@
       "batch_size": 30,
       "num_workers": 4,
       "shuffle": true
+    },
+    "v2": {
+      "bert": "kykim/bert-kor-base",
+      "desc": "the same as v1, but with kykim/bert-kor-base.",
+      "seed": 410,
+      "train_type": "wisdom2def",
+      "train_ver": "v1",
+      "wisdoms_ver": "v0",
+      "val_test_ver": "v0",
+      "k": 11,
+      "lr": 0.00001,
+      "max_epochs": 23,
+      "batch_size": 30,
+      "num_workers": 4,
+      "shuffle": true
     }
   }
 }
