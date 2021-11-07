@@ -1,191 +1,84 @@
 {
-  "versions": {
-    "_실험 버전": {
-      "_주의사항!": "추후 버전 추가에 따라 파라미터가 추가되면 해당 파라미터를 아래 설명 추가해주세요",
-      "exp_name": "(Str) 해당 실험의 간략한 이름을 적어주세요.",
-      "exp_desc": "(Str) 해당 실험에 대한 정보를 간결하지만 명확하게 적어주세요.",
-      "wandb": {
-        "_주의사항!": "이 곳의 명세는 반드시 W&B 페이지에 접속하여 사용할 아티펙트의 이름, 명세를 정확하게 확인하세요.",
-        "load": {
-          "_주의 (RD)!": "RD 관련 명세는 infer와 eval에만 사용됩니다. Train시 빈칸으로 두어도 무방합니다. (특별한 케이스가 아니면 동일하게 해주세요.)",
-          "rd_name": "(Str) WandB에서 로드할 RD 아티펙트의 이름을 적어주세요.",
-          "rd_ver": "(Str) WandB에서 로드할 RD 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
-          "mlm_name": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 이름을 적어주세요.",
-          "mlm_ver": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
-          "tokenizer_name": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
-          "tokenizer_ver": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
-          "data_name": "(Str) 해당 모델 트레이닝에 사용된 데이터 이름",
-          "data_version": "(Str) 해당 모델 트레이닝에 사용된 데이터 버전",
-          "data_type": "(Str) 해당 모델 트레이닝에 사용된 데이터의 타입 (definition, example)"
-        },
-        "save": {
-          "_주의 1": "mlm, tokenizer 그리고 rd의 이름은 반드시 'mlm_' / 'tokenizer_' / 'rd_' 로 시작해야합니다.",
-          "_주의 2": "mlm 혹은 tokenizer를 W&B에 저장하지 않을 시, 빈 string으로 이름을 설정하면됩니다.",
-          "rd_name": "(Str) WandB에서 로드할 RD 아티펙트의 이름을 적어주세요.",
-          "rd_desc": "(Str) WandB에서 로드할 RD 아티펙트의 설명을 적어주세요. (default: None)",
-          "mlm_name": "(Str) WandB에 저장할 BERT mlm 아티펙트의 이름을 적어주세요.",
-          "mlm_desc": "(Str) WandB에 저장할 BERT mlm 아티펙트의 설명을 적어주세요. (default: None)",
-          "tokenizer_name": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
-          "tokenizer_desc": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 설명을 적어주세요. (default: None)"
-        }
-      },
-      "model": {
-        "rd_model": "(Str) 사용할 RD_model 클래스 이름을 적어주세요. (해당 클래스가 작성되어 있지 않으면 NotImplementedError 발생합니다.)",
-        "X_mode": "(Str) 사용할 XBuilder 클래스 이름을 적어주세요. (해당 클래스가 작성되어 있지 않으면 NotImplementedError 발생합니다.)",
-        "y_mode": "(Str) 사용할 YBuilder 클래스 이름을 적어주세요. (해당 클래스가 작성되어 있지 않으면 NotImplementedError 발생합니다.)",
-        "k": "(Int) 최대 길이 설정",
-        "lr": "(Float) learning rate 설정",
-        "max_epochs": "(Int) 최대 에폭값",
-        "batch_size": "(Int) 배치사이즈",
-        "repeat": "(Int) 반복 횟수",
-        "num_workers": "(Int) 워커 개수 (해당 컴퓨터 사양에 맞춰 작성하세요. CPU의 경우 코어 개수이하여야합니다.)",
-        "shuffle": "(Bool) 셔플여부"
-      },
-      "wisdoms": "(List[Str]) - 검색할 속담 리스트"
+  "rd_alpha": {
+    "desc": "[rd_alpha]: The first minimal-viable-product of wisdomify. Trained on wisdom2def only. S_wisdom = S_wisdom_literal",
+    "v0": {
+      "bert": "beomi/kcbert-base",
+      "desc": "The first version of RDAlpha, with small patience (3)",
+      "seed": 410,
+      "train_type": "wisdom2def",
+      "train_ver": "v0",
+      "wisdoms_ver": "v0",
+      "val_test_ver": "v0",
+      "k": 11,
+      "lr": 0.00001,
+      "max_epochs": 40,
+      "batch_size": 30,
+      "num_workers": 4,
+      "shuffle": true
     },
-    "0": {
-      "exp_name": "version_0",
-      "exp_desc": "[version_0]: The first minimal-viable-product of wisdomify. S_wisdom = S_wisdom_literal",
-      "wandb": {
-        "load": {
-          "rd_name": "rd_tiny_def_data",
-          "rd_ver": "",
-          "mlm_name": "mlm_init_kcbert",
-          "mlm_ver": "",
-          "tokenizer_name": "tokenizer_init_kcbert",
-          "tokenizer_ver": "",
-          "data_name": "init_wisdom2def-raw",
-          "data_version": "",
-          "data_type": "definition"
-        },
-        "save": {
-          "rd_name": "rd_tiny_def_data",
-          "rd_desc": "이 RD 모델은 50여개의 정의 데이터만을 사용해서 학습되었습니다.",
-          "mlm_name": "mlm_tiny_def_data",
-          "mlm_desc": "이 mlm 모델은 50여개의 정의 데이터만을 사용해서 학습되었습니다.",
-          "tokenizer_name": "",
-          "tokenizer_desc": ""
-        }
-      },
-      "model": {
-        "rd_model": "RDAlpha",
-        "X_mode": "XBuilder",
-        "y_mode": "YBuilder",
-        "k": 11,
-        "lr": 0.00001,
-        "max_epochs": 40,
-        "batch_size": 30,
-        "num_workers": 0,
-        "shuffle": true
-      },
-      "wisdoms": [
-        "가는 날이 장날",
-        "갈수록 태산",
-        "꿩 대신 닭",
-        "등잔 밑이 어둡다",
-        "소문난 잔치에 먹을 것 없다",
-        "핑계 없는 무덤 없다",
-        "고래 싸움에 새우 등 터진다",
-        "서당개 삼 년이면 풍월을 읊는다",
-        "원숭이도 나무에서 떨어진다",
-        "산 넘어 산"
-      ]
+    "v1": {
+      "bert": "beomi/kcbert-base",
+      "desc": "The second version RDAlpha - trained on more data",
+      "seed": 410,
+      "train_type": "wisdom2def",
+      "train_ver": "v1",
+      "wisdoms_ver": "v0",
+      "val_test_ver": "v0",
+      "k": 11,
+      "lr": 0.00001,
+      "max_epochs": 40,
+      "batch_size": 30,
+      "num_workers": 4,
+      "shuffle": true
+    }
+  },
+  "rd_beta": {
+    "desc": "[rd_beta]: Trained on wisdom2def only. S_wisdom = S_wisdom_literal + S_wisdom_figurative",
+    "v0": {
+      "bert": "beomi/kcbert-base",
+      "desc": "the first version of RDBeta.",
+      "seed": 410,
+      "train_type": "wisdom2def",
+      "train_ver": "v0",
+      "wisdoms_ver": "v0",
+      "val_test_ver": "v0",
+      "k": 11,
+      "lr": 0.00001,
+      "max_epochs": 23,
+      "batch_size": 30,
+      "num_workers": 4,
+      "shuffle": true
     },
-    "1": {
-      "exp_name": "version_1",
-      "exp_desc": "[version_1]: Trained on a very few examples. S_wisdom = S_wisdom_literal",
-      "wandb": {
-        "load": {
-          "rd_name": "rd_tiny_eg_data",
-          "rd_ver": "",
-          "mlm_name": "mlm_init_kcbert",
-          "mlm_ver": "",
-          "tokenizer_name": "tokenizer_init_kcbert",
-          "tokenizer_ver": "",
-          "data_name": "init_wisdom2eg-raw",
-          "data_version": "",
-          "data_type": "example"
-        },
-        "save": {
-          "rd_name": "rd_tiny_eg_data",
-          "rd_desc": "이 RD 모델은 직접 작성한 10개의 속담의 용례 데이터만을 사용해서 학습되었습니다.",
-          "mlm_name": "mlm_tiny_eg_data",
-          "mlm_desc": "이 mlm 모델은 직접 작성한 10개의 속담의 용례 데이터만을 사용해서 학습되었습니다.",
-          "tokenizer_name": "",
-          "tokenizer_desc": ""
-        }
-      },
-      "model": {
-        "rd_model": "RDAlpha",
-        "X_mode": "XBuilder",
-        "y_mode": "YBuilder",
-        "k": 11,
-        "lr": 0.00001,
-        "max_epochs": 60,
-        "batch_size": 40,
-        "num_workers": 0,
-        "shuffle": true
-      },
-      "wisdoms": [
-        "가는 날이 장날",
-        "갈수록 태산",
-        "꿩 대신 닭",
-        "등잔 밑이 어둡다",
-        "소문난 잔치에 먹을 것 없다",
-        "핑계 없는 무덤 없다",
-        "고래 싸움에 새우 등 터진다",
-        "서당개 삼 년이면 풍월을 읊는다",
-        "원숭이도 나무에서 떨어진다",
-        "산 넘어 산"
-      ]
+    "v1": {
+      "bert": "beomi/kcbert-base",
+      "desc": "the second version of RDBeta - trained on more data",
+      "seed": 410,
+      "train_type": "wisdom2def",
+      "train_ver": "v1",
+      "wisdoms_ver": "v0",
+      "val_test_ver": "v0",
+      "k": 11,
+      "lr": 0.00001,
+      "max_epochs": 23,
+      "batch_size": 30,
+      "num_workers": 4,
+      "shuffle": true
     },
-    "2": {
-      "exp_name": "version_2",
-      "exp_desc": "[version_2]: Trained on a very tiny examples",
-      "wandb": {
-        "load": {
-          "rd_name": "rd_tiny_kuniv_eg_data",
-          "rd_ver": "",
-          "mlm_name": "mlm_init_kcbert",
-          "mlm_ver": "",
-          "tokenizer_name": "tokenizer_init_kcbert",
-          "tokenizer_ver": "",
-          "data_name": "init_kuniv_wisdom2eg-raw",
-          "data_version": "",
-          "data_type": "example"
-        },
-        "save": {
-          "rd_name": "rd_tiny_kuniv_eg_data",
-          "rd_desc": "이 RD 모델은 고려대 코퍼스로 수집한 10개의 속담의 용례 데이터를 사용해서 학습되었습니다.",
-          "mlm_name": "mlm_tiny_kuniv_eg_data",
-          "mlm_desc": "이 mlm 모델은 고려대 코퍼스로 수집한 10개의 속담의 용례 데이터를 사용해서 학습되었습니다.",
-          "tokenizer_name": "",
-          "tokenizer_desc": ""
-        }
-      },
-      "model": {
-        "rd_model": "RDBeta",
-        "X_mode": "XBuilder",
-        "y_mode": "YBuilder",
-        "k": 11,
-        "lr": 0.00001,
-        "max_epochs": 60,
-        "batch_size": 40,
-        "num_workers": 0,
-        "shuffle": true
-      },
-      "wisdoms": [
-        "가는 날이 장날",
-        "갈수록 태산",
-        "꿩 대신 닭",
-        "등잔 밑이 어둡다",
-        "소문난 잔치에 먹을 것 없다",
-        "핑계 없는 무덤 없다",
-        "고래 싸움에 새우 등 터진다",
-        "서당개 삼 년이면 풍월을 읊는다",
-        "원숭이도 나무에서 떨어진다",
-        "산 넘어 산"
-      ]
+    "v2": {
+      "bert": "kykim/bert-kor-base",
+      "desc": "the same as v1, but with kykim/bert-kor-base.",
+      "seed": 410,
+      "train_type": "wisdom2def",
+      "train_ver": "v1",
+      "wisdoms_ver": "v0",
+      "val_test_ver": "v0",
+      "k": 11,
+      "lr": 0.00001,
+      "max_epochs": 23,
+      "batch_size": 30,
+      "num_workers": 4,
+      "shuffle": true
     }
   }
 }
+

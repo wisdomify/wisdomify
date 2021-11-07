@@ -4,7 +4,7 @@ at the moment, the tests test for version_0 only.
 import unittest
 from wisdomify.loaders import load_conf, load_device
 from wisdomify.builders import (
-    Wisdom2SubWordsBuilder,
+    Wisdom2SubwordsBuilder,
     WisKeysBuilder,
     Wisdom2DefXBuilder,
     Wisdom2EgXBuilder,
@@ -24,11 +24,11 @@ class TensorBuilderTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        conf = load_conf()['versions']['0']
+        config = load_conf()['rd_alpha']['v0']
         cls.tokenizer = AutoTokenizer.from_pretrained('beomi/kcbert-base')
-        cls.tokenizer.add_tokens(conf['wisdoms'])
-        cls.k = conf['model']['k']
-        cls.wisdoms = conf['wisdoms']
+        cls.wisdoms = cls.get_wisdoms_v0()
+        cls.tokenizer.add_tokens(cls.wisdoms)
+        cls.k = config['k']
         cls.device = load_device()
 
     @classmethod
@@ -38,16 +38,31 @@ class TensorBuilderTest(unittest.TestCase):
             ('서당개 삼 년이면 풍월을 읊는다', '아무리 무지해도 오래오래 듣거나 보게 되면 자연히 잘하게 된다'),
         ]  # data to test.
 
+    @classmethod
+    def get_wisdoms_v0(cls) -> List[str]:
+        return [
+            "가는 날이 장날",
+            "갈수록 태산",
+            "꿩 대신 닭",
+            "등잔 밑이 어둡다",
+            "소문난 잔치에 먹을 것 없다",
+            "핑계 없는 무덤 없다",
+            "고래 싸움에 새우 등 터진다",
+            "서당개 삼 년이면 풍월을 읊는다",
+            "원숭이도 나무에서 떨어진다",
+            "산 넘어 산"
+        ]
+
 
 class Wisdom2SubwordsBuilderTest(TensorBuilderTest):
 
-    wisdom2subwords_builder: Wisdom2SubWordsBuilder
+    wisdom2subwords_builder: Wisdom2SubwordsBuilder
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.tokenizer.add_tokens(cls.wisdoms)  # treat wisdoms as single tokens
-        cls.wisdom2subwords_builder = Wisdom2SubWordsBuilder(cls.tokenizer, cls.k, cls.device)
+        cls.wisdom2subwords_builder = Wisdom2SubwordsBuilder(cls.tokenizer, cls.k, cls.device)
 
     def test_build_wisdom2subwords_dim(self):
         wisdom2subwords = self.wisdom2subwords_builder(self.wisdoms)  # should be (V,K)

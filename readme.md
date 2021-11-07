@@ -94,14 +94,14 @@ How did I end up with Wisdomify?:
 
 [BERT for monolingual reverse-dictionary](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414#fdc245ac3f9b44bfa7fd1a506ae7dde2)|
 --- |
-![](.readme_images/3e2407f9.png) |
-![](.readme_images/fd7e409b.png) |
+<img width="849" alt="image" src="https://user-images.githubusercontent.com/56193069/140656471-10a555a5-56b9-4117-b26d-ab2b25d142b6.png"> |
+<img width="857" alt="image" src="https://user-images.githubusercontent.com/56193069/140656500-4d1508e4-0230-482b-9fa1-8b3d8d5f8219.png"> |
 
 
 ### `conf.json`
 The `conf.json` on project directory must have format as following. The value type and meaning are written as value of json.
 
-The hyper paramters for the model must be written below "_experiment version.model"
+The hyper parameters for the model must be written below "_experiment version.model"
 
 ```json
 "_experiment version": {

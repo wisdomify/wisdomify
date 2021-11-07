@@ -15,8 +15,8 @@ class RDMetric(Metric):
         self.add_state("ranks", default=[], dist_reduce_fx='cat')  # concat is the reduce function
         self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
         self.add_state("correct_top1", default=torch.tensor(0), dist_reduce_fx="sum")
-        self.add_state("correct_top10", default=torch.tensor(0), dist_reduce_fx="sum")
-        self.add_state("correct_top100", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.add_state("correct_top3", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.add_state("correct_top5", default=torch.tensor(0), dist_reduce_fx="sum")
 
 
     def update(self, preds: torch.Tensor, targets: torch.Tensor) -> None:  # noqa
@@ -25,17 +25,18 @@ class RDMetric(Metric):
         targets = targets.repeat(argsorted.shape[1], 1).T
         self.ranks += torch.eq(argsorted, targets).nonzero(as_tuple=True)[1].tolist()  # noqa, see examples/explore_nonzero
         self.correct_top1 += torch.eq(argsorted[:, :1], targets[:, :1]).sum()  # noqa
-        self.correct_top10 += torch.eq(argsorted[:, :10], targets[:, :10]).sum()  # noqa
-        self.correct_top100 += torch.eq(argsorted[:, :100], targets[:, :100]).sum()  # noqa
+        self.correct_top3 += torch.eq(argsorted[:, :3], targets[:, :3]).sum()  # noqa
+        self.correct_top5 += torch.eq(argsorted[:, :5], targets[:, :5]).sum()  # noqa
         self.total += preds.shape[0]
 
-    def compute(self) -> Tuple[float, float, float, float, float]:
+    def compute(self) -> Tuple[float, float, float, float, float, float]:
         """
         returns: median, var, top1 acc, top10 acc, top10 acc.
         """
+        mean = np.mean(self.ranks)
         median = np.median(self.ranks)
-        var = np.var(self.ranks)
-        top1_acc = self.correct_top1.float() / self.total
-        top10_acc = self.correct_top10.float() / self.total
-        top100_acc = self.correct_top100.float() / self.total
-        return median, var, top1_acc.item(), top10_acc.item(), top100_acc.item()
+        std = np.std(self.ranks)
+        top1 = self.correct_top1.float() / self.total
+        top3 = self.correct_top3.float() / self.total
+        top5 = self.correct_top5.float() / self.total
+        return mean.item(), median.item(), std.item(), top1.item(), top3.item(), top5.item()
