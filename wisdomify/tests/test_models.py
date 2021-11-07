@@ -74,6 +74,21 @@ class RDCommonTest:
             self.assertEqual(self.N, P_wisdom.shape[0])  # N
             self.assertEqual(self.W, P_wisdom.shape[1])  # |W|
 
+        @classmethod
+        def get_wisdoms_v0(cls) -> List[str]:
+            return [
+                "가는 날이 장날",
+                "갈수록 태산",
+                "꿩 대신 닭",
+                "등잔 밑이 어둡다",
+                "소문난 잔치에 먹을 것 없다",
+                "핑계 없는 무덤 없다",
+                "고래 싸움에 새우 등 터진다",
+                "서당개 삼 년이면 풍월을 읊는다",
+                "원숭이도 나무에서 떨어진다",
+                "산 넘어 산"
+            ]
+
 
 class RDAlphaTest(RDCommonTest.Test):
     rd: RDAlpha
@@ -83,17 +98,17 @@ class RDAlphaTest(RDCommonTest.Test):
         # version - 0 and 1
         super().setUpClass()
         device = load_device()
-        conf = load_conf()['versions']['0']
-        bert_model = 'beomi/kcbert-base'
-        wisdoms = conf['wisdoms']
-        K = conf['model']['k']
-        LR = conf['model']['lr']
-        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
-        tokenizer = AutoTokenizer.from_pretrained(bert_model)
-        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, K, device)(wisdoms)
-        cls.rd = RDAlpha(bert_mlm, wisdom2subwords, K, LR, device)
-        cls.initialize(Wisdom2DefXBuilder(tokenizer, K, device), YBuilder(device),
-                       wisdoms, bert_mlm.config.hidden_size, len(wisdoms), K)
+        config = load_conf()['rd_alpha']['v0']
+        bert = config['bert']
+        wisdoms = cls.get_wisdoms_v0()
+        k = config['k']
+        lr = config['lr']
+        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert))
+        tokenizer = AutoTokenizer.from_pretrained(bert)
+        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, device)(wisdoms)
+        cls.rd = RDAlpha(bert_mlm, wisdom2subwords, k, lr, device)
+        cls.initialize(Wisdom2DefXBuilder(tokenizer, k, device), YBuilder(device),
+                       wisdoms, bert_mlm.config.hidden_size, len(wisdoms), k)
 
     def test_forward_dim(self):
         super(RDAlphaTest, self).test_forward_dim()
@@ -119,13 +134,13 @@ class RDBetaTest(RDCommonTest.Test):
         # version - 2
         super().setUpClass()
         device = load_device()
-        conf = load_conf()['versions']['2']
-        bert_model = 'beomi/kcbert-base'
-        wisdoms = conf['wisdoms']
-        k = conf['model']['k']
-        lr = conf['model']['lr']
-        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert_model))
-        tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        config = load_conf()['rd_beta']['v0']
+        bert = config['bert']
+        wisdoms = cls.get_wisdoms_v0()
+        k = config['k']
+        lr = config['lr']
+        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert))
+        tokenizer = AutoTokenizer.from_pretrained(bert)
         # need to add the wisdoms to the tokenizer, and resize the embedding table as well
         tokenizer.add_tokens(wisdoms)
         bert_mlm.resize_token_embeddings(len(tokenizer))
