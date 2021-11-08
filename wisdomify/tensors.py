@@ -3,23 +3,20 @@ all the functions for building tensors are defined here.
 builders must accept device as one of the parameters.
 """
 import torch
-import wandb
-import os
 from typing import List, Tuple
 from transformers import BertTokenizerFast, BatchEncoding
-from wisdomify.paths import ARTIFACTS_DIR
 
 
-class TensorBuilder:
+class WisdomifyTensor:
 
     def __call__(self, *args, **kwargs) -> torch.Tensor:
         """
-        whatever it does,a builder outputs a Tensor.
+        whatever it does, a tensor builder outputs a Tensor.
         """
         raise NotImplementedError
 
 
-class Wisdom2SubwordsBuilder(TensorBuilder):
+class Wisdom2SubwordsTensor(WisdomifyTensor):
     def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
         self.tokenizer = tokenizer
         self.k = k
@@ -42,7 +39,7 @@ class Wisdom2SubwordsBuilder(TensorBuilder):
         return input_ids.to(self.device)
 
 
-class WisKeysBuilder(TensorBuilder):
+class WisKeysTensor(WisdomifyTensor):
     def __init__(self, tokenizer: BertTokenizerFast, device: torch.device):
         self.tokenizer = tokenizer
         self.device = device
@@ -57,7 +54,7 @@ class WisKeysBuilder(TensorBuilder):
         return input_ids.to(self.device)
 
 
-class XBuilder(TensorBuilder):
+class XTensor(WisdomifyTensor):
     def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
         self.tokenizer = tokenizer
         self.k = k
@@ -83,7 +80,7 @@ class XBuilder(TensorBuilder):
         raise NotImplementedError
 
 
-class Wisdom2DefXBuilder(XBuilder):
+class Wisdom2DefXTensor(XTensor):
     def encode(self, wisdom2def: List[Tuple[str, str]]) -> BatchEncoding:
         """
         param wisdom2def: (가는 날이 장날, 어떤 일을 하려고 하는데 뜻하지 않은 일을 공교롭게 당하는 것을 비유적으로 이르는 말)
@@ -100,7 +97,7 @@ class Wisdom2DefXBuilder(XBuilder):
         return encodings
 
 
-class Wisdom2EgXBuilder(XBuilder):
+class Wisdom2EgXTensor(XTensor):
     def encode(self, wisdom2eg: List[Tuple[str, str]]) -> BatchEncoding:
         """
         param wisdom2eg: (가는 날이 장날, 아이고... [WISDOM]이라더니, 오늘 하필 비가 오네.)
@@ -125,7 +122,7 @@ class Wisdom2EgXBuilder(XBuilder):
         return encodings
 
 
-class YBuilder(TensorBuilder):
+class YTensor(WisdomifyTensor):
 
     def __init__(self, device: torch.device):
         self.device = device
@@ -140,33 +137,3 @@ class YBuilder(TensorBuilder):
             wisdoms.index(wisdom)
             for wisdom in [wisdom for wisdom, _ in wisdom2desc]
         ]).to(self.device)
-
-
-class RDArtifactBuilder:
-
-    def __init__(self, model: str, ver: str, config: dict):
-        self.model = model
-        self.ver = ver
-        self.config = config
-
-    def __call__(self) -> wandb.Artifact:
-        artifact = wandb.Artifact(self.model, metadata=self.config, type="model")
-        artifact.add_file(self.rd_bin_path)
-        artifact.add_dir(self.tok_dir_path, name="tokenizer")
-        return artifact
-
-    @property
-    def artifact_dir_path(self) -> str:
-        dir_path = os.path.join(ARTIFACTS_DIR, f"{self.model}:{self.ver}")
-        os.makedirs(dir_path, exist_ok=True)
-        return dir_path
-
-    @property
-    def rd_bin_path(self) -> str:
-        return os.path.join(self.artifact_dir_path, "rd.bin")
-
-    @property
-    def tok_dir_path(self) -> str:
-        tok_dir_path = os.path.join(self.artifact_dir_path, "tokenizer")
-        os.makedirs(tok_dir_path, exist_ok=True)
-        return tok_dir_path

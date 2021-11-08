@@ -3,13 +3,18 @@ from typing import Tuple, Optional, List
 from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
 from transformers import BertTokenizerFast
-from wisdomify.builders import XBuilder, YBuilder, Wisdom2DefXBuilder, Wisdom2EgXBuilder
+from wisdomify.tensors import (
+    XTensor,
+    YTensor,
+    Wisdom2DefXTensor,
+    Wisdom2EgXTensor
+)
 from wandb.wandb_run import Run
-from wisdomify.downloaders import (
-    Wisdom2QueryDownloader,
-    Wisdom2DefDownloader,
-    Wisdom2EgDownloader,
-    Downloader
+from wisdomify.artifacts import (
+    Wisdom2QueryLoader,
+    Wisdom2DefLoader,
+    Wisdom2EgLoader,
+    ArtifactLoader
 )
 
 
@@ -63,8 +68,8 @@ class WisdomifyDataModule(LightningDataModule):
         """
         prepare: download all data needed for this from wandb to local.
         """
-        self.train_downloader()(self.config["train_ver"])
-        self.val_test_downloader()(self.config["val_test_ver"])
+        self.train_downloader()()
+        self.val_test_downloader()()
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
@@ -72,8 +77,8 @@ class WisdomifyDataModule(LightningDataModule):
         """
         # --- set up the builders --- #
         # build the datasets
-        train = self.train_downloader()(self.config["train_ver"])
-        val, test = self.val_test_downloader()(self.config["val_test_ver"])
+        train = self.train_downloader()()
+        val, test = self.val_test_downloader()()
         self.train_dataset = self.build_dataset(train, self.wisdoms)
         self.val_dataset = self.build_dataset(val, self.wisdoms)
         self.test_dataset = self.build_dataset(test, self.wisdoms)
@@ -98,29 +103,29 @@ class WisdomifyDataModule(LightningDataModule):
         y = y_builder(wisdom2desc, wisdoms)
         return WisdomifyDataset(X, y)
 
-    def train_downloader(self) -> Downloader:
+    def train_downloader(self) -> ArtifactLoader:
         raise NotImplementedError
 
-    def val_test_downloader(self) -> Downloader:
-        return Wisdom2QueryDownloader(self.run)
+    def val_test_downloader(self) -> ArtifactLoader:
+        return Wisdom2QueryLoader(self.run, self.config['val_test_ver'])
 
-    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
+    def tensor_builders(self) -> Tuple[XTensor, YTensor]:
         raise NotImplementedError
 
 
 class Wisdom2DefDataModule(WisdomifyDataModule):
 
-    def train_downloader(self) -> Downloader:
-        return Wisdom2DefDownloader(self.run)
+    def train_downloader(self) -> ArtifactLoader:
+        return Wisdom2DefLoader(self.run, self.config["train_ver"])
 
-    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
-        return Wisdom2DefXBuilder(self.tokenizer, self.k, self.device), YBuilder(self.device)
+    def tensor_builders(self) -> Tuple[XTensor, YTensor]:
+        return Wisdom2DefXTensor(self.tokenizer, self.k, self.device), YTensor(self.device)
 
 
 class Wisdom2EgDataModule(WisdomifyDataModule):
 
-    def train_downloader(self) -> Downloader:
-        return Wisdom2EgDownloader(self.run)
+    def train_downloader(self) -> ArtifactLoader:
+        return Wisdom2EgLoader(self.run, self.config["train_ver"])
 
-    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
-        return Wisdom2EgXBuilder(self.tokenizer, self.k, self.device), YBuilder(self.device)
+    def tensor_builders(self) -> Tuple[XTensor, YTensor]:
+        return Wisdom2EgXTensor(self.tokenizer, self.k, self.device), YTensor(self.device)
