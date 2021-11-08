@@ -33,9 +33,9 @@ class Experiment:
         cls.fix_seeds(seed)
         # --- choose an appropriate rd version --- #
         if model == "rd_alpha":
-            rd, tokenizer, wisdoms = RDAlphaLoader(run, ver, device)()
+            rd, tokenizer, wisdoms = RDAlphaLoader(run, device)(ver)
         elif model == "rd_beta":
-            rd, tokenizer, wisdoms = RDBetaLoader(run, ver, device)()
+            rd, tokenizer, wisdoms = RDBetaLoader(run, device)(ver)
         else:
             raise ValueError
         # --- load a datamodule --- #
@@ -67,7 +67,7 @@ class Experiment:
         bert_mlm = BertForMaskedLM.from_pretrained(bert)
         tokenizer = BertTokenizerFast.from_pretrained(bert)
         # --- wisdom-related data --- #
-        wisdoms = WisdomsLoader(run, wisdoms_ver)()
+        wisdoms = WisdomsLoader(run)(wisdoms_ver)
         wisdom2subwords = Wisdom2SubwordsTensor(tokenizer, k, device)(wisdoms)
         # --- choose an appropriate rd version --- #
         if model == "rd_alpha":

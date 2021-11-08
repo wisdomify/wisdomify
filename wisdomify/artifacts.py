@@ -14,18 +14,17 @@ from wisdomify.paths import ARTIFACTS_DIR
 
 class ArtifactLoader:
 
-    def __init__(self, run: Run, ver: str):
+    def __init__(self, run: Run):
         self.run = run
-        self.ver = ver
 
-    def __call__(self):
+    def __call__(self, ver: str):
         raise NotImplementedError
 
-    def use_artifact(self) -> wandb.Artifact:
+    def use_artifact(self, ver: str) -> wandb.Artifact:
         """
         whenever you use an artifact, you must change the default root directory.
         """
-        artifact = self.run.use_artifact(self.name)
+        artifact = self.run.use_artifact(f"{self.name}:{ver}")
         # https://stackoverflow.com/a/42154067
         # terribly messy, but I must do this, if I were to save artifacts to local
         artifact._default_root = types.MethodType(lambda a, b=True: path.join(ARTIFACTS_DIR, a.name), artifact)
@@ -37,23 +36,22 @@ class ArtifactLoader:
 
 
 # --- datasets --- #
-
 class WisdomsLoader(ArtifactLoader):
 
-    def __call__(self) -> List[str]:
-        artifact = self.use_artifact()
+    def __call__(self, ver: str) -> List[str]:
+        artifact = self.use_artifact(ver)
         table = cast(wandb.Table, artifact.get("wisdoms"))
         return [row[0] for _, row in table.iterrows()]
 
     @property
     def name(self) -> str:
-        return f"wisdoms:{self.ver}"
+        return "wisdoms"
 
 
 class Wisdom2QueryLoader(ArtifactLoader):
 
-    def __call__(self) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
-        artifact = self.use_artifact()
+    def __call__(self, ver: str) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
+        artifact = self.use_artifact(ver)
         val_table = cast(wandb.Table, artifact.get("val"))
         test_table = cast(wandb.Table, artifact.get("test"))
         val = [(row[0], row[1]) for _, row in val_table.iterrows()]
@@ -62,43 +60,43 @@ class Wisdom2QueryLoader(ArtifactLoader):
 
     @property
     def name(self):
-        return f"wisdom2query:{self.ver}"
+        return "wisdom2query"
 
 
 class Wisdom2DefLoader(ArtifactLoader):
 
-    def __call__(self, *args, **kwargs):
-        artifact = self.use_artifact()
+    def __call__(self, ver: str):
+        artifact = self.use_artifact(ver)
         all_table = cast(wandb.Table, artifact.get("all"))
         return [(row[0], row[1]) for _, row in all_table.iterrows()]
 
     @property
     def name(self):
-        return f"wisdom2def:{self.ver}"
+        return "wisdom2def"
 
 
 class Wisdom2EgLoader(ArtifactLoader):
 
-    def __call__(self, *args, **kwargs):
-        artifact = self.use_artifact()
+    def __call__(self, ver: str):
+        artifact = self.use_artifact(ver)
         all_table = cast(wandb.Table, artifact.get("all"))
         return [(row[0], row[1]) for _, row in all_table.iterrows()]
 
     @property
     def name(self):
-        return f"wisdom2eg:{self.ver}"
+        return "wisdom2eg"
 
 
 # --- model loaders --- #
 class RDLoader(ArtifactLoader, ABC):
 
-    def __init__(self, run: Run, ver: str, device: torch.device):
-        super().__init__(run, ver)
+    def __init__(self, run: Run, device: torch.device):
+        super().__init__(run)
         self.device = device
 
-    def __call__(self) -> Tuple[RD, BertTokenizerFast, List[str]]:
-        artifact = self.use_artifact()
-        wisdoms = WisdomsLoader(self.run, artifact.metadata['wisdoms_ver'])()
+    def __call__(self, ver: str) -> Tuple[RD, BertTokenizerFast, List[str]]:
+        artifact = self.use_artifact(ver)
+        wisdoms = WisdomsLoader(self.run)(artifact.metadata['wisdoms_ver'])
         bert = artifact.metadata['bert']
         k = artifact.metadata['k']
         lr = artifact.metadata['lr']
@@ -114,22 +112,6 @@ class RDLoader(ArtifactLoader, ABC):
     def rd(self, bert_mlm: BertForMaskedLM, tokenizer: BertTokenizerFast, k: int, lr: float, wisdoms: List[str]) -> RD:
         raise NotImplementedError
 
-    @property
-    def artifact_dir_path(self) -> str:
-        dir_path = os.path.join(ARTIFACTS_DIR, self.name)
-        os.makedirs(dir_path, exist_ok=True)
-        return dir_path
-
-    @property
-    def rd_bin_path(self) -> str:
-        return os.path.join(self.artifact_dir_path, "rd.bin")
-
-    @property
-    def tok_dir_path(self) -> str:
-        tok_dir_path = os.path.join(self.artifact_dir_path, "tokenizer")
-        os.makedirs(tok_dir_path, exist_ok=True)
-        return tok_dir_path
-
 
 class RDAlphaLoader(RDLoader):
 
@@ -140,7 +122,7 @@ class RDAlphaLoader(RDLoader):
 
     @property
     def name(self) -> str:
-        return f"rd_alpha:{self.ver}"
+        return "rd_alpha"
 
 
 class RDBetaLoader(RDLoader):
@@ -154,7 +136,7 @@ class RDBetaLoader(RDLoader):
 
     @property
     def name(self) -> str:
-        return f"rd_beta:{self.ver}"
+        return "rd_beta"
 
 
 # --- model builders  --- #

@@ -68,8 +68,8 @@ class WisdomifyDataModule(LightningDataModule):
         """
         prepare: download all data needed for this from wandb to local.
         """
-        self.train_downloader()()
-        self.val_test_downloader()()
+        self.train_downloader()(self.config["train_ver"])
+        self.val_test_downloader()(self.config["val_test_ver"])
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
@@ -77,8 +77,8 @@ class WisdomifyDataModule(LightningDataModule):
         """
         # --- set up the builders --- #
         # build the datasets
-        train = self.train_downloader()()
-        val, test = self.val_test_downloader()()
+        train = self.train_downloader()(self.config["train_ver"])
+        val, test = self.val_test_downloader()(self.config["val_test_ver"])
         self.train_dataset = self.build_dataset(train, self.wisdoms)
         self.val_dataset = self.build_dataset(val, self.wisdoms)
         self.test_dataset = self.build_dataset(test, self.wisdoms)
@@ -107,7 +107,7 @@ class WisdomifyDataModule(LightningDataModule):
         raise NotImplementedError
 
     def val_test_downloader(self) -> ArtifactLoader:
-        return Wisdom2QueryLoader(self.run, self.config['val_test_ver'])
+        return Wisdom2QueryLoader(self.run)
 
     def tensor_builders(self) -> Tuple[XTensor, YTensor]:
         raise NotImplementedError
@@ -116,7 +116,7 @@ class WisdomifyDataModule(LightningDataModule):
 class Wisdom2DefDataModule(WisdomifyDataModule):
 
     def train_downloader(self) -> ArtifactLoader:
-        return Wisdom2DefLoader(self.run, self.config["train_ver"])
+        return Wisdom2DefLoader(self.run)
 
     def tensor_builders(self) -> Tuple[XTensor, YTensor]:
         return Wisdom2DefXTensor(self.tokenizer, self.k, self.device), YTensor(self.device)
@@ -125,7 +125,7 @@ class Wisdom2DefDataModule(WisdomifyDataModule):
 class Wisdom2EgDataModule(WisdomifyDataModule):
 
     def train_downloader(self) -> ArtifactLoader:
-        return Wisdom2EgLoader(self.run, self.config["train_ver"])
+        return Wisdom2EgLoader(self.run)
 
     def tensor_builders(self) -> Tuple[XTensor, YTensor]:
         return Wisdom2EgXTensor(self.tokenizer, self.k, self.device), YTensor(self.device)
