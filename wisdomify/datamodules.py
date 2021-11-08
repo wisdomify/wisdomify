@@ -3,11 +3,11 @@ from typing import Tuple, Optional, List
 from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
 from transformers import BertTokenizerFast
-from wisdomify.tensors import (
-    XTensor,
-    YTensor,
-    Wisdom2DefXTensor,
-    Wisdom2EgXTensor
+from wisdomify.builders import (
+    XBuilder,
+    YBuilder,
+    Wisdom2DefXBuilder,
+    Wisdom2EgXBuilder
 )
 from wandb.wandb_run import Run
 from wisdomify.artifacts import (
@@ -109,7 +109,7 @@ class WisdomifyDataModule(LightningDataModule):
     def val_test_downloader(self) -> ArtifactLoader:
         return Wisdom2QueryLoader(self.run)
 
-    def tensor_builders(self) -> Tuple[XTensor, YTensor]:
+    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
         raise NotImplementedError
 
 
@@ -118,8 +118,8 @@ class Wisdom2DefDataModule(WisdomifyDataModule):
     def train_downloader(self) -> ArtifactLoader:
         return Wisdom2DefLoader(self.run)
 
-    def tensor_builders(self) -> Tuple[XTensor, YTensor]:
-        return Wisdom2DefXTensor(self.tokenizer, self.k, self.device), YTensor(self.device)
+    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
+        return Wisdom2DefXBuilder(self.tokenizer, self.k, self.device), YBuilder(self.device)
 
 
 class Wisdom2EgDataModule(WisdomifyDataModule):
@@ -127,5 +127,5 @@ class Wisdom2EgDataModule(WisdomifyDataModule):
     def train_downloader(self) -> ArtifactLoader:
         return Wisdom2EgLoader(self.run)
 
-    def tensor_builders(self) -> Tuple[XTensor, YTensor]:
-        return Wisdom2EgXTensor(self.tokenizer, self.k, self.device), YTensor(self.device)
+    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
+        return Wisdom2EgXBuilder(self.tokenizer, self.k, self.device), YBuilder(self.device)

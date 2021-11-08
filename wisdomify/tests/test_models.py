@@ -7,7 +7,7 @@ from wisdomify.models import (
     RDBeta
 )
 from wisdomify.loaders import load_conf, load_device
-from wisdomify.builders import Wisdom2SubwordsBuilder, WisKeysBuilder, XBuilder, Wisdom2DefXBuilder, YBuilder
+from wisdomify.builders import Wisdom2SubwordsBuilder, WiskeysBuilder, XBuilder, Wisdom2DefXBuilder, YBuilder
 import torch
 
 
@@ -145,7 +145,7 @@ class RDBetaTest(RDCommonTest.Test):
         tokenizer.add_tokens(wisdoms)
         bert_mlm.resize_token_embeddings(len(tokenizer))
         wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, device)(wisdoms)
-        wiskeys = WisKeysBuilder(tokenizer, device)(wisdoms)
+        wiskeys = WiskeysBuilder(tokenizer, device)(wisdoms)
         cls.rd = RDBeta(bert_mlm, wisdom2subwords, wiskeys, k, lr, device)
         cls.initialize(Wisdom2DefXBuilder(tokenizer, k, device), YBuilder(device),
                        wisdoms, bert_mlm.config.hidden_size, len(wisdoms), k)

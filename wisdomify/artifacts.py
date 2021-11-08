@@ -7,7 +7,7 @@ from abc import ABC
 from typing import List, cast, Tuple
 from transformers import BertTokenizerFast, AutoConfig, AutoModelForMaskedLM, BertForMaskedLM
 from wandb.wandb_run import Run
-from wisdomify.tensors import Wisdom2SubwordsTensor, WisKeysTensor
+from wisdomify.builders import Wisdom2SubwordsBuilder, WiskeysBuilder
 from wisdomify.models import RD, RDAlpha, RDBeta
 from wisdomify.paths import ARTIFACTS_DIR
 
@@ -116,7 +116,7 @@ class RDLoader(ArtifactLoader, ABC):
 class RDAlphaLoader(RDLoader):
 
     def rd(self, bert_mlm: BertForMaskedLM, tokenizer: BertTokenizerFast, k: int, lr: float, wisdoms: List[str]) -> RD:
-        wisdom2subwords = Wisdom2SubwordsTensor(tokenizer, k, self.device)(wisdoms)
+        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, self.device)(wisdoms)
         rd = RDAlpha(bert_mlm, wisdom2subwords, k, lr, self.device)
         return rd
 
@@ -128,9 +128,9 @@ class RDAlphaLoader(RDLoader):
 class RDBetaLoader(RDLoader):
 
     def rd(self, bert_mlm: BertForMaskedLM, tokenizer: BertTokenizerFast, k: int, lr: float, wisdoms: List[str]) -> RD:
-        wisdom2subwords = Wisdom2SubwordsTensor(tokenizer, k, self.device)(wisdoms)
+        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, self.device)(wisdoms)
         bert_mlm.resize_token_embeddings(len(tokenizer))
-        wiskeys = WisKeysTensor(tokenizer, self.device)(wisdoms)
+        wiskeys = WiskeysBuilder(tokenizer, self.device)(wisdoms)
         rd = RDBeta(bert_mlm, wisdom2subwords, wiskeys, k, lr, self.device)
         return rd
 

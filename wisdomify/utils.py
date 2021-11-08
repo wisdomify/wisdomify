@@ -8,7 +8,7 @@ from wisdomify.artifacts import WisdomsLoader, RDAlphaLoader, RDBetaLoader
 from wisdomify.models import RD, RDAlpha, RDBeta
 from wisdomify.datamodules import Wisdom2DefDataModule, Wisdom2EgDataModule, WisdomifyDataModule
 from wisdomify.loaders import load_conf
-from wisdomify.tensors import Wisdom2SubwordsTensor, WisKeysTensor
+from wisdomify.builders import Wisdom2SubwordsBuilder, WiskeysBuilder
 
 
 # --- an experiment --- #
@@ -68,14 +68,14 @@ class Experiment:
         tokenizer = BertTokenizerFast.from_pretrained(bert)
         # --- wisdom-related data --- #
         wisdoms = WisdomsLoader(run)(wisdoms_ver)
-        wisdom2subwords = Wisdom2SubwordsTensor(tokenizer, k, device)(wisdoms)
+        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, device)(wisdoms)
         # --- choose an appropriate rd version --- #
         if model == "rd_alpha":
             rd = RDAlpha(bert_mlm, wisdom2subwords, k, lr, device)
         elif model == "rd_beta":
             tokenizer.add_tokens(wisdoms)
             bert_mlm.resize_token_embeddings(len(tokenizer))
-            wiskeys = WisKeysTensor(tokenizer, device)(wisdoms)
+            wiskeys = WiskeysBuilder(tokenizer, device)(wisdoms)
             rd = RDBeta(bert_mlm, wisdom2subwords, wiskeys, k, lr, device)
         else:
             raise NotImplementedError

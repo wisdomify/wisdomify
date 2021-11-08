@@ -7,7 +7,7 @@ from typing import List, Tuple
 from transformers import BertTokenizerFast, BatchEncoding
 
 
-class WisdomifyTensor:
+class TensorBuilder:
 
     def __call__(self, *args, **kwargs) -> torch.Tensor:
         """
@@ -16,7 +16,7 @@ class WisdomifyTensor:
         raise NotImplementedError
 
 
-class Wisdom2SubwordsTensor(WisdomifyTensor):
+class Wisdom2SubwordsBuilder(TensorBuilder):
     def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
         self.tokenizer = tokenizer
         self.k = k
@@ -39,7 +39,7 @@ class Wisdom2SubwordsTensor(WisdomifyTensor):
         return input_ids.to(self.device)
 
 
-class WisKeysTensor(WisdomifyTensor):
+class WiskeysBuilder(TensorBuilder):
     def __init__(self, tokenizer: BertTokenizerFast, device: torch.device):
         self.tokenizer = tokenizer
         self.device = device
@@ -54,7 +54,7 @@ class WisKeysTensor(WisdomifyTensor):
         return input_ids.to(self.device)
 
 
-class XTensor(WisdomifyTensor):
+class XBuilder(TensorBuilder):
     def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
         self.tokenizer = tokenizer
         self.k = k
@@ -80,7 +80,7 @@ class XTensor(WisdomifyTensor):
         raise NotImplementedError
 
 
-class Wisdom2DefXTensor(XTensor):
+class Wisdom2DefXBuilder(XBuilder):
     def encode(self, wisdom2def: List[Tuple[str, str]]) -> BatchEncoding:
         """
         param wisdom2def: (가는 날이 장날, 어떤 일을 하려고 하는데 뜻하지 않은 일을 공교롭게 당하는 것을 비유적으로 이르는 말)
@@ -97,7 +97,7 @@ class Wisdom2DefXTensor(XTensor):
         return encodings
 
 
-class Wisdom2EgXTensor(XTensor):
+class Wisdom2EgXBuilder(XBuilder):
     def encode(self, wisdom2eg: List[Tuple[str, str]]) -> BatchEncoding:
         """
         param wisdom2eg: (가는 날이 장날, 아이고... [WISDOM]이라더니, 오늘 하필 비가 오네.)
@@ -122,7 +122,7 @@ class Wisdom2EgXTensor(XTensor):
         return encodings
 
 
-class YTensor(WisdomifyTensor):
+class YBuilder(TensorBuilder):
 
     def __init__(self, device: torch.device):
         self.device = device
