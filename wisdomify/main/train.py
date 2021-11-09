@@ -2,9 +2,8 @@ import torch
 import argparse
 import wandb
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
-from wisdomify.builders import RDArtifactBuilder
+from wisdomify.artifacts import RDBuilder
 from wisdomify.loaders import load_device
 from wisdomify.paths import ROOT_DIR
 from wisdomify.utils import Experiment
@@ -19,10 +18,13 @@ def main():
     parser.add_argument("--ver", type=str, default="v0")
     parser.add_argument("--upload", dest='upload', action='store_true',
                         default=False)  # set this flag up if you want to save the logs & the model
+    parser.add_argument("--online", dest="online", action="store_true",
+                        default=False)
     args = parser.parse_args()
     model: str = args.model
     ver: str = args.ver
     upload: bool = args.upload
+    online: bool = args.online
     # --- init a run  --- #
     run = wandb.init(name="wisdomify.main.train",
                      tags=[f"{model}:{ver}"],
@@ -33,7 +35,7 @@ def main():
     exp = Experiment.build(model, ver, run, device)
     # --- instantiate the training logger --- #
     # A new W&B run will be created when training starts if you have not created one manually before with wandb.init().
-    logger = WandbLogger(log_model=False)
+    logger = WandbLogger(log_model=False, offline=not online)
     # --- instantiate the trainer --- #
     trainer = pl.Trainer(gpus=torch.cuda.device_count(),
                          max_epochs=exp.config['max_epochs'],
@@ -47,10 +49,10 @@ def main():
     trainer.fit(model=exp.rd, datamodule=exp.datamodule)
     # --- upload the model as an artifact to wandb, after training is done --- #
     if upload:
-        builder = RDArtifactBuilder(model, ver, exp.config)
+        builder = RDBuilder(model, ver)
         torch.save(exp.rd.state_dict(), builder.rd_bin_path)  # saving stat_dict only
         exp.tokenizer.save_pretrained(builder.tok_dir_path)  # save the tokenizer as well
-        rd_artifact = builder()
+        rd_artifact = builder(exp.rd, exp.tokenizer, exp.config)
         run.log_artifact(rd_artifact)
 
 

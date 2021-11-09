@@ -5,7 +5,7 @@ import unittest
 from wisdomify.loaders import load_conf, load_device
 from wisdomify.builders import (
     Wisdom2SubwordsBuilder,
-    WisKeysBuilder,
+    WiskeysBuilder,
     Wisdom2DefXBuilder,
     Wisdom2EgXBuilder,
     YBuilder
@@ -83,7 +83,7 @@ class WiskeysBuilderTest(TensorBuilderTest):
     def setUpClass(cls):
         super().setUpClass()
         cls.tokenizer.add_tokens(cls.wisdoms)  # treat wisdoms as single tokens
-        cls.wiskeys_builder = WisKeysBuilder(cls.tokenizer, cls.device)
+        cls.wiskeys_builder = WiskeysBuilder(cls.tokenizer, cls.device)
 
     def test_build_wiskeys_dim(self):
         wiskeys = self.wiskeys_builder(self.wisdoms)
