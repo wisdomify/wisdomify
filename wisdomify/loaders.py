@@ -4,6 +4,7 @@ A loader loads something from local.
 import json
 from wisdomify.paths import CONF_JSON
 import torch
+from typing import Tuple
 
 
 def load_conf() -> dict:
@@ -11,7 +12,7 @@ def load_conf() -> dict:
         return json.loads(fh.read())
 
 
-def load_device(use_gpu=False) -> tuple(torch.device, int):
+def load_device(use_gpu=False) -> Tuple[torch.device, int]:
     if not use_gpu: 
         return torch.device("cpu"), 0
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

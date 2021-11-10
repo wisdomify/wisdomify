@@ -23,7 +23,7 @@ def main():
     ver: str = args.ver
     desc: str = args.desc
     # --- init a run  --- #
-    run = wandb.init(name="wisdomify.main.train",
+    run = wandb.init(name="wisdomify.main.infer",
                      tags=[f"{model}:{ver}"],
                      dir=ROOT_DIR,
                      project="wisdomify",

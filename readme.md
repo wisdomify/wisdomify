@@ -1,6 +1,8 @@
 # Wisdomify
-- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1WH-ukPOV69lL41wkSPH8mi33AzCa3vQd?usp=sharing) ![](https://github.com/eubinecto/wisdomify/workflows/wisdomify%20pytest%20on%20pull_request/badge.svg)
-- [![Run on Ainize](https://ainize.ai/images/run_on_ainize_button.svg)](https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search)
+<a href="https://colab.research.google.com/drive/1WH-ukPOV69lL41wkSPH8mi33AzCa3vQd?usp=sharing"><img src="https://colab.research.google.com/assets/colab-badge.svg" height=20></a>
+![](https://github.com/eubinecto/wisdomify/workflows/pytest/badge.svg)
+<a href="https://wandb.ai/wisdomify/wisdomify?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20></a>
+<a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://ainize.ai/images/run_on_ainize_button.svg" height="22"/></a>
 
 A BERT-based reverse-dictionary of Korean proverbs.
 - 김유빈 : 모델링 / 데이터 수집 / 프로젝트 설계 / back-end

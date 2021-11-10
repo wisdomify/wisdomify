@@ -1,4 +1,4 @@
-name: wisdomify pytest on pull_request
+name: pytest
 on:
   pull_request:
     branches: [ main ]

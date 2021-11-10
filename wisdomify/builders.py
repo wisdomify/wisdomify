@@ -3,18 +3,15 @@ all the functions for building tensors are defined here.
 builders must accept device as one of the parameters.
 """
 import torch
-import wandb
-import os
 from typing import List, Tuple
 from transformers import BertTokenizerFast, BatchEncoding
-from wisdomify.paths import ARTIFACTS_DIR
 
 
 class TensorBuilder:
 
     def __call__(self, *args, **kwargs) -> torch.Tensor:
         """
-        whatever it does,a builder outputs a Tensor.
+        whatever it does, a tensor builder outputs a Tensor.
         """
         raise NotImplementedError
 
@@ -42,7 +39,7 @@ class Wisdom2SubwordsBuilder(TensorBuilder):
         return input_ids.to(self.device)
 
 
-class WisKeysBuilder(TensorBuilder):
+class WiskeysBuilder(TensorBuilder):
     def __init__(self, tokenizer: BertTokenizerFast, device: torch.device):
         self.tokenizer = tokenizer
         self.device = device
@@ -140,33 +137,3 @@ class YBuilder(TensorBuilder):
             wisdoms.index(wisdom)
             for wisdom in [wisdom for wisdom, _ in wisdom2desc]
         ]).to(self.device)
-
-
-class RDArtifactBuilder:
-
-    def __init__(self, model: str, ver: str, config: dict):
-        self.model = model
-        self.ver = ver
-        self.config = config
-
-    def __call__(self) -> wandb.Artifact:
-        artifact = wandb.Artifact(self.model, metadata=self.config, type="model")
-        artifact.add_file(self.rd_bin_path)
-        artifact.add_dir(self.tok_dir_path, name="tokenizer")
-        return artifact
-
-    @property
-    def artifact_dir_path(self) -> str:
-        dir_path = os.path.join(ARTIFACTS_DIR, f"{self.model}:{self.ver}")
-        os.makedirs(dir_path, exist_ok=True)
-        return dir_path
-
-    @property
-    def rd_bin_path(self) -> str:
-        return os.path.join(self.artifact_dir_path, "rd.bin")
-
-    @property
-    def tok_dir_path(self) -> str:
-        tok_dir_path = os.path.join(self.artifact_dir_path, "tokenizer")
-        os.makedirs(tok_dir_path, exist_ok=True)
-        return tok_dir_path

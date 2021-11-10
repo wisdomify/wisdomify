@@ -1,14 +1,14 @@
 import random
-from typing import List, Tuple
 import torch
 import numpy as np
-from wisdomify.downloaders import WisdomsDownloader, RDAlphaDownloader, RDBetaDownloader, RDBetaAttnDownloader
+from typing import List, Tuple
+from wandb.wandb_run import Run
+from transformers import BertTokenizerFast, BertForMaskedLM
+from wisdomify.artifacts import WisdomsLoader, RDAlphaLoader, RDBetaLoader, RDBetaAttnLoader
 from wisdomify.models import RD, RDAlpha, RDBeta, RDBetaAttention
 from wisdomify.datamodules import Wisdom2DefDataModule, Wisdom2EgDataModule, WisdomifyDataModule
 from wisdomify.loaders import load_conf
-from wisdomify.builders import Wisdom2SubwordsBuilder, WisKeysBuilder
-from transformers import BertTokenizerFast, BertForMaskedLM
-from wandb.wandb_run import Run
+from wisdomify.builders import Wisdom2SubwordsBuilder, WiskeysBuilder
 
 
 # --- an experiment --- #
@@ -28,18 +28,16 @@ class Experiment:
         """
         config = load_conf()[model][ver]
         seed = config["seed"]
-        wisdoms_ver = config["wisdoms_ver"]
         train_type = config["train_type"]
         # --- for reproducibility --- #
         cls.fix_seeds(seed)
-        wisdoms = WisdomsDownloader(run)(wisdoms_ver)
         # --- choose an appropriate rd version --- #
         if model == "rd_alpha":
-            rd, tokenizer = RDAlphaDownloader(run, wisdoms, device)(ver)
+            rd, tokenizer, wisdoms = RDAlphaLoader(run, device)(ver)
         elif model == "rd_beta":
-            rd, tokenizer = RDBetaDownloader(run, wisdoms, device)(ver)
+            rd, tokenizer, wisdoms = RDBetaLoader(run, device)(ver)
         elif model == "rd_beta_attn":
-            rd, tokenizer = RDBetaAttnDownloader(run, wisdoms, device)(ver)
+            rd, tokenizer, wisdoms = RDBetaAttnLoader(run, device)(ver)
         else:
             raise ValueError
         # --- load a datamodule --- #
@@ -71,7 +69,7 @@ class Experiment:
         bert_mlm = BertForMaskedLM.from_pretrained(bert)
         tokenizer = BertTokenizerFast.from_pretrained(bert)
         # --- wisdom-related data --- #
-        wisdoms = WisdomsDownloader(run)(wisdoms_ver)
+        wisdoms = WisdomsLoader(run)(wisdoms_ver)
         wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, device)(wisdoms)
         # --- choose an appropriate rd version --- #
         if model == "rd_alpha":
@@ -79,12 +77,12 @@ class Experiment:
         elif model == "rd_beta":
             tokenizer.add_tokens(wisdoms)
             bert_mlm.resize_token_embeddings(len(tokenizer))
-            wiskeys = WisKeysBuilder(tokenizer, device)(wisdoms)
+            wiskeys = WiskeysBuilder(tokenizer, device)(wisdoms)
             rd = RDBeta(bert_mlm, wisdom2subwords, wiskeys, k, lr, device)
         elif model == "rd_beta_attn":
             tokenizer.add_tokens(wisdoms)
             bert_mlm.resize_token_embeddings(len(tokenizer))
-            wiskeys = WisKeysBuilder(tokenizer, device)(wisdoms)
+            wiskeys = WiskeysBuilder(tokenizer, device)(wisdoms)
             rd = RDBetaAttention(bert_mlm, wisdom2subwords, wiskeys, k, lr, device)
         else:
             raise NotImplementedError
