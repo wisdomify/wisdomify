@@ -14,10 +14,12 @@ def main():
                         default="rd_alpha")
     parser.add_argument("--ver", type=str,
                         default="latest")
-    device = load_device()
+    parser.add_argument("--use_gpu", type=bool, default=False)
     args = parser.parse_args()
     model: str = args.model
     ver: str = args.ver
+    # --- setup the device --- #
+    device, n_gpus = load_device(args.use_gpu)
     # --- init a run instance --- #
     run = wandb.init(name="wisdomify.main.eval",
                      tags=[f"{model}:{ver}"],
@@ -29,7 +31,7 @@ def main():
     exp.rd.eval()
     # --- instantiate the training logger --- #
     logger = WandbLogger(log_model=False)
-    trainer = pl.Trainer(gpus=torch.cuda.device_count(),
+    trainer = pl.Trainer(gpus = n_gpus,
                          # do not save checkpoints to a file.
                          logger=logger)
     # --- run the test on the test set! --- #

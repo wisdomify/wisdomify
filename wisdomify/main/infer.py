@@ -9,7 +9,6 @@ from wisdomify.utils import Experiment, Wisdomifier
 
 
 def main():
-    device = load_device()
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str,
                         default="rd_beta")
@@ -17,7 +16,9 @@ def main():
                         default="v1")
     parser.add_argument("--desc", type=str,
                         default="오전 내내 비가 안오길래 산책하러 밖을 나왔더니 갑자기 비가 쏟아지기 시작했다")
+    parser.add_argument("--use_gpu", type=bool, default=False)
     args = parser.parse_args()
+    device = load_device(args.use_gpu)
     model: str = args.model
     ver: str = args.ver
     desc: str = args.desc

@@ -11,8 +11,10 @@ def load_conf() -> dict:
         return json.loads(fh.read())
 
 
-def load_device() -> torch.device:
+def load_device(use_gpu=False) -> tuple(torch.device, int):
+    if not use_gpu: 
+        return torch.device("cpu"), 0
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    return device
+    return device, torch.cuda.device_count()
 
 
