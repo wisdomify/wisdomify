@@ -1,4 +1,6 @@
-
+"""
+to be implemented later!
+"""
 
 
 class WisdomifyAPI:

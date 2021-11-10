@@ -138,3 +138,4 @@ data/lightning_logs
 */artifacts/*
 */wandb/*
 wandb
+corpora

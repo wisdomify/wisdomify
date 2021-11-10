@@ -54,7 +54,7 @@ class WiskeysBuilder(TensorBuilder):
         return input_ids.to(self.device)
 
 
-class XBuilder(TensorBuilder):
+class InputsBuilder(TensorBuilder):
     def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
         self.tokenizer = tokenizer
         self.k = k
@@ -80,7 +80,7 @@ class XBuilder(TensorBuilder):
         raise NotImplementedError
 
 
-class Wisdom2DefXBuilder(XBuilder):
+class Wisdom2DefInputsBuilder(InputsBuilder):
     def encode(self, wisdom2def: List[Tuple[str, str]]) -> BatchEncoding:
         """
         param wisdom2def: (가는 날이 장날, 어떤 일을 하려고 하는데 뜻하지 않은 일을 공교롭게 당하는 것을 비유적으로 이르는 말)
@@ -97,7 +97,7 @@ class Wisdom2DefXBuilder(XBuilder):
         return encodings
 
 
-class Wisdom2EgXBuilder(XBuilder):
+class Wisdom2EgInputsBuilder(InputsBuilder):
     def encode(self, wisdom2eg: List[Tuple[str, str]]) -> BatchEncoding:
         """
         param wisdom2eg: (가는 날이 장날, 아이고... [WISDOM]이라더니, 오늘 하필 비가 오네.)
@@ -122,7 +122,7 @@ class Wisdom2EgXBuilder(XBuilder):
         return encodings
 
 
-class YBuilder(TensorBuilder):
+class TargetsBuilder(TensorBuilder):
 
     def __init__(self, device: torch.device):
         self.device = device

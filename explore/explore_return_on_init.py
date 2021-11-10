@@ -6,4 +6,5 @@ class MyClass:
 
 
 if __name__ == '__main__':
+    # this of course gives an error!
     print(MyClass())

@@ -2,10 +2,9 @@
 load a pre-trained wisdomify, and play with it.
 """
 import argparse
-import wandb
+from wisdomify.connectors import connect_to_wandb
 from wisdomify.loaders import load_device
-from wisdomify.paths import ROOT_DIR
-from wisdomify.utils import Experiment, Wisdomifier
+from wisdomify import flows
 
 
 def main():
@@ -21,21 +20,14 @@ def main():
     model: str = args.model
     ver: str = args.ver
     desc: str = args.desc
-    # --- init a run  --- #
-    run = wandb.init(name="wisdomify.main.infer",
-                     tags=[f"{model}:{ver}"],
-                     dir=ROOT_DIR,
-                     project="wisdomify",
-                     entity="wisdomify")
-    # --- init a wisdomifier --- #
-    exp = Experiment.load(model, ver, run, device)
-    wisdomifier = Wisdomifier(exp)
-
-    # --- inference --- #
-    print("### desc: {} ###".format(desc))
-    for results in wisdomifier(sents=[desc]):
-        for idx, res in enumerate(results):
-            print("{}: ({}, {:.4f})".format(idx, res[0], res[1]))
+    with connect_to_wandb() as run:
+        # --- init a wisdomifier --- #
+        flow = flows.WisdomifyFlow(run, model, ver, [desc], device)
+        # --- inference --- #
+        print("### desc: {} ###".format(desc))
+        for result in flow.results:
+            for idx, entry in enumerate(result):
+                print("{}: ({}, {:.4f})".format(idx, entry[0], entry[1]))
 
 
 if __name__ == '__main__':

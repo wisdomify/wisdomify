@@ -2,7 +2,7 @@
 A loader loads something from local.
 """
 import json
-from wisdomify.paths import CONF_JSON
+from wisdomify.constants import CONF_JSON
 import torch
 
 

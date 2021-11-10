@@ -58,7 +58,7 @@ class Story(Document):
         }
 
     @staticmethod
-    def all_indices() -> List[str]:
+    def all_names() -> List[str]:
         return [cls.Index.name for cls in Story.__subclasses__()]
 
 

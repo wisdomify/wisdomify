@@ -30,7 +30,7 @@ def main():
     # get the hidden representations for the masked tokens
     mask_id = tokenizer.convert_tokens_to_ids("[MASK]")
     masked_ids = [
-        input_id.tolist().index(mask_id)
+        input_id.tolist().index_stories(mask_id)
         for input_id in encoded['input_ids']
     ]
     hidden_masked_1 = H_all[0, masked_ids[0], :]  # (N, L, 768) -> (1, 768)

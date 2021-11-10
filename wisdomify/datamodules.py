@@ -1,20 +1,15 @@
 import torch
 from typing import Tuple, Optional, List
+from wandb.wandb_run import Run
 from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
 from transformers import BertTokenizerFast
-from wisdomify.builders import (
-    XBuilder,
-    YBuilder,
-    Wisdom2DefXBuilder,
-    Wisdom2EgXBuilder
-)
-from wandb.wandb_run import Run
-from wisdomify.artifacts import (
-    Wisdom2QueryLoader,
-    Wisdom2DefLoader,
-    Wisdom2EgLoader,
-    ArtifactLoader
+from wisdomify import flows
+from wisdomify.tensors import (
+    InputsBuilder,
+    TargetsBuilder,
+    Wisdom2DefInputsBuilder,
+    Wisdom2EgInputsBuilder
 )
 
 
@@ -42,6 +37,7 @@ class WisdomifyDataset(Dataset):
 
 
 class WisdomifyDataModule(LightningDataModule):
+
     def __init__(self,
                  config: dict,
                  tokenizer: BertTokenizerFast,
@@ -54,7 +50,6 @@ class WisdomifyDataModule(LightningDataModule):
         self.wisdoms = wisdoms
         self.run = run
         self.device = device
-        self.train_type = config['train_type']
         self.k = config["k"]
         self.batch_size = config['batch_size']
         self.shuffle = config['shuffle']
@@ -68,8 +63,8 @@ class WisdomifyDataModule(LightningDataModule):
         """
         prepare: download all data needed for this from wandb to local.
         """
-        self.train_downloader()(self.config["train_ver"])
-        self.val_test_downloader()(self.config["val_test_ver"])
+        self.train_flow()
+        self.val_test_flow()
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
@@ -77,8 +72,11 @@ class WisdomifyDataModule(LightningDataModule):
         """
         # --- set up the builders --- #
         # build the datasets
-        train = self.train_downloader()(self.config["train_ver"])
-        val, test = self.val_test_downloader()(self.config["val_test_ver"])
+        train_flow = self.train_flow()
+        train = [(row[0], row[1]) for _, row in train_flow.raw_table.iterrows()]
+        val_test_flow = self.val_test_flow()
+        val, test = [(row[0], row[1]) for _, row in val_test_flow.val_table.iterrows()], \
+                    [(row[0], row[1]) for _, row in val_test_flow.test_table.iterrows()]
         self.train_dataset = self.build_dataset(train, self.wisdoms)
         self.val_dataset = self.build_dataset(val, self.wisdoms)
         self.test_dataset = self.build_dataset(test, self.wisdoms)
@@ -95,6 +93,11 @@ class WisdomifyDataModule(LightningDataModule):
         return DataLoader(self.test_dataset, batch_size=self.batch_size,
                           shuffle=False, num_workers=self.num_workers)
 
+    def predict_dataloader(self):
+        # TODO: what is this? never seen this before...?
+        # has this been added?
+        pass
+
     def build_dataset(self, wisdom2desc: List[Tuple[str, str]], wisdoms: List[str]) -> WisdomifyDataset:
         """
         """
@@ -103,29 +106,30 @@ class WisdomifyDataModule(LightningDataModule):
         y = y_builder(wisdom2desc, wisdoms)
         return WisdomifyDataset(X, y)
 
-    def train_downloader(self) -> ArtifactLoader:
+    def train_flow(self) -> flows.DatasetFlow:
         raise NotImplementedError
 
-    def val_test_downloader(self) -> ArtifactLoader:
-        return Wisdom2QueryLoader(self.run)
+    def val_test_flow(self) -> flows.DatasetFlow:
+        return flows.Wisdom2QueryFlow(self.run, self.config['val_test_ver'],
+                                      "download", self.config['val_ratio'], self.config['seed'])
 
-    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
+    def tensor_builders(self) -> Tuple[InputsBuilder, TargetsBuilder]:
         raise NotImplementedError
 
 
 class Wisdom2DefDataModule(WisdomifyDataModule):
 
-    def train_downloader(self) -> ArtifactLoader:
-        return Wisdom2DefLoader(self.run)
+    def train_flow(self) -> flows.Wisdom2DefFlow:
+        return flows.Wisdom2DefFlow(self.run, self.config['train_ver'], "download")
 
-    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
-        return Wisdom2DefXBuilder(self.tokenizer, self.k, self.device), YBuilder(self.device)
+    def tensor_builders(self) -> Tuple[InputsBuilder, TargetsBuilder]:
+        return Wisdom2DefInputsBuilder(self.tokenizer, self.k, self.device), TargetsBuilder(self.device)
 
 
 class Wisdom2EgDataModule(WisdomifyDataModule):
 
-    def train_downloader(self) -> ArtifactLoader:
-        return Wisdom2EgLoader(self.run)
+    def train_flow(self) -> flows.Wisdom2EgFlow:
+        return flows.Wisdom2EgFlow(self.run, self.config['train_ver'], "download")
 
-    def tensor_builders(self) -> Tuple[XBuilder, YBuilder]:
-        return Wisdom2EgXBuilder(self.tokenizer, self.k, self.device), YBuilder(self.device)
+    def tensor_builders(self) -> Tuple[InputsBuilder, TargetsBuilder]:
+        return Wisdom2EgInputsBuilder(self.tokenizer, self.k, self.device), TargetsBuilder(self.device)
