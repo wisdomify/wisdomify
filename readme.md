@@ -25,9 +25,15 @@ Objectives:
 
 Check the dependencies:
 ```text
-pytorch-lightning==1.3.7.post0
-transformers==4.8.1
-wandb==0.12.2
+more-itertools  # for batch-processing generators 
+pandas #  for preprocessing data
+elasticsearch-dsl  # for collecting examples
+scikit-learn  # for split 
+wandb  # for tracking & visualising experiments
+metaflow  # for orchestrating the project as DAG's
+python-dotenv  # for accessing secrets
+pytorch-lightning  # for model-centric design
+transformers  # for transfer learning
 ```
 Clone the project and set up a virtualenv for the project:
 ```bash
