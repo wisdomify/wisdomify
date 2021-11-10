@@ -9,7 +9,7 @@ from typing import Tuple, cast, List
 from transformers import BertTokenizerFast, AutoModelForMaskedLM, AutoConfig
 from wandb.sdk.wandb_run import Run
 from wisdomify.builders import Wisdom2SubwordsBuilder, WisKeysBuilder
-from wisdomify.models import RD, RDAlpha, RDBeta
+from wisdomify.models import RD, RDAlpha, RDBeta, RDBetaAttention
 from wisdomify.paths import ARTIFACTS_DIR
 
 
@@ -32,7 +32,7 @@ class WisdomsDownloader(Downloader):
 
     def __call__(self, ver: str) -> List[str]:
         artifact = self.use_artifact(f"wisdoms:{ver}")
-        table = cast(wandb.Table, artifact.get("wisdoms"))
+        table = cast(wandb.Table, artifact.get("all"))
         return [
             row[0]
             for _, row in table.iterrows()
@@ -112,5 +112,25 @@ class RDBetaDownloader(RDDownloader):
         bert_mlm.resize_token_embeddings(len(tokenizer))
         wiskeys = WisKeysBuilder(tokenizer, self.device)(self.wisdoms)
         rd = RDBeta(bert_mlm, wisdom2subwords, wiskeys, k, lr, self.device)
+        rd.load_state_dict(torch.load(rd_bin_path))
+        return rd, tokenizer
+
+
+class RDBetaAttnDownloader(RDDownloader):
+
+    def __call__(self, ver: str) -> Tuple[RD, BertTokenizerFast]:
+        artifact = self.use_artifact(f"rd_beta_attn:{ver}")
+        artifact_path = artifact.download()
+        rd_bin_path = path.join(artifact_path, "rd.bin")
+        tok_dir_path = path.join(artifact_path, "tokenizer")
+        bert = artifact.metadata['bert']
+        k = artifact.metadata['k']
+        lr = artifact.metadata['lr']
+        bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert))  # just the skeleton
+        tokenizer = BertTokenizerFast.from_pretrained(tok_dir_path)
+        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, self.device)(self.wisdoms)
+        bert_mlm.resize_token_embeddings(len(tokenizer))
+        wiskeys = WisKeysBuilder(tokenizer, self.device)(self.wisdoms)
+        rd = RDBetaAttention(bert_mlm, wisdom2subwords, wiskeys, k, lr, self.device)
         rd.load_state_dict(torch.load(rd_bin_path))
         return rd, tokenizer
