@@ -1,3 +1,4 @@
+import os
 import random
 import numpy as np
 import io
@@ -461,8 +462,8 @@ class RDFlow(Flow):
                 self.download_tokenizer,
                 self.build_wisdom2subwords,
                 self.build_rd,
-                # to be used when saving
                 self.save_paths,
+                self.make_dirs,
             ]
         else:
             raise ValueError
@@ -474,6 +475,11 @@ class RDFlow(Flow):
         self.artifact_path = path.join(ARTIFACTS_DIR, f"{self.name}:{self.ver}")
         self.rd_bin_path = path.join(self.artifact_path, "rd.bin")
         self.tok_dir_path = path.join(self.artifact_path, "tokenizer")
+
+    def make_dirs(self):
+        # and make directories as well, if they don't exist
+        os.makedirs(self.artifact_path, exist_ok=True)
+        os.makedirs(self.tok_dir_path, exist_ok=True)
 
     def save_config(self):
         self.config = self.artifact.metadata
@@ -540,18 +546,37 @@ class RDBetaFlow(RDFlow):
         self.tokenizer.add_tokens(self.wisdoms)
         self.bert_mlm.resize_token_embeddings(len(self.tokenizer))
         wiskeys = WiskeysBuilder(self.tokenizer, self.device)(self.wisdoms)
-        rd = RDBeta(self.bert_mlm, self.wisdom2subwords, wiskeys,
-                    self.config['k'], self.config['lr'], self.device)
-        return rd
+        self.rd = RDBeta(self.bert_mlm, self.wisdom2subwords, wiskeys,
+                         self.config['k'], self.config['lr'], self.device)
 
     @property
     def name(self):
         return "rd_beta"
 
-# TODO implement your new RDModelFow here
+
+class RDSomethingFlow(RDFlow):
+
+    def build_rd(self):
+        """
+        at this point, you have access to:
+        self.bert_mlm
+        self.tokenizer
+        self.device
+        self.wisdoms
+        self.wisdom2subwords
+        self.config
+        get use of these data to build your rd, and save to:
+        self.rd <= RDSomething(...)
+        """
+        self.rd = ...
+
+    @property
+    def name(self):
+        return "rd_something"
 
 
 # ======= experiment flows ======= #
+# this is here to prevent circular import error
 from wisdomify import datamodules  # noqa
 
 
@@ -585,12 +610,14 @@ class ExperimentFlow(Flow):
             ]
 
     def choose_rd_flow(self):
-        if self.model == "rd_alpha":
+        if self.model == RDAlphaFlow.name:
             self.rd_flow = RDAlphaFlow(self.run, self.ver, self.device)
-        elif self.model == "rd_beta":
+        elif self.model == RDBetaFlow.name:
             self.rd_flow = RDBetaFlow(self.run, self.ver, self.device)
+        elif self.model == RDSomethingFlow.name:
+            self.rd_flow = RDSomethingFlow(self.run, self.ver, self.device)
+            raise NotImplementedError("add your own rd here")
         else:
-            # TODO: ADD your new flow here
             raise ValueError
 
     def fix_seeds(self):
@@ -626,8 +653,7 @@ class ExperimentFlow(Flow):
 
 
 # ===== for deploying ==== #
-
-class WisdomifyFlow(Flow):
+class InferFlow(Flow):
 
     exp_flow: ExperimentFlow
     results: List[List[Tuple[str, float]]]

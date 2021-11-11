@@ -24,7 +24,7 @@ def main():
     device = load_device(use_gpu)
     with connect_to_wandb() as run:
         # --- init a wisdomifier --- #
-        flow = flows.WisdomifyFlow(run, model, ver, [desc], device)
+        flow = flows.InferFlow(run, model, ver, [desc], device)
         # --- inference --- #
         print("### desc: {} ###".format(desc))
         for result in flow.results:
