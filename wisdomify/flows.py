@@ -643,12 +643,16 @@ class WisdomifyFlow(Flow):
     def steps(self) -> List[Callable]:
         return [
             self.download_experiment,
+            self.switch_to_eval,
             self.wisdomify
         ]
 
     def download_experiment(self):
         self.exp_flow = ExperimentFlow(self.run, self.model, self.ver,
                                        "download", self.device)
+
+    def switch_to_eval(self):
+        self.exp_flow.rd_flow.rd.eval()
 
     def wisdomify(self):
         # get the X

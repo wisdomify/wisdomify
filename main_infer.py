@@ -8,7 +8,6 @@ from wisdomify import flows
 
 
 def main():
-    device = load_device()
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str,
                         default="rd_beta")
@@ -16,10 +15,13 @@ def main():
                         default="v1")
     parser.add_argument("--desc", type=str,
                         default="오전 내내 비가 안오길래 산책하러 밖을 나왔더니 갑자기 비가 쏟아지기 시작했다")
+    parser.add_argument("--use_gpu", dest="use_gpu", action="store_true", default=False)
     args = parser.parse_args()
     model: str = args.model
     ver: str = args.ver
     desc: str = args.desc
+    use_gpu: bool = args.use_gpu
+    device = load_device(use_gpu)
     with connect_to_wandb() as run:
         # --- init a wisdomifier --- #
         flow = flows.WisdomifyFlow(run, model, ver, [desc], device)
