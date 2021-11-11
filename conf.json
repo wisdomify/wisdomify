@@ -14,7 +14,10 @@
       "max_epochs": 40,
       "batch_size": 30,
       "num_workers": 4,
-      "shuffle": true
+      "shuffle": true,
+      "log_every_n_steps": 1,
+      "enable_checkpointing": false,
+      "num_sanity_val_steps":0
     },
     "b": {
       "bert": "beomi/kcbert-base",
@@ -29,7 +32,10 @@
       "max_epochs": 40,
       "batch_size": 30,
       "num_workers": 4,
-      "shuffle": true
+      "shuffle": true,
+      "log_every_n_steps": 1,
+      "enable_checkpointing": false,
+      "num_sanity_val_steps":0
     }
   },
   "rd_beta": {
@@ -47,7 +53,10 @@
       "max_epochs": 23,
       "batch_size": 30,
       "num_workers": 4,
-      "shuffle": true
+      "shuffle": true,
+      "log_every_n_steps": 1,
+      "enable_checkpointing": false,
+      "num_sanity_val_steps":0
     },
     "b": {
       "bert": "beomi/kcbert-base",
@@ -62,7 +71,10 @@
       "max_epochs": 23,
       "batch_size": 30,
       "num_workers": 4,
-      "shuffle": true
+      "shuffle": true,
+      "log_every_n_steps": 1,
+      "enable_checkpointing": false,
+      "num_sanity_val_steps":0
     },
     "c": {
       "bert": "kykim/bert-kor-base",
@@ -77,7 +89,10 @@
       "max_epochs": 23,
       "batch_size": 30,
       "num_workers": 4,
-      "shuffle": true
+      "shuffle": true,
+      "log_every_n_steps": 1,
+      "enable_checkpointing": false,
+      "num_sanity_val_steps":0
     }
   }
 }

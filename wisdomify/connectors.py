@@ -1,5 +1,5 @@
 """
-Anything that has to do with instantiating some sort of  a client via acessing .env,
+Anything that has to do with instantiating some sort of  a es via acessing .env,
 goes into here.
 """
 import wandb

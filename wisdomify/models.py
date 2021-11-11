@@ -1,14 +1,15 @@
 """
 The reverse dictionary models below are based off of: https://github.com/yhcc/BertForRD/blob/master/mono/model/bert.py
 """
-from wisdomify.metrics import RDMetric
 from argparse import Namespace
 from typing import Tuple, List, Optional
-import pytorch_lightning as pl
-from transformers.models.bert.modeling_bert import BertForMaskedLM
-from torch.nn import functional as F
 import torch
 import torch.nn as nn
+import pytorch_lightning as pl
+from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
+from transformers.models.bert.modeling_bert import BertForMaskedLM
+from torch.nn import functional as F
+from wisdomify.metrics import RDMetric
 
 
 class RD(pl.LightningModule):
@@ -16,6 +17,19 @@ class RD(pl.LightningModule):
     The superclass of all the reverse-dictionaries. This class houses any methods that are required by
     whatever reverse-dictionaries we define.
     """
+    # --- boilerplate; the loaders are defined in datamodules, so we don't define them here
+    # passing them to avoid warnings ---  #
+    def train_dataloader(self) -> TRAIN_DATALOADERS:
+        pass
+
+    def test_dataloader(self) -> EVAL_DATALOADERS:
+        pass
+
+    def val_dataloader(self) -> EVAL_DATALOADERS:
+        pass
+
+    def predict_dataloader(self) -> EVAL_DATALOADERS:
+        pass
 
     def __init__(self, bert_mlm: BertForMaskedLM,
                  wisdom2subwords: torch.Tensor, k: int, lr: float, device: torch.device):
@@ -113,20 +127,28 @@ class RD(pl.LightningModule):
         X, y = batch
         H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
         S_wisdom = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
-        loss = F.cross_entropy(S_wisdom, y)  # (N, |W|), (N,) -> (N,)
-        loss = loss.sum()  # (N,) -> (1,)
+        train_loss = F.cross_entropy(S_wisdom, y)  # (N, |W|), (N,) -> (N,)
+        train_loss = train_loss.sum()  # (N,) -> (1,)
         P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)
         # so that the metrics accumulate over the course of this epoch
-        self.rd_metric.update(preds=P_wisdom, targets=y)
+        self.rd_metric.update(P_wisdom, y)
         # why dict? - just a boilerplate
         return {
-            "loss": loss
+            # you cannot change the keyword for the loss
+            "loss": train_loss,
         }
+
+    def on_train_batch_end(self, outputs: dict, *args, **kwargs) -> None:
+        # watch the loss for this batch
+        self.log("Train/Loss", outputs['loss'])
+
+    def on_train_epoch_start(self) -> None:
+        # so that the metrics do not accumulate to the next epoch
+        self.rd_metric.reset()
 
     def training_epoch_end(self, outputs: List[dict]) -> None:
         # to see an average performance over the batches in this specific epoch
         avg_loss = torch.stack([output['loss'] for output in outputs]).mean()
-        # log the metrics
         rank_mean, rank_median, rank_std, top1, top3, top5 = self.rd_metric.compute()
         self.log("Train/Average Loss", avg_loss)
         self.log("Train/Rank Mean", rank_mean)
@@ -135,12 +157,12 @@ class RD(pl.LightningModule):
         self.log("Train/Top 1 Accuracy", top1)
         self.log("Train/Top 3 Accuracy", top3)
         self.log("Train/Top 5 Accuracy", top5)
-        # so that the metrics do not accumulate to the next epoch
-        self.rd_metric.reset()
 
     def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
-        # just the same as the training step
         return self.training_step(batch, batch_idx)
+
+    def on_validation_batch_end(self, outputs: dict, *args, **kwargs) -> None:
+        self.log("Validation/Loss", outputs['loss'])
 
     def validation_epoch_end(self, outputs: List[dict]) -> None:
         # to see an average performance over the batches in this specific epoch
@@ -154,12 +176,12 @@ class RD(pl.LightningModule):
         self.log("Validation/Top 1 Accuracy", top1)
         self.log("Validation/Top 3 Accuracy", top3)
         self.log("Validation/Top 5 Accuracy", top5)
+
+    def on_validation_epoch_start(self) -> None:
         # so that the metrics do not accumulate to the next epoch
         self.rd_metric.reset()
 
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
-        # so that
-        self.rd_metric.reset()
         X, y = batch
         P_wisdom = self.P_wisdom(X)
         self.rd_metric.update(preds=P_wisdom, targets=y)
@@ -173,6 +195,8 @@ class RD(pl.LightningModule):
         self.log("Test/Top 1 Accuracy", top1)
         self.log("Test/Top 3 Accuracy", top3)
         self.log("Test/Top 5 Accuracy", top5)
+
+    def on_test_epoch_start(self) -> None:
         # so that the metrics do not accumulate to the next epoch
         self.rd_metric.reset()
 

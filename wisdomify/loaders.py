@@ -11,6 +11,10 @@ def load_conf() -> dict:
         return json.loads(fh.read())
 
 
-def load_device() -> torch.device:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    return device
+def load_device(use_gpu: bool) -> torch.device:
+    if use_gpu:
+        if not torch.cuda.is_available():
+            raise ValueError("cuda is unavailable")
+        else:
+            return torch.device("cuda")
+    return torch.device("cpu")

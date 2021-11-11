@@ -110,8 +110,7 @@ class WisdomifyDataModule(LightningDataModule):
         raise NotImplementedError
 
     def val_test_flow(self) -> flows.DatasetFlow:
-        return flows.Wisdom2QueryFlow(self.run, self.config['val_test_ver'],
-                                      "download", self.config['val_ratio'], self.config['seed'])
+        return flows.Wisdom2QueryFlow(self.run, self.config['val_test_ver'], "download")
 
     def tensor_builders(self) -> Tuple[InputsBuilder, TargetsBuilder]:
         raise NotImplementedError

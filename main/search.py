@@ -4,7 +4,7 @@ searches for a wisdom on elasticsearch
 import argparse
 from wisdomify.connectors import connect_to_es
 from wisdomify.docs import Story
-from wisdomify.flows_elastic import SearchFlow
+from wisdomify.flows import SearchFlow
 
 
 def main():
@@ -20,8 +20,8 @@ def main():
     index_name: str = args.index_name
     size: int = args.size
 
-    with connect_to_es() as client:
-        flow = SearchFlow(client, wisdom, index_name, size)
+    with connect_to_es() as es:
+        flow = SearchFlow(es, wisdom, index_name, size)
         res = flow.res
 
     print(f"total hits:{res['hits']['total']}")

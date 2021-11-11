@@ -1,59 +1,69 @@
+import wandb
 import torch
 import argparse
-import wandb
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
-from wisdomify.artifacts import RDBuilder
+from wisdomify.connectors import connect_to_wandb
 from wisdomify.loaders import load_device
-from wisdomify.paths import ROOT_DIR
-from wisdomify.utils import Experiment
+from wisdomify.constants import ROOT_DIR
+from wisdomify.flows import ExperimentFlow
 
 
 def main():
-    # --- setup the device --- #
-    device = load_device()
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="rd_alpha")
-    parser.add_argument("--ver", type=str, default="v0")
+    parser.add_argument("--ver", type=str, default="a")
+    parser.add_argument("--use_gpu", dest="use_gpu", action='store_true', default=False)
     parser.add_argument("--upload", dest='upload', action='store_true',
                         default=False)  # set this flag up if you want to save the logs & the model
-    parser.add_argument("--online", dest="online", action="store_true",
-                        default=False)
     args = parser.parse_args()
     model: str = args.model
     ver: str = args.ver
+    use_gpu: bool = args.use_gpu
     upload: bool = args.upload
-    online: bool = args.online
+    # --- set up the device to train the model with --- #
+    device = load_device(use_gpu)
     # --- init a run  --- #
-    run = wandb.init(name="wisdomify.main.train",
-                     tags=[f"{model}:{ver}"],
-                     dir=ROOT_DIR,
-                     project="wisdomify",
-                     entity="wisdomify")
-    # --- build an experiment instance --- #
-    exp = Experiment.build(model, ver, run, device)
-    # --- instantiate the training logger --- #
-    # A new W&B run will be created when training starts if you have not created one manually before with wandb.init().
-    logger = WandbLogger(log_model=False, offline=not online)
-    # --- instantiate the trainer --- #
-    trainer = pl.Trainer(gpus=torch.cuda.device_count(),
-                         max_epochs=exp.config['max_epochs'],
-                         default_root_dir=ROOT_DIR,
-                         # do not save checkpoints every epoch - we need this especially for sweeping
-                         # https://github.com/PyTorchLightning/pytorch-lightning/issues/5867#issuecomment-775223087
-                         checkpoint_callback=False,
-                         callbacks=[],
-                         logger=logger)
-    # --- start training with validation --- #
-    trainer.fit(model=exp.rd, datamodule=exp.datamodule)
-    # --- upload the model as an artifact to wandb, after training is done --- #
-    if upload:
-        builder = RDBuilder(model, ver)
-        torch.save(exp.rd.state_dict(), builder.rd_bin_path)  # saving stat_dict only
-        exp.tokenizer.save_pretrained(builder.tok_dir_path)  # save the tokenizer as well
-        rd_artifact = builder(exp.rd, exp.tokenizer, exp.config)
-        run.log_artifact(rd_artifact)
+    with connect_to_wandb() as run:
+        # --- build an experiment --- #
+        flow = ExperimentFlow(run, model, ver, "build", device)
+        # --- instantiate the training logger --- #
+        # A new W&B run will be created when training starts
+        # if you have not created one manually before with wandb.init().
+        logger = WandbLogger(log_model=False)
+        # --- instantiate the trainer --- #
+        # -- trainer는 flow로 만들지 않는다. 계속 옵션을 바꾸고 싶을때가 많을거라서, 그냥 이대로 두는게 좋다.
+        trainer = pl.Trainer(max_epochs=flow.rd_flow.config['max_epochs'],
+                             # wisdomify does not support multi-gpu training, as of right now
+                             gpus=1 if device.type == "cuda" else 0,
+                             # lightning_logs will be saved under this directory
+                             default_root_dir=ROOT_DIR,
+                             # each step means each batch. Don't set this too low
+                             # https://youtu.be/3JgpG4K6HxA
+                             log_every_n_steps=flow.rd_flow.config["log_every_n_steps"],
+                             # do not save checkpoints every epoch - we need this especially for sweeping
+                             # https://github.com/PyTorchLightning/pytorch-lightning/issues/5867#issuecomment-775223087
+                             enable_checkpointing=flow.rd_flow.config["enable_checkpointing"],
+                             # set this to zero to prevent "calling metric.compute before metric.update" error
+                             # https://forums.pytorchlightning.ai/t/validation-sanity-check/174/6
+                             num_sanity_val_steps=flow.rd_flow.config["num_sanity_val_steps"],
+                             logger=logger)
+        # --- start training with validation --- #
+        trainer.fit(model=flow.rd_flow.rd, datamodule=flow.datamodule)
+        # --- upload the model as an artifact to wandb, after training is done --- #
+        if upload:
+            # save the rd & the tokenizer locally
+            torch.save(flow.rd_flow.rd.state_dict(), flow.rd_flow.rd_bin_path)  # saving stat_dict only
+            flow.rd_flow.tokenizer.save_pretrained(flow.rd_flow.tok_dir_path)  # save the tokenizer as well
+            artifact = wandb.Artifact(model, type="model")
+            # add the paths to the artifact
+            artifact.add_file(flow.rd_flow.rd_bin_path)
+            artifact.add_dir(flow.rd_flow.tok_dir_path, "tokenizer")
+            # add the config
+            artifact.metadata = flow.rd_flow.config
+            #  upload to wandb
+            run.log_artifact(artifact, aliases=[ver, "latest"])
 
 
 if __name__ == '__main__':

@@ -19,7 +19,8 @@ from wisdomify.loaders import load_conf
 from wisdomify.models import RD, RDAlpha, RDBeta
 from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder
 from wisdomify.connectors import connect_to_es
-from wisdomify.constants import WISDOMS_A, WISDOMS_B, WISDOM2QUERY_RAW_A, WISDOM2DEF_RAW_A, WISDOM2DEF_RAW_B
+from wisdomify.constants import WISDOMS_A, WISDOMS_B, WISDOM2QUERY_RAW_A, WISDOM2DEF_RAW_A, WISDOM2DEF_RAW_B, \
+    ARTIFACTS_DIR
 from wisdomify.preprocess import parse, cleanse, normalise, augment, upsample, stratified_split
 
 
@@ -53,8 +54,8 @@ class SearchFlow(Flow):
     highlight: dict
     res: dict
 
-    def __init__(self, client: Elasticsearch, wisdom: str, index: str, size: int, on_init: bool = True):
-        self.client = client
+    def __init__(self, es: Elasticsearch, wisdom: str, index: str, size: int, on_init: bool = True):
+        self.es = es
         self.wisdom = wisdom
         self.index = index
         self.size = size
@@ -86,10 +87,10 @@ class SearchFlow(Flow):
          }
 
     def search(self):
-        self.res = self.client.search(index=self.index,
-                                      query=self.query,
-                                      highlight=self.highlight,
-                                      size=self.size)
+        self.res = self.es.search(index=self.index,
+                                  query=self.query,
+                                  highlight=self.highlight,
+                                  size=self.size)
 
 
 class IndexFlow(Flow):
@@ -97,11 +98,11 @@ class IndexFlow(Flow):
     name2story: Dict[str, Story]
     stories: Generator[Story, None, None]
 
-    def __init__(self, client: Elasticsearch, index_name: str, batch_size: int,  on_init: bool = True):
+    def __init__(self, es: Elasticsearch, index_name: str, batch_size: int,  on_init: bool = True):
         """
-        :param client:
+        :param es:
         """
-        self.client = client
+        self.es = es
         self.index_name = index_name
         self.batch_size = batch_size
         super().__init__(on_init)
@@ -119,8 +120,8 @@ class IndexFlow(Flow):
         check if an index with given name already exists.
         If it does exists, delete it so that we overwrite the index in the following steps
         """
-        if self.client.indices.exists(index=self.index_name):
-            r = self.client.indices.delete(index=self.index_name)
+        if self.es.indices.exists(index=self.index_name):
+            r = self.es.indices.delete(index=self.index_name)
             print(f"Deleted {self.index_name} - {r}")
 
     def validate(self):
@@ -160,7 +161,7 @@ class IndexFlow(Flow):
             # must make sure include_meta is set to true, otherwise the helper won't be
             # aware of the name of the index that= we are indexing the corpus into
             actions = (doc.to_dict(include_meta=True) for doc in batch)
-            r = bulk(self.client, actions)
+            r = bulk(self.es, actions)
             print(f"successful count: {r[0]}, error messages: {r[1]}")
 
 
@@ -190,13 +191,12 @@ class DatasetFlow(Flow):
                 self.download_artifact,
                 self.download_tables
             ]
-        elif self.mode == "upload":
+        elif self.mode == "build":
             return [
                 self.download_raw_df,
                 self.preprocess,
                 self.val_test_split,
-                self.build_artifact,
-                self.log_artifact
+                self.build_artifact
             ]
         else:
             raise ValueError
@@ -218,9 +218,6 @@ class DatasetFlow(Flow):
 
     def build_artifact(self):
         raise NotImplementedError
-
-    def log_artifact(self):
-        self.run.log_artifact(self.artifact, aliases=[self.ver, "latest"])
 
     @property
     def name(self):
@@ -280,11 +277,11 @@ class WisdomsFlow(DatasetFlow):
 
 class Wisdom2QueryFlow(DatasetFlow):
 
-    def __init__(self, run: Run, ver: str, mode: str, val_ratio: float, seed: int, on_init: bool = True):
-
-        super().__init__(run, ver, mode, on_init)
+    def __init__(self, run: Run, ver: str, mode: str, val_ratio: float = None, seed: int = None, on_init: bool = True):
+        # if you are downloading it, you don't need to provide these
         self.val_ratio = val_ratio
         self.seed = seed
+        super().__init__(run, ver, mode, on_init)
 
     def download_tables(self):
         self.raw_table = cast(wandb.Table, self.artifact.get("raw"))
@@ -326,15 +323,12 @@ class Wisdom2QueryFlow(DatasetFlow):
 
 class Wisdom2DefFlow(DatasetFlow):
 
-    tables: Tuple[wandb.Table, wandb.Table]
-
     def __init__(self, run: Run, ver: str, mode: str, on_init=True):
         super().__init__(run, ver, mode, on_init)
 
     def download_tables(self):
-        raw_table = cast(wandb.Table, self.artifact.get("raw"))
-        all_table = cast(wandb.Table, self.artifact.get("all"))
-        self.tables = (raw_table, all_table)
+        self.raw_table = cast(wandb.Table, self.artifact.get("raw"))
+        self.all_table = cast(wandb.Table, self.artifact.get("all"))
 
     def download_raw_df(self):
         if self.ver == "a":
@@ -371,15 +365,12 @@ class Wisdom2DefFlow(DatasetFlow):
 
 class Wisdom2EgFlow(DatasetFlow):
 
-    tables: Tuple[wandb.Table, wandb.Table]
-
     def __init__(self, run: Run, ver: str, mode: str, on_init=True):
         super().__init__(run, ver, mode, on_init)
 
     def download_tables(self):
-        raw_table = cast(wandb.Table, self.artifact.get("raw"))
-        all_table = cast(wandb.Table, self.artifact.get("all"))
-        self.tables = (raw_table, all_table)
+        self.raw_table = cast(wandb.Table, self.artifact.get("raw"))
+        self.all_table = cast(wandb.Table, self.artifact.get("all"))
 
     def download_raw_df(self):
         """
@@ -388,10 +379,10 @@ class Wisdom2EgFlow(DatasetFlow):
         table = WisdomsFlow(self.run, self.ver, mode="download").raw_table
         wisdoms = [row[0] for _, row in table.iterrows()]
         rows = list()
-        with connect_to_es() as client:
+        with connect_to_es() as es:
             for wisdom in tqdm(wisdoms, desc="searching for wisdoms on stories...",
                                total=len(wisdoms)):
-                flow = SearchFlow(client, wisdom, ",".join(Story.all_names()), size=10000)
+                flow = SearchFlow(es, wisdom, ",".join(Story.all_names()), size=10000)
                 # encoding korean as json files https://stackoverflow.com/a/18337754
                 raw = json.dumps(flow.res, ensure_ascii=False)
                 rows.append((wisdom, raw))
@@ -430,11 +421,13 @@ class RDFlow(Flow):
     artifact: wandb.Artifact
     bert_mlm: BertForMaskedLM
     wisdom2subwords: torch.Tensor
+    artifact_path: str
     rd_bin_path: str
     tok_dir_path: str
     config: dict
     mode: str
     wisdoms: List[str]
+    artifact: wandb.Artifact
 
     def __init__(self, run: Run, ver: str, device: torch.device):
         self.run = run
@@ -451,6 +444,8 @@ class RDFlow(Flow):
         if self.mode == "download":
             return [
                 self.download_artifact,
+                self.save_paths,
+                self.save_config,
                 self.download_wisdoms,
                 self.load_tokenizer,
                 self.load_bert_mlm,
@@ -465,20 +460,26 @@ class RDFlow(Flow):
                 self.download_bert_mlm,
                 self.download_tokenizer,
                 self.build_wisdom2subwords,
-                self.build_rd
+                self.build_rd,
+                # to be used when saving
+                self.save_paths,
             ]
         else:
             raise ValueError
 
     def download_artifact(self):
-        artifact = self.run.use_artifact(f"{self.name}:{self.ver}")
-        artifact_path = artifact.download()
-        self.rd_bin_path = path.join(artifact_path, "rd.bin")
-        self.tok_dir_path = path.join(artifact_path, "tokenizer")
-        self.config = artifact.metadata
+        self.run.use_artifact(f"{self.name}:{self.ver}").download()
+
+    def save_paths(self):
+        self.artifact_path = path.join(ARTIFACTS_DIR, f"{self.name}:{self.ver}")
+        self.rd_bin_path = path.join(self.artifact_path, "rd.bin")
+        self.tok_dir_path = path.join(self.artifact_path, "tokenizer")
+
+    def save_config(self):
+        self.config = self.artifact.metadata
 
     def download_wisdoms(self):
-        table = WisdomsFlow(self.run, self.config['wisdoms_ver'], "download").raw_table
+        table = WisdomsFlow(self.run, self.config["wisdoms_ver"], "download").raw_table
         self.wisdoms = [row[0] for _, row in table.iterrows()]
 
     def download_bert_mlm(self):
@@ -489,6 +490,9 @@ class RDFlow(Flow):
 
     def build_wisdom2subwords(self):
         self.wisdom2subwords = Wisdom2SubwordsBuilder(self.tokenizer, self.config['k'], self.device)(self.wisdoms)
+
+    def build_rd(self):
+        raise NotImplementedError
 
     def load_config(self):
         self.config = load_conf()[self.name][self.ver]
@@ -501,9 +505,6 @@ class RDFlow(Flow):
 
     def load_rd(self):
         self.rd.load_state_dict(torch.load(self.rd_bin_path))
-
-    def build_rd(self):
-        raise NotImplementedError
 
     @property
     def name(self):

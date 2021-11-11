@@ -13,7 +13,7 @@ WANDB_DIR = path.join(ROOT_DIR, "wandb")  # for saving wandb logs
 # --- for configuring experiments --- #
 CONF_JSON = path.join(ROOT_DIR, "conf.json")
 CORPORA_DIR = path.join(ROOT_DIR, "corpora")
-
+ARTIFACTS_DIR = path.join(ROOT_DIR, "artifacts")
 # corpora
 SC_DIR = path.join(CORPORA_DIR, "sc")  # 감성대화
 MR_DIR = path.join(CORPORA_DIR, "mr")  # 기계독해
