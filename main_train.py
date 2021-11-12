@@ -7,6 +7,7 @@ from wisdomify.connectors import connect_to_wandb
 from wisdomify.loaders import load_device, load_config
 from wisdomify.constants import ROOT_DIR
 from wisdomify.flows import ExperimentFlow
+from termcolor import colored
 
 
 def main():
@@ -23,7 +24,7 @@ def main():
     use_gpu: bool = args.use_gpu
     upload: bool = args.upload
     if not upload:
-        print("########## WARNING: YOU CHOSE NOT TO UPLOAD. NOTHING BUT LOGS WILL BE SAVED TO WANDB #################")
+        print(colored("WARNING: YOU CHOSE NOT TO UPLOAD. NOTHING BUT LOGS WILL BE SAVED TO WANDB", color="red"))
     # --- set up the device to train the model with --- #
     device = load_device(use_gpu)
     # --- init a run  --- #
