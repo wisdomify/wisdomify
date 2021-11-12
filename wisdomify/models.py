@@ -1,14 +1,15 @@
 """
 The reverse dictionary models below are based off of: https://github.com/yhcc/BertForRD/blob/master/mono/model/bert.py
 """
-from wisdomify.metrics import RDMetric
 from argparse import Namespace
 from typing import Tuple, List, Optional
-import pytorch_lightning as pl
-from transformers.models.bert.modeling_bert import BertForMaskedLM
-from torch.nn import functional as F
 import torch
 import torch.nn as nn
+import pytorch_lightning as pl
+from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
+from transformers.models.bert.modeling_bert import BertForMaskedLM
+from torch.nn import functional as F
+from wisdomify.metrics import RDMetric
 
 
 class RD(pl.LightningModule):
@@ -16,15 +17,32 @@ class RD(pl.LightningModule):
     The superclass of all the reverse-dictionaries. This class houses any methods that are required by
     whatever reverse-dictionaries we define.
     """
+    # --- boilerplate; the loaders are defined in datamodules, so we don't define them here
+    # passing them to avoid warnings ---  #
+    def train_dataloader(self) -> TRAIN_DATALOADERS:
+        pass
 
-    def __init__(self, bert_mlm: BertForMaskedLM,
-                 wisdom2subwords: torch.Tensor, k: int, lr: float, device: torch.device):
+    def test_dataloader(self) -> EVAL_DATALOADERS:
+        pass
+
+    def val_dataloader(self) -> EVAL_DATALOADERS:
+        pass
+
+    def predict_dataloader(self) -> EVAL_DATALOADERS:
+        pass
+
+    def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM,
+                 wisdom2subwords: torch.Tensor, device: torch.device):
         """
         :param bert_mlm: a bert model for masked language modeling
         :param wisdom2subwords: (|W|, K)
         :return: (N, K, |V|); (num samples, k, the size of the vocabulary of subwords)
         """
         super().__init__()
+        # -- hyper params --- #
+        # should be saved to self.hparams
+        # https://github.com/PyTorchLightning/pytorch-lightning/issues/4390#issue-730493746
+        self.save_hyperparameters(Namespace(k=k, lr=lr))
         # -- the only neural network we need -- #
         self.bert_mlm = bert_mlm
         # -- to be used to compute S_wisdom -- #
@@ -34,13 +52,12 @@ class RD(pl.LightningModule):
         # --- to be used for getting H_desc --- #
         self.desc_mask: Optional[torch.Tensor] = None  # (N, L)
         # --- to be used to evaluate the model --- #
-        self.rd_metric = RDMetric()
+        # have different metric objects for each phase
+        self.metric_train = RDMetric()
+        self.metric_val = RDMetric()
+        self.metric_test = RDMetric()
         # --- load the model to device --- #
         self.to(device)  # always make sure to do this.
-        # -- hyper params --- #
-        # should be saved to self.hparams
-        # https://github.com/PyTorchLightning/pytorch-lightning/issues/4390#issue-730493746
-        self.save_hyperparameters(Namespace(k=k, lr=lr))
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:
         """
@@ -113,68 +130,78 @@ class RD(pl.LightningModule):
         X, y = batch
         H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
         S_wisdom = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
-        loss = F.cross_entropy(S_wisdom, y)  # (N, |W|), (N,) -> (N,)
-        loss = loss.sum()  # (N,) -> (1,)
+        train_loss = F.cross_entropy(S_wisdom, y)  # (N, |W|), (N,) -> (N,)
+        train_loss = train_loss.sum()  # (N,) -> (1,)
         P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)
         # so that the metrics accumulate over the course of this epoch
-        self.rd_metric.update(preds=P_wisdom, targets=y)
         # why dict? - just a boilerplate
         return {
-            "loss": loss
+            # you cannot change the keyword for the loss
+            "loss": train_loss,
+            "P_wisdom": P_wisdom.detach(),
+            "y": y.detach()
         }
+
+    def on_train_batch_end(self, outputs: dict, *args, **kwargs) -> None:
+        # watch the loss for this batch
+        self.log("Train/Loss", outputs['loss'])
+        self.metric_train.update(outputs['P_wisdom'], outputs['y'])
 
     def training_epoch_end(self, outputs: List[dict]) -> None:
         # to see an average performance over the batches in this specific epoch
         avg_loss = torch.stack([output['loss'] for output in outputs]).mean()
-        # log the metrics
-        rank_mean, rank_median, rank_std, top1, top3, top5 = self.rd_metric.compute()
         self.log("Train/Average Loss", avg_loss)
+
+    def on_train_epoch_end(self) -> None:
+        rank_mean, rank_median, rank_std, top1, top3, top5 = self.metric_train.compute()
+        self.metric_train.reset()
         self.log("Train/Rank Mean", rank_mean)
         self.log("Train/Rank Median", rank_median)
         self.log("Train/Rank Standard Deviation", rank_std)
         self.log("Train/Top 1 Accuracy", top1)
         self.log("Train/Top 3 Accuracy", top3)
         self.log("Train/Top 5 Accuracy", top5)
-        # so that the metrics do not accumulate to the next epoch
-        self.rd_metric.reset()
 
     def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
-        # just the same as the training step
         return self.training_step(batch, batch_idx)
+
+    def on_validation_batch_end(self, outputs: dict, *args, **kwargs) -> None:
+        self.log("Validation/Loss", outputs['loss'])
+        self.metric_val.update(outputs['P_wisdom'], outputs['y'])
 
     def validation_epoch_end(self, outputs: List[dict]) -> None:
         # to see an average performance over the batches in this specific epoch
         avg_loss = torch.stack([output['loss'] for output in outputs]).mean()
-        # log the metrics
-        rank_mean, rank_median, rank_std, top1, top3, top5 = self.rd_metric.compute()
         self.log("Validation/Average Loss", avg_loss)
+
+    def on_validation_epoch_end(self) -> None:
+        # log the metrics
+        rank_mean, rank_median, rank_std, top1, top3, top5 = self.metric_val.compute()
+        self.metric_val.reset()
         self.log("Validation/Rank Mean", rank_mean)
         self.log("Validation/Rank Median", rank_median)
         self.log("Validation/Rank Standard Deviation", rank_std)
         self.log("Validation/Top 1 Accuracy", top1)
         self.log("Validation/Top 3 Accuracy", top3)
         self.log("Validation/Top 5 Accuracy", top5)
-        # so that the metrics do not accumulate to the next epoch
-        self.rd_metric.reset()
 
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
-        # so that
-        self.rd_metric.reset()
         X, y = batch
         P_wisdom = self.P_wisdom(X)
-        self.rd_metric.update(preds=P_wisdom, targets=y)
+        self.metric_test.update(preds=P_wisdom, targets=y)
 
     def test_epoch_end(self, outputs: List[dict]) -> None:
         # log the metrics
-        rank_mean, rank_median, rank_std, top1, top3, top5 = self.rd_metric.compute()
+        rank_mean, rank_median, rank_std, top1, top3, top5 = self.metric_test.compute()
+        total = self.metric_test.total
+        self.metric_test.reset()
+        self.log("Test/Total samples", total)
         self.log("Test/Rank Mean", rank_mean)
         self.log("Test/Rank Median", rank_median)
         self.log("Test/Rank Standard Deviation", rank_std)
         self.log("Test/Top 1 Accuracy", top1)
         self.log("Test/Top 3 Accuracy", top3)
         self.log("Test/Top 5 Accuracy", top5)
-        # so that the metrics do not accumulate to the next epoch
-        self.rd_metric.reset()
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """
@@ -226,15 +253,13 @@ class RDBeta(RD):
     trained on: wisdom2def only.
     """
 
-    def __init__(self, bert_mlm: BertForMaskedLM,
-                 wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor,
-                 k: int, lr: float, device: torch.device):
-        super().__init__(bert_mlm, wisdom2subwords, k, lr, device)
-
+    def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM,
+                 wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor, device: torch.device):
+        super().__init__(k, lr, bert_mlm, wisdom2subwords, device)
         self.wiskeys = wiskeys   # (|W|,)
         self.hidden_size = bert_mlm.config.hidden_size
         self.dr_rate = 0.0
-        
+        # fully- connected layers
         self.cls_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
         self.wisdom_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
         self.example_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)

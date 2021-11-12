@@ -3,7 +3,8 @@
 ![](https://github.com/eubinecto/wisdomify/workflows/pytest/badge.svg)
 <a href="https://wandb.ai/wisdomify/wisdomify?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20></a>
 <a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://ainize.ai/images/run_on_ainize_button.svg" height="22"/></a>
-
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/alerts/)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/context:python)
 
 A BERT-based reverse-dictionary of Korean proverbs. 
 
