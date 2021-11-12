@@ -400,7 +400,7 @@ class Wisdom2EgFlow(DatasetFlow):
         """
         search on elasticsearch indices!
         """
-        table = WisdomsFlow(self.run, self.ver)(mode="d").raw_table
+        table = WisdomsFlow(self.run, self.ver)(mode="d", config=self.config).raw_table
         wisdoms = [row[0] for row in table.data]
         rows = list()
         with connect_to_es() as es:
@@ -493,7 +493,7 @@ class RDFlow(TwoWayFlow):
         self.config = self.artifact.metadata
 
     def download_wisdoms(self):
-        table = WisdomsFlow(self.run, self.config["wisdoms_ver"])(mode="d").raw_table
+        table = WisdomsFlow(self.run, self.config["wisdoms_ver"])(mode="d", config=self.config).raw_table
         self.wisdoms = [row[0] for _, row in table.iterrows()]
 
     def download_bert_mlm(self):
@@ -620,10 +620,10 @@ class ExperimentFlow(TwoWayFlow):
             raise ValueError
 
     def run_download(self):
-        self.rd_flow(mode="download")
+        self.rd_flow(mode="d", config=self.config)
 
     def run_build(self):
-        self.rd_flow(mode="build")
+        self.rd_flow(mode="b", config=self.config)
 
     def build_datamodule(self):
         if self.rd_flow.config["train_type"] == "wisdom2def":

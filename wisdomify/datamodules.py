@@ -63,8 +63,8 @@ class WisdomifyDataModule(LightningDataModule):
         """
         prepare: download all data needed for this from wandb to local.
         """
-        self.train_flow()(mode="d")
-        self.val_test_flow()(mode="d")
+        self.train_flow()("d", self.config)
+        self.val_test_flow()("d", self.config)
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
@@ -72,8 +72,8 @@ class WisdomifyDataModule(LightningDataModule):
         """
         # --- set up the builders --- #
         # build the datasets
-        train_flow = self.train_flow()(mode="d")
-        val_test_flow = self.val_test_flow()(mode="d")
+        train_flow = self.train_flow()("d", self.config)
+        val_test_flow = self.val_test_flow()("d", self.config)
         train = [(row[0], row[1]) for row in train_flow.all_table.data]
         val, test = [(row[0], row[1]) for row in val_test_flow.val_table.data], \
                     [(row[0], row[1]) for row in val_test_flow.test_table.data]
