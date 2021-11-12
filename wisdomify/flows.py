@@ -16,7 +16,6 @@ from more_itertools import chunked
 from tqdm import tqdm
 from transformers import BertTokenizerFast, AutoConfig, AutoModelForMaskedLM, BertForMaskedLM, AutoTokenizer
 from wandb.sdk.wandb_run import Run
-from wisdomify.datamodules import WisdomifyDataModule
 from wisdomify.models import RD, RDAlpha, RDBeta
 from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder
 from wisdomify.connectors import connect_to_es
@@ -176,7 +175,7 @@ class TwoWayFlow(Flow):
         self.config: Optional[dict] = None
         self.artifact: Optional[wandb.Artifact] = None
 
-    def __call__(self, mode: str, config: dict = None, *args, **kwargs):
+    def __call__(self, mode: str, config: dict):
         self.mode = mode
         self.config = config
         super(TwoWayFlow, self).__call__()
@@ -192,14 +191,12 @@ class TwoWayFlow(Flow):
 
     def download_steps(self):
         return [
-            self.use_artifact,
-            self.check_config,
-            self.fix_seeds  # download should be preceded by fixing seeds
+            self.fix_seeds,  # download should be preceded by fixing seeds
+            self.use_artifact
         ]
 
     def build_steps(self):
         return [
-            self.check_config,
             self.fix_seeds  # build should be preceded by fixing seeds
         ]
 
@@ -238,10 +235,6 @@ class DatasetFlow(TwoWayFlow):
         self.all_table: Optional[wandb.Table] = None
         self.val_table: Optional[wandb.Table] = None
         self.test_table: Optional[wandb.Table] = None
-
-    def __call__(self, mode: str, *args, **kwargs):
-        super(DatasetFlow, self).__call__(mode, *args, **kwargs)
-        return self
 
     def download_steps(self):
         return super(DatasetFlow, self).download_steps() + [
@@ -321,14 +314,6 @@ class Wisdom2QueryFlow(DatasetFlow):
 
     def __init__(self, run: Run, ver: str):
         super().__init__(run, ver)
-        self.val_ratio: Optional[float] = None
-        self.seed: Optional[int] = None
-
-    def __call__(self, mode: str, val_ratio: float = None, seed: int = None, *args):
-        self.val_ratio = val_ratio
-        self.seed = seed
-        super(Wisdom2QueryFlow, self).__call__(mode, *args)
-        return self
 
     def download_tables(self):
         self.raw_table = cast(wandb.Table, self.artifact.get("raw"))
@@ -349,9 +334,7 @@ class Wisdom2QueryFlow(DatasetFlow):
             .pipe(normalise)
 
     def val_test_split(self):
-        if None in (self.val_ratio, self.seed):
-            raise ValueError
-        self.val_df, self.test_df = stratified_split(self.raw_df, self.val_ratio, self.seed)
+        self.val_df, self.test_df = stratified_split(self.raw_df, self.config['val_ratio'], self.config['seed'])
 
     def build_artifact(self):
         self.artifact = wandb.Artifact("wisdom2query", type="dataset")
@@ -595,7 +578,7 @@ class RDSomethingFlow(RDFlow):
 
 # ======= experiment flows ======= #
 # this is here to prevent circular import error
-from wisdomify import datamodules  # noqa
+from wisdomify.datamodules import WisdomifyDataModule, Wisdom2EgDataModule, Wisdom2DefDataModule # noqa
 
 
 class ExperimentFlow(TwoWayFlow):
@@ -621,6 +604,7 @@ class ExperimentFlow(TwoWayFlow):
 
     def build_steps(self) -> List[Callable]:
         return super(ExperimentFlow, self).build_steps() + [
+                self.check_config,
                 self.choose_rd_flow,
                 self.run_build,
                 self.build_datamodule,
@@ -643,17 +627,17 @@ class ExperimentFlow(TwoWayFlow):
 
     def build_datamodule(self):
         if self.rd_flow.config["train_type"] == "wisdom2def":
-            self.datamodule = datamodules.Wisdom2DefDataModule(self.rd_flow.config,
-                                                               self.rd_flow.tokenizer,
-                                                               self.rd_flow.wisdoms,
-                                                               self.run,
-                                                               self.device)
+            self.datamodule = Wisdom2DefDataModule(self.rd_flow.config,
+                                                   self.rd_flow.tokenizer,
+                                                   self.rd_flow.wisdoms,
+                                                   self.run,
+                                                   self.device)
         elif self.rd_flow.config["train_type"] == "wisdom2eg":
-            self.datamodule = datamodules.Wisdom2EgDataModule(self.rd_flow.config,
-                                                              self.rd_flow.tokenizer,
-                                                              self.rd_flow.wisdoms,
-                                                              self.run,
-                                                              self.device)
+            self.datamodule = Wisdom2EgDataModule(self.rd_flow.config,
+                                                  self.rd_flow.tokenizer,
+                                                  self.rd_flow.wisdoms,
+                                                  self.run,
+                                                  self.device)
         else:
             raise ValueError
 
