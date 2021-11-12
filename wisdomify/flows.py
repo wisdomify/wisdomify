@@ -482,7 +482,7 @@ class RDFlow(TwoWayFlow):
 
     def download_wisdoms(self):
         table = WisdomsFlow(self.run, self.config["wisdoms_ver"])(mode="d", config=self.config).raw_table
-        self.wisdoms = [row[0] for _, row in table.iterrows()]
+        self.wisdoms = [row[0] for row in table.data]
 
     def download_bert_mlm(self):
         self.bert_mlm = AutoModelForMaskedLM.from_pretrained(self.config['bert'])

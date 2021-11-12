@@ -27,13 +27,14 @@ def main():
     with connect_to_wandb(job_type="infer", config=config) as run:
         # --- init a wisdomifier --- #
         flow = flows.ExperimentFlow(run, model, ver, device)("d", config)
-        wisdomifier = Wisdomifier(flow.rd_flow.rd, flow.datamodule)
-        # --- inference --- #
-        print("### desc: {} ###".format(desc))
-        results = wisdomifier(sents=[desc])
-        for result in results:
-            for idx, entry in enumerate(result):
-                print("{}: ({}, {:.4f})".format(idx, entry[0], entry[1]))
+    # --- wisdomifier is independent of wandb run  --- #
+    wisdomifier = Wisdomifier(flow.rd_flow.rd, flow.datamodule)
+    # --- inference --- #
+    print("### desc: {} ###".format(desc))
+    results = wisdomifier(sents=[desc])
+    for result in results:
+        for idx, entry in enumerate(result):
+            print("{}: ({}, {:.4f})".format(idx, entry[0], entry[1]))
 
 
 if __name__ == '__main__':
