@@ -6,7 +6,6 @@ from transformers import AutoTokenizer
 def main():
     conf = load_config()['versions']['0']
     bert_model = conf['bert_model']
-    k = conf['k']
     wisdoms = conf['wisdoms']
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
     # why does the vocab size not increase after adding new tokens?

@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from wisdomify.builders import Wisdom2EgXBuilder
+from wisdomify.tensors import Wisdom2EgInputsBuilder
 from wisdomify.loaders import load_config, load_device
 from transformers import AutoTokenizer
 
@@ -14,13 +14,13 @@ VER: str = "0"
 
 def main():
     conf = load_config()
-    device = load_device()
+    device = load_device(use_gpu=False)
     vers = conf['versions']
     selected_ver = vers[VER]
     bert_model: str = selected_ver['bert_model']
     k: int = selected_ver['k']
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
-    X = Wisdom2EgXBuilder(tokenizer, k, device)(wisdom2eg=WISDOM2EG)
+    X = Wisdom2EgInputsBuilder(tokenizer, k, device)(WISDOM2EG)
     print(X)
 
 

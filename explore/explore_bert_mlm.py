@@ -1,4 +1,4 @@
-from transformers import BertForMaskedLM, BertTokenizer, BertForNextSentencePrediction
+from transformers import BertForMaskedLM, BertTokenizer
 from torch.nn import functional as F
 
 
@@ -7,7 +7,6 @@ BATCH = [
     ("[MASK]는 원숭이가 가장 좋아하는 과일이다.", None)  # bananas,
 ]
 BERT_MODEL = "beomi/kcbert-base"
-
 
 
 def main():
