@@ -4,60 +4,23 @@
 <a href="https://wandb.ai/wisdomify/wisdomify?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20></a>
 <a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://ainize.ai/images/run_on_ainize_button.svg" height="22"/></a>
 
-A BERT-based reverse-dictionary of Korean proverbs.
-- 김유빈 : 모델링 / 데이터 수집 / 프로젝트 설계 / back-end
-- 김종윤 : 데이터 수집 / 프로젝트 설계 / front-end / back-end
-- 임용택 : 모델링 / deploy / back-end
+A BERT-based reverse-dictionary of Korean proverbs. 
 
-Related Projects:
-- Model design/analysis, proposal: [wisdomify/wisdomify](https://github.com/wisdomify/wisdomify)
-- Data collect, Feature engineering: [wisdomify/storyteller](https://github.com/wisdomify/storyteller)
-- Web service, Front-End: [wisdomify/platanus](https://github.com/wisdomify/platanus)
 
-Objectives:
-1. 빈도수 TOP 100 속담 검색을 목표로 한다.
-2. 맥락 → 속담 검색을 목표로 한다.
-3. 한국어 → 한국어 속담 검색이 가능하도록 한다.
-4. 영어 → 한국어 속담 검색이 가능하도록 한다.
-5. 우리는 해적. 우리와 같은 가치를 공유하는 사람이라면 기꺼이 동료로 받아들인다. 
+## Objectives
+1. 빈도수 TOP 100 속담 검색을 목표로 한다!
+2. 맥락 → 속담 검색을 목표로 한다!
+3. 한국어 → 한국어 속담 검색이 가능하도록 한다!
+4. 영어 → 한국어 속담 검색이 가능하도록 한다!
+5. 같은 가치를 공유하는 사람은 언제든 환영한다!
+
 
 ## Quick Start
-
-Check the dependencies:
-```text
-more-itertools  # for batch-processing generators 
-pandas #  for preprocessing data
-elasticsearch-dsl  # for collecting examples
-scikit-learn  # for split 
-wandb  # for tracking & visualising experiments
-metaflow  # for orchestrating the project as DAG's
-python-dotenv  # for accessing secrets
-pytorch-lightning  # for model-centric design
-transformers  # for transfer learning
-```
-Clone the project and set up a virtualenv for the project:
-```bash
-git clone https://github.com/eubinecto/wisdomify.git
-cd wisdomify
-virtualenv wisdomifyenv
-source wisdomifyenv/bin/activate  # activate the virtualenv
-pip3 install -r ./requirements.txt  # install the required libraries onto the virtualenv
-```
-
-**[Requirement]: Weight and Bias Authentication**
-
-This project uses "Weight and Bias (W&B)" for storing dataset and recording model experiment.
-
-Therefore, if you try to whether 'train', 'eval' or 'infer' this model, you will be requested to authenticate via W&B login process.
-
-The authentication process will be done only once when you run any script below 'main' directory.
+(Weights & Biases 연동 (#98) 마무리되는대로 업데이트 예정. 어찌되었든 목표는 이렇게)
 
 
-
-Wisdomify a sentence:
-
-```text
-python3 -m wisdomify.main.infer --ver="0" --desc="까불지말고 침착하여라"
+```shell
+python3 main_infer.py --model=rd_alpha --ver="a" --sent="까불지말고 침착하여라"
 ```
 ```text
 ### desc: 까불지말고 침착하여라 ###
@@ -408,3 +371,16 @@ python3 -m wisdomify.main.eval --ver="0"
 - Hinton, G. Vinyals, O. Dean, J. (2015). *Distilling the Knowledge in a Neural Network*
 - Junbum, L. (2020). *KcBERT: Korean Comments BERT*
 - Yan, H. Li, X. Qiu, X. Deng, B. (2020). *BERT for Monolingual and Cross-Lingual Reverse Dictionary*
+
+
+
+## Contributors
+contributor | roles | what have I done?
+--- | --- | --- 
+김유빈 | ... | [MVP 구현하기](https://github.com/wisdomify/wisdomify/issues/2) / [Collab 데모 구현하기](https://github.com/wisdomify/wisdomify/issues/12) / [테스트 지표 정의 및 구현하기](https://github.com/wisdomify/wisdomify/issues/16) / [리팩토링: `Wisdomifier` 구현하기](https://github.com/wisdomify/wisdomify/issues/39) / [리팩토링 및 `RDBeta`        구현](https://github.com/wisdomify/wisdomify/issues/68)
+김민성 | ... | ...
+김종윤 | ... | ...
+오수지 | ... | ...
+임용택 | ... | ...
+최유라 | ... | ...
+
