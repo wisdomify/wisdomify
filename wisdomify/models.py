@@ -52,12 +52,12 @@ class RD(pl.LightningModule):
         self.metric_train = RDMetric()
         self.metric_val = RDMetric()
         self.metric_test = RDMetric()
-        # --- load the model to device --- #
-        self.to(device)  # always make sure to do this.
         # -- hyper params --- #
         # should be saved to self.hparams
         # https://github.com/PyTorchLightning/pytorch-lightning/issues/4390#issue-730493746
         self.save_hyperparameters(Namespace(k=k, lr=lr))
+        # --- load the model to device --- #
+        self.to(device)  # always make sure to do this.
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:
         """
@@ -193,6 +193,9 @@ class RD(pl.LightningModule):
     def test_epoch_end(self, outputs: List[dict]) -> None:
         # log the metrics
         rank_mean, rank_median, rank_std, top1, top3, top5 = self.metric_test.compute()
+        total = self.metric_test.total
+        self.metric_test.reset()
+        self.log("Test/Total samples", total)
         self.log("Test/Rank Mean", rank_mean)
         self.log("Test/Rank Median", rank_median)
         self.log("Test/Rank Standard Deviation", rank_std)

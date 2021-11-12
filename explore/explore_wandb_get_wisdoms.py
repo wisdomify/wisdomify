@@ -8,7 +8,7 @@ def main():
     run = wandb.init(dir=ROOT_DIR,  # this is for logging
                      project="wisdomify",
                      entity="wisdomify")
-    artifact = run.use_artifact("wisdoms:v0")
+    artifact = run.use_artifact("wisdoms:a")
     # yeah, a bit messy, but it does what it is supposed to do
     # I might want to do a PR on this, later
     artifact._default_root = types.MethodType(lambda a, b=True:

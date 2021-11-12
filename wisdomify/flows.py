@@ -530,7 +530,11 @@ class RDAlphaFlow(RDFlow):
 class RDBetaFlow(RDFlow):
 
     def build_rd(self):
-        self.tokenizer.add_tokens(self.wisdoms)
+        # add tokens only if you are building it.
+        # if you are downloading a tokenizer from wand Artifact (i.e. mode == d), you don't need to do this
+        # as the tokens would have been already added
+        if self.mode == "b":
+            self.tokenizer.add_tokens(self.wisdoms)
         self.bert_mlm.resize_token_embeddings(len(self.tokenizer))
         wiskeys = WiskeysBuilder(self.tokenizer, self.device)(self.wisdoms)
         self.rd = RDBeta(self.bert_mlm, self.wisdom2subwords, wiskeys,

@@ -3,12 +3,12 @@ at the moment, the tests test for version_0 only.
 """
 import unittest
 from wisdomify.loaders import load_config, load_device
-from wisdomify.builders import (
+from wisdomify.tensors import (
     Wisdom2SubwordsBuilder,
     WiskeysBuilder,
-    Wisdom2DefXBuilder,
-    Wisdom2EgXBuilder,
-    YBuilder
+    Wisdom2DefInputsBuilder,
+    Wisdom2EgInputsBuilder,
+    TargetsBuilder
 )
 from transformers import AutoTokenizer, BertTokenizerFast
 from typing import Tuple, List
@@ -24,12 +24,12 @@ class TensorBuilderTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        config = load_config()['rd_alpha']['v0']
+        config = load_config()['rd_alpha']['a']
         cls.tokenizer = AutoTokenizer.from_pretrained('beomi/kcbert-base')
-        cls.wisdoms = cls.get_wisdoms_v0()
+        cls.wisdoms = cls.get_wisdoms_a()
         cls.tokenizer.add_tokens(cls.wisdoms)
         cls.k = config['k']
-        cls.device = load_device()
+        cls.device = load_device(use_gpu=False)
 
     @classmethod
     def get_wisdom2sent(cls) -> List[Tuple[str, str]]:
@@ -39,7 +39,7 @@ class TensorBuilderTest(unittest.TestCase):
         ]  # data to test.
 
     @classmethod
-    def get_wisdoms_v0(cls) -> List[str]:
+    def get_wisdoms_a(cls) -> List[str]:
         return [
             "가는 날이 장날",
             "갈수록 태산",
@@ -97,11 +97,11 @@ class WiskeysBuilderTest(TensorBuilderTest):
         self.assertTrue(torch.all(wiskeys, dim=0))
 
 
-class Wisdom2DefXBuilderTest(TensorBuilderTest):
+class Wisdom2DefInputsBuilderTest(TensorBuilderTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.wisdom2def_X_builder = Wisdom2DefXBuilder(cls.tokenizer, cls.k, cls.device)
+        cls.wisdom2def_X_builder = Wisdom2DefInputsBuilder(cls.tokenizer, cls.k, cls.device)
 
     def test_build_X_dim(self):
         X = self.wisdom2def_X_builder(self.get_wisdom2sent())  # should be (N, 3, L)
@@ -110,11 +110,11 @@ class Wisdom2DefXBuilderTest(TensorBuilderTest):
         self.assertEqual(28, X.shape[2])  # the max length.. what is it?
 
 
-class Wisdom2EgXBuilderTest(TensorBuilderTest):
+class Wisdom2EgInputsBuilderTest(TensorBuilderTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.wisdom2eg_X_builder = Wisdom2EgXBuilder(cls.tokenizer, cls.k, cls.device)
+        cls.wisdom2eg_X_builder = Wisdom2EgInputsBuilder(cls.tokenizer, cls.k, cls.device)
 
     @classmethod
     def get_wisdom2sent(cls) -> List[Tuple[str, str]]:
@@ -130,11 +130,11 @@ class Wisdom2EgXBuilderTest(TensorBuilderTest):
         self.assertEqual(41, X.shape[2])
 
 
-class YBuilderTest(TensorBuilderTest):
+class TargetsBuilderTest(TensorBuilderTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.y_builder = YBuilder(cls.device)
+        cls.y_builder = TargetsBuilder(cls.device)
 
     def test_build_y_dim(self):
         y = self.y_builder(self.get_wisdom2sent(), self.wisdoms)  # should be (N,)
