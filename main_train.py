@@ -1,5 +1,4 @@
 import wandb
-import torch
 import argparse
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
@@ -57,16 +56,16 @@ def main():
         trainer.fit(model=flow.rd_flow.rd, datamodule=flow.datamodule)
         # --- upload the model as an artifact to wandb, after training is done --- #
         if upload:
-            # save the rd & the tokenizer locally
-            torch.save(flow.rd_flow.rd.state_dict(), flow.rd_flow.rd_bin_path)  # saving stat_dict only
-            flow.rd_flow.tokenizer.save_pretrained(flow.rd_flow.tok_dir_path)  # save the tokenizer as well
+            # save the rd & the tokenizer locally, first
+            trainer.save_checkpoint(flow.rd_flow.rd_ckpt_path)
+            flow.rd_flow.tokenizer.save_pretrained(flow.rd_flow.tok_dir_path)
             artifact = wandb.Artifact(model, type="model")
             # add the paths to the artifact
-            artifact.add_file(flow.rd_flow.rd_bin_path)
+            artifact.add_file(flow.rd_flow.rd_ckpt_path)
             artifact.add_dir(flow.rd_flow.tok_dir_path, "tokenizer")
             # add the config
             artifact.metadata = config
-            #  upload to wandb
+            #  upload both the model and the tokenizer to wandb
             run.log_artifact(artifact, aliases=[ver, "latest"])
 
 

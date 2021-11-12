@@ -434,7 +434,7 @@ class RDFlow(TwoWayFlow):
         self.bert_mlm: Optional[BertForMaskedLM] = None
         self.wisdom2subwords: Optional[torch.Tensor] = None
         self.artifact_path: Optional[str] = None
-        self.rd_bin_path: Optional[str] = None
+        self.rd_ckpt_path: Optional[str] = None
         self.tok_dir_path: Optional[str] = None
         self.config: Optional[dict] = None
         self.mode: Optional[str] = None
@@ -451,8 +451,7 @@ class RDFlow(TwoWayFlow):
                 self.build_bert_mlm,
                 self.download_wisdoms,
                 self.build_wisdom2subwords,
-                self.build_rd,
-                self.load_rd  # load the weights
+                self.load_rd  # load rd from checkpoint
             ]
 
     def build_steps(self):
@@ -462,7 +461,7 @@ class RDFlow(TwoWayFlow):
                 self.download_tokenizer,
                 self.download_wisdoms,
                 self.build_wisdom2subwords,
-                self.build_rd
+                self.build_rd  # build a new rd instance
             ]
 
     def checkout_artifact(self):
@@ -471,7 +470,7 @@ class RDFlow(TwoWayFlow):
     def save_paths(self):
         if not self.artifact_path:
             self.artifact_path = path.join(ARTIFACTS_DIR, self.name)
-        self.rd_bin_path = path.join(self.artifact_path, "rd.bin")
+        self.rd_ckpt_path = path.join(self.artifact_path, "rd.ckpt")
         self.tok_dir_path = path.join(self.artifact_path, "tokenizer")
         # and make directories as well, if they don't exist
         os.makedirs(self.artifact_path, exist_ok=True)
@@ -503,7 +502,7 @@ class RDFlow(TwoWayFlow):
         self.tokenizer = BertTokenizerFast.from_pretrained(self.tok_dir_path)
 
     def load_rd(self):
-        self.rd.load_state_dict(torch.load(self.rd_bin_path))
+        raise NotImplementedError
 
     @property
     def name(self):
@@ -519,8 +518,14 @@ class RDFlow(TwoWayFlow):
 class RDAlphaFlow(RDFlow):
 
     def build_rd(self):
-        self.rd = RDAlpha(self.bert_mlm, self.wisdom2subwords,
-                          self.config['k'], self.config['lr'], self.device)
+        self.rd = RDAlpha(self.config['k'], self.config['lr'],
+                          self.bert_mlm, self.wisdom2subwords, self.device)
+
+    def load_rd(self):
+        self.rd = RDAlpha.load_from_checkpoint(self.rd_ckpt_path,
+                                               wisdom2subwords=self.wisdom2subwords,
+                                               bert_mlm=self.bert_mlm,
+                                               device=self.device)
 
     @property
     def name(self):
@@ -533,12 +538,20 @@ class RDBetaFlow(RDFlow):
         # add tokens only if you are building it.
         # if you are downloading a tokenizer from wand Artifact (i.e. mode == d), you don't need to do this
         # as the tokens would have been already added
-        if self.mode == "b":
-            self.tokenizer.add_tokens(self.wisdoms)
+        self.tokenizer.add_tokens(self.wisdoms)
         self.bert_mlm.resize_token_embeddings(len(self.tokenizer))
         wiskeys = WiskeysBuilder(self.tokenizer, self.device)(self.wisdoms)
-        self.rd = RDBeta(self.bert_mlm, self.wisdom2subwords, wiskeys,
-                         self.config['k'], self.config['lr'], self.device)
+        self.rd = RDBeta(self.config['k'], self.config['lr'],
+                         self.bert_mlm, self.wisdom2subwords, wiskeys, self.device)
+
+    def load_rd(self):
+        self.bert_mlm.resize_token_embeddings(len(self.tokenizer))
+        wiskeys = WiskeysBuilder(self.tokenizer, self.device)(self.wisdoms)
+        self.rd = RDBeta.load_from_checkpoint(self.rd_ckpt_path,
+                                              bert_mlm=self.bert_mlm,
+                                              wisdom2subwords=self.wisdom2subwords,
+                                              wiskeys=wiskeys,
+                                              device=self.device)
 
     @property
     def name(self):
@@ -562,6 +575,9 @@ class RDSomethingFlow(RDFlow):
         self.rd <= RDSomething(...)
         """
         self.rd = ...
+
+    def load_rd(self):
+        pass
 
     @property
     def name(self):
