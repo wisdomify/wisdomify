@@ -11,3 +11,4 @@ termcolor~=1.1.0
 pyyaml~=6.0
 python-dotenv~=0.19.1
 scikit-learn~=1.0.1
+pytorch-lightning~=1.5.1
