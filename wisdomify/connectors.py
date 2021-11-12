@@ -1,9 +1,7 @@
 """
-Anything that has to do with instantiating some sort of  a es via acessing .env,
+Anything that has to do with instantiating some sort of  a es via accessing .env,
 goes into here.
 """
-from typing import List
-
 import wandb
 from elasticsearch import Elasticsearch
 from wandb.wandb_run import Run

@@ -3,8 +3,9 @@ load a pre-trained wisdomify, and play with it.
 """
 import argparse
 from wisdomify.connectors import connect_to_wandb
-from wisdomify.loaders import load_device
+from wisdomify.loaders import load_device, load_config
 from wisdomify import flows
+from wisdomify.wisdomifier import Wisdomifier
 
 
 def main():
@@ -22,12 +23,15 @@ def main():
     desc: str = args.desc
     use_gpu: bool = args.use_gpu
     device = load_device(use_gpu)
-    with connect_to_wandb() as run:
+    config = load_config()[model][ver]
+    with connect_to_wandb(job_type="infer", config=config) as run:
         # --- init a wisdomifier --- #
-        flow = flows.InferFlow(run, model, ver, [desc], device)
+        flow = flows.ExperimentFlow(run, model, ver, device)("d")
+        wisdomifier = Wisdomifier(flow.rd_flow.rd, flow.datamodule)
         # --- inference --- #
         print("### desc: {} ###".format(desc))
-        for result in flow.results:
+        results = wisdomifier(sents=[desc])
+        for result in results:
             for idx, entry in enumerate(result):
                 print("{}: ({}, {:.4f})".format(idx, entry[0], entry[1]))
 

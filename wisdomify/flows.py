@@ -8,7 +8,7 @@ import requests
 import torch
 import wandb
 from os import path
-from typing import Callable, List, cast, Tuple, Dict, Generator
+from typing import Callable, List, cast, Dict, Generator, Optional
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from elasticsearch_dsl import Document
@@ -16,7 +16,7 @@ from more_itertools import chunked
 from tqdm import tqdm
 from transformers import BertTokenizerFast, AutoConfig, AutoModelForMaskedLM, BertForMaskedLM, AutoTokenizer
 from wandb.sdk.wandb_run import Run
-from wisdomify.loaders import load_config
+from wisdomify.datamodules import WisdomifyDataModule
 from wisdomify.models import RD, RDAlpha, RDBeta
 from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder
 from wisdomify.connectors import connect_to_es
@@ -35,6 +35,12 @@ class Flow:
     def steps(self) -> List[Callable]:
         raise NotImplementedError
 
+    def __str__(self) -> str:
+        """
+        you might want to do some formatting later...
+        """
+        return "\n".join([step.__name__ for step in self.steps()])
+
 
 # === elastic flows === #
 from wisdomify.docs import (
@@ -47,10 +53,11 @@ from wisdomify.docs import (
 
 class SearchFlow(Flow):
 
-    def __init__(self, es: Elasticsearch, index: str, size: int):
+    def __init__(self, es: Elasticsearch, index_name: str, size: int):
         self.es = es
-        self.index = index
+        self.index_name = index_name
         self.size = size
+        # to be built
         self.query: Optional[dict] = None
         self.highlight: Optional[dict] = None
         self.res: Optional[dict] = None
@@ -63,6 +70,8 @@ class SearchFlow(Flow):
 
     def __call__(self, wisdom: str):
         self.wisdom = wisdom
+        super(SearchFlow, self).__call__()
+        return self
 
     def build(self):
         self.query = {
@@ -84,7 +93,7 @@ class SearchFlow(Flow):
          }
 
     def search(self):
-        self.res = self.es.search(index=self.index,
+        self.res = self.es.search(index=self.index_name,
                                   query=self.query,
                                   highlight=self.highlight,
                                   size=self.size)
@@ -92,15 +101,12 @@ class SearchFlow(Flow):
 
 class IndexFlow(Flow):
 
-    def __init__(self, es: Elasticsearch, index_name: str, bach_size: int,  on_init: bool = True):
-        """
-        :param es:
-        """
+    def __init__(self, es: Elasticsearch, index_name: str, batch_size: int):
         self.es = es
         self.index_name = index_name
         self.batch_size = batch_size
-        name2story: Optional[Dict[str, Story]] = None
-        stories: Optional[Generator[Story, None, None]] = None
+        self.name2story: Optional[Dict[str, Story]] = None
+        self.stories: Optional[Generator[Story, None, None]] = None
 
     def steps(self) -> List[Callable]:
         # skip the steps
@@ -160,44 +166,95 @@ class IndexFlow(Flow):
             print(f"successful count: {r[0]}, error messages: {r[1]}")
 
 
-# ==== dataset flows ==== #
-class DatasetFlow(Flow):
+class TwoWayFlow(Flow):
 
-    artifact: wandb.Artifact
-    raw_df: pd.DataFrame
-    all_df: pd.DataFrame
-    val_df: pd.DataFrame
-    test_df: pd.DataFrame
-    raw_table: wandb.Table
-    all_table: wandb.Table
-    val_table: wandb.Table
-    test_table: wandb.Table
-
-    def __init__(self, run: Run, ver: str, mode: str, on_init):
+    def __init__(self, run: Run, ver: str):
         self.run = run
         self.ver = ver
+        # --- to be filled later --- #
+        self.mode: Optional[str] = None
+        self.config: Optional[dict] = None
+        self.artifact: Optional[wandb.Artifact] = None
+
+    def __call__(self, mode: str, config: dict = None, *args, **kwargs):
         self.mode = mode
-        super().__init__(on_init)
+        self.config = config
+        super(TwoWayFlow, self).__call__()
+        return self
 
     def steps(self) -> List[Callable]:
-        # a flow executes the steps, defined by steps
-        if self.mode == "download":
-            return [
-                self.download_artifact,
-                self.download_tables
-            ]
-        elif self.mode == "build":
-            return [
-                self.download_raw_df,
-                self.preprocess,
-                self.val_test_split,
-                self.build_artifact
-            ]
+        if self.mode == "d":
+            return self.download_steps()
+        elif self.mode == "b":
+            return self.build_steps()
         else:
             raise ValueError
 
-    def download_artifact(self):
+    def download_steps(self):
+        return [
+            self.use_artifact,
+            self.check_config,
+            self.fix_seeds  # download should be preceded by fixing seeds
+        ]
+
+    def build_steps(self):
+        return [
+            self.check_config,
+            self.fix_seeds  # build should be preceded by fixing seeds
+        ]
+
+    def use_artifact(self):
         self.artifact = self.run.use_artifact(f"{self.name}:{self.ver}")
+
+    def check_config(self):
+        if not self.config:
+            raise ValueError
+
+    def fix_seeds(self):
+        """
+        https://pytorch.org/docs/stable/notes/randomness.html
+        """
+        seed = self.config['seed']
+        torch.manual_seed(seed)
+        random.seed(seed)
+        np.random.seed(seed)
+
+    @property
+    def name(self):
+        raise NotImplementedError
+
+
+# ==== dataset flows ==== #
+class DatasetFlow(TwoWayFlow):
+
+    def __init__(self, run: Run, ver: str):
+        super().__init__(run, ver)
+        # --- to build --- #
+        self.raw_df: Optional[pd.DataFrame] = None
+        self.all_df: Optional[pd.DataFrame] = None
+        self.val_df: Optional[pd.DataFrame] = None
+        self.test_df: Optional[pd.DataFrame] = None
+        self.raw_table: Optional[wandb.Table] = None
+        self.all_table: Optional[wandb.Table] = None
+        self.val_table: Optional[wandb.Table] = None
+        self.test_table: Optional[wandb.Table] = None
+
+    def __call__(self, mode: str, *args, **kwargs):
+        super(DatasetFlow, self).__call__(mode, *args, **kwargs)
+        return self
+
+    def download_steps(self):
+        return super(DatasetFlow, self).download_steps() + [
+            self.download_tables
+        ]
+
+    def build_steps(self):
+        return super(DatasetFlow, self).build_steps() + [
+            self.download_raw_df,
+            self.preprocess,
+            self.val_test_split,
+            self.build_artifact
+        ]
 
     def download_tables(self):
         raise NotImplementedError
@@ -225,17 +282,8 @@ class DatasetFlow(Flow):
         r.encoding = 'utf-8'
         return r.text
 
-    def __str__(self) -> str:
-        """
-        you might want to do some formatting later...
-        """
-        return "\n".join([step.__name__ for step in self.steps()])
-
 
 class WisdomsFlow(DatasetFlow):
-
-    def __init__(self, run: Run, ver: str, mode: str, on_init: bool = True):
-        super().__init__(run, ver, mode, on_init)
 
     def download_tables(self):
         # download any tables you need from the given artifact
@@ -260,10 +308,9 @@ class WisdomsFlow(DatasetFlow):
         pass
 
     def build_artifact(self):
-        artifact = wandb.Artifact("wisdoms", type="dataset")
+        self.artifact = wandb.Artifact("wisdoms", type="dataset")
         raw_table = wandb.Table(dataframe=self.raw_df)
-        artifact.add(raw_table, "raw")
-        self.artifact = artifact
+        self.artifact.add(raw_table, "raw")
 
     @property
     def name(self):
@@ -272,11 +319,16 @@ class WisdomsFlow(DatasetFlow):
 
 class Wisdom2QueryFlow(DatasetFlow):
 
-    def __init__(self, run: Run, ver: str, mode: str, val_ratio: float = None, seed: int = None, on_init: bool = True):
-        # if you are downloading it, you don't need to provide these
+    def __init__(self, run: Run, ver: str):
+        super().__init__(run, ver)
+        self.val_ratio: Optional[float] = None
+        self.seed: Optional[int] = None
+
+    def __call__(self, mode: str, val_ratio: float = None, seed: int = None, *args):
         self.val_ratio = val_ratio
         self.seed = seed
-        super().__init__(run, ver, mode, on_init)
+        super(Wisdom2QueryFlow, self).__call__(mode, *args)
+        return self
 
     def download_tables(self):
         self.raw_table = cast(wandb.Table, self.artifact.get("raw"))
@@ -297,10 +349,12 @@ class Wisdom2QueryFlow(DatasetFlow):
             .pipe(normalise)
 
     def val_test_split(self):
+        if None in (self.val_ratio, self.seed):
+            raise ValueError
         self.val_df, self.test_df = stratified_split(self.raw_df, self.val_ratio, self.seed)
 
     def build_artifact(self):
-        artifact = wandb.Artifact("wisdom2query", type="dataset")
+        self.artifact = wandb.Artifact("wisdom2query", type="dataset")
         table2name = (
             (wandb.Table(dataframe=self.raw_df), "raw"),
             (wandb.Table(dataframe=self.all_df), "all"),
@@ -308,8 +362,7 @@ class Wisdom2QueryFlow(DatasetFlow):
             (wandb.Table(dataframe=self.test_df), "test")
         )
         for table, name in table2name:
-            artifact.add(table, name)
-        self.artifact = artifact
+            self.artifact.add(table, name)
 
     @property
     def name(self):
@@ -317,9 +370,6 @@ class Wisdom2QueryFlow(DatasetFlow):
 
 
 class Wisdom2DefFlow(DatasetFlow):
-
-    def __init__(self, run: Run, ver: str, mode: str, on_init=True):
-        super().__init__(run, ver, mode, on_init)
 
     def download_tables(self):
         self.raw_table = cast(wandb.Table, self.artifact.get("raw"))
@@ -346,12 +396,11 @@ class Wisdom2DefFlow(DatasetFlow):
         pass
 
     def build_artifact(self):
-        artifact = wandb.Artifact("wisdom2def", type="dataset")
+        self.artifact = wandb.Artifact("wisdom2def", type="dataset")
         raw_table = wandb.Table(dataframe=self.raw_df)
         all_table = wandb.Table(dataframe=self.all_df)
-        artifact.add(raw_table, "raw")
-        artifact.add(all_table, "all")
-        self.artifact = artifact
+        self.artifact.add(raw_table, "raw")
+        self.artifact.add(all_table, "all")
 
     @property
     def name(self):
@@ -359,9 +408,6 @@ class Wisdom2DefFlow(DatasetFlow):
 
 
 class Wisdom2EgFlow(DatasetFlow):
-
-    def __init__(self, run: Run, ver: str, mode: str, on_init=True):
-        super().__init__(run, ver, mode, on_init)
 
     def download_tables(self):
         self.raw_table = cast(wandb.Table, self.artifact.get("raw"))
@@ -371,13 +417,13 @@ class Wisdom2EgFlow(DatasetFlow):
         """
         search on elasticsearch indices!
         """
-        table = WisdomsFlow(self.run, self.ver, mode="download").raw_table
-        wisdoms = [row[0] for _, row in table.iterrows()]
+        table = WisdomsFlow(self.run, self.ver)(mode="d").raw_table
+        wisdoms = [row[0] for row in table.data]
         rows = list()
         with connect_to_es() as es:
             for wisdom in tqdm(wisdoms, desc="searching for wisdoms on stories...",
                                total=len(wisdoms)):
-                flow = SearchFlow(es, wisdom, ",".join(Story.all_names()), size=10000)
+                flow = SearchFlow(es, ",".join(Story.all_names()), size=10000)(wisdom)
                 # encoding korean as json files https://stackoverflow.com/a/18337754
                 raw = json.dumps(flow.res, ensure_ascii=False)
                 rows.append((wisdom, raw))
@@ -396,12 +442,11 @@ class Wisdom2EgFlow(DatasetFlow):
         pass
 
     def build_artifact(self):
-        artifact = wandb.Artifact("wisdom2eg", type="dataset")
+        self.artifact = wandb.Artifact("wisdom2eg", type="dataset")
         raw_table = wandb.Table(dataframe=self.raw_df)
         all_table = wandb.Table(dataframe=self.all_df)
-        artifact.add(raw_table, "raw")
-        artifact.add(all_table, "all")
-        self.artifact = artifact
+        self.artifact.add(raw_table, "raw")
+        self.artifact.add(all_table, "all")
 
     @property
     def name(self):
@@ -409,68 +454,46 @@ class Wisdom2EgFlow(DatasetFlow):
 
 
 # === model flows === #
-class RDFlow(Flow):
+class RDFlow(TwoWayFlow):
 
-    rd: RD
-    tokenizer: BertTokenizerFast
-    artifact: wandb.Artifact
-    bert_mlm: BertForMaskedLM
-    wisdom2subwords: torch.Tensor
-    artifact_path: str
-    rd_bin_path: str
-    tok_dir_path: str
-    config: dict
-    mode: str
-    wisdoms: List[str]
-    artifact: wandb.Artifact
-
-    def __init__(self, run: Run, ver: str,  device: torch.device,  config: dict = None):
-        self.run = run
-        self.ver = ver
-        self.config = config
+    def __init__(self, run: Run, ver: str, device: torch.device):
+        super().__init__(run, ver)
         self.device = device
-        super().__init__(on_init=False)
+        self.rd: Optional[RD] = None
+        self.tokenizer: Optional[BertTokenizerFast] = None
+        self.artifact: Optional[wandb.Artifact] = None
+        self.bert_mlm: Optional[BertForMaskedLM] = None
+        self.wisdom2subwords: Optional[torch.Tensor] = None
+        self.artifact_path: Optional[str] = None
+        self.rd_bin_path: Optional[str] = None
+        self.tok_dir_path: Optional[str] = None
+        self.config: Optional[dict] = None
+        self.mode: Optional[str] = None
+        self.wisdoms: Optional[List[str]] = None
+        self.artifact: Optional[wandb.Artifact] = None
 
-    def __call__(self, mode: str):
-        self.mode = mode
-        super(RDFlow, self).__call__()
-
-    def steps(self) -> List[Callable]:
-        # a flow executes the steps, defined by steps
-        # the problem is, when you download, you don't need config.
-        # but when you build, you need config.
-        # and you just want to add one class and one class only.
-        # that's all...
-        # make config optional maybe?
-        if self.mode == "download":
-            return [
-                self.use_artifact,
+    def download_steps(self):
+        return super(RDFlow, self).download_steps() + [
                 self.download_artifact,
                 self.save_paths,
-                self.save_config,
-                self.download_wisdoms,
+                self.save_config,  # at download, you don't have access to config
                 self.load_tokenizer,
                 self.load_bert_mlm,
+                self.download_wisdoms,
                 self.build_wisdom2subwords,
                 self.build_rd,
-                self.load_rd
+                self.load_rd  # load the weights
             ]
-        elif self.mode == "build":
-            return [
+
+    def build_steps(self):
+        return super(RDFlow, self).build_steps() + [
                 self.save_paths,
-                self.check_config,
-                self.download_wisdoms,
                 self.download_bert_mlm,
                 self.download_tokenizer,
+                self.download_wisdoms,
                 self.build_wisdom2subwords,
-                self.build_rd,
-                self.make_dirs,
+                self.build_rd
             ]
-        else:
-            raise ValueError
-
-    def use_artifact(self):
-        self.artifact = self.run.use_artifact(f"{self.name}:{self.ver}")
 
     def download_artifact(self):
         self.artifact.download()
@@ -479,8 +502,6 @@ class RDFlow(Flow):
         self.artifact_path = path.join(ARTIFACTS_DIR, "artifacts")
         self.rd_bin_path = path.join(self.artifact_path, "rd.bin")
         self.tok_dir_path = path.join(self.artifact_path, "tokenizer")
-
-    def make_dirs(self):
         # and make directories as well, if they don't exist
         os.makedirs(self.artifact_path, exist_ok=True)
         os.makedirs(self.tok_dir_path, exist_ok=True)
@@ -489,7 +510,7 @@ class RDFlow(Flow):
         self.config = self.artifact.metadata
 
     def download_wisdoms(self):
-        table = WisdomsFlow(self.run, self.config["wisdoms_ver"], "download").raw_table
+        table = WisdomsFlow(self.run, self.config["wisdoms_ver"])(mode="d").raw_table
         self.wisdoms = [row[0] for _, row in table.iterrows()]
 
     def download_bert_mlm(self):
@@ -503,10 +524,6 @@ class RDFlow(Flow):
 
     def build_rd(self):
         raise NotImplementedError
-
-    def check_config(self):
-        if not self.config:
-            raise ValueError("A config must be provided to build an RD, but it is not given")
 
     def load_tokenizer(self):
         self.tokenizer = BertTokenizerFast.from_pretrained(self.tok_dir_path)
@@ -530,9 +547,6 @@ class RDFlow(Flow):
 
 class RDAlphaFlow(RDFlow):
 
-    def __init__(self, run: Run, ver: str, device: torch.device):
-        super().__init__(run, ver, device)
-
     def build_rd(self):
         self.rd = RDAlpha(self.bert_mlm, self.wisdom2subwords,
                           self.config['k'], self.config['lr'], self.device)
@@ -543,9 +557,6 @@ class RDAlphaFlow(RDFlow):
 
 
 class RDBetaFlow(RDFlow):
-
-    def __init__(self, run: Run, ver: str, device: torch.device):
-        super().__init__(run, ver, device)
 
     def build_rd(self):
         self.tokenizer.add_tokens(self.wisdoms)
@@ -560,7 +571,9 @@ class RDBetaFlow(RDFlow):
 
 
 class RDSomethingFlow(RDFlow):
-
+    """
+    TODO: a new rd flow
+    """
     def build_rd(self):
         """
         at this point, you have access to:
@@ -585,32 +598,29 @@ class RDSomethingFlow(RDFlow):
 from wisdomify import datamodules  # noqa
 
 
-class ExperimentFlow(Flow):
-    rd_flow: RDFlow
-    datamodule: datamodules.WisdomifyDataModule
+class ExperimentFlow(TwoWayFlow):
 
-    def __init__(self, run: Run, model: str, ver: str, mode: str,
-                 device: torch.device, config: dict = None, on_init: bool = True):
-        self.run = run
+    def __init__(self, run: Run, model: str, ver: str, device: torch.device):
+        super().__init__(run, ver)
         self.model = model
-        self.ver = ver
-        self.config = config
-        self.mode = mode
         self.device = device
-        super().__init__(on_init)
+        # top be filled
+        self.config: Optional[dict] = None
+        self.mode: Optional[str] = None
+        self.rd_flow: Optional[RDFlow] = None
+        self.datamodule: Optional[WisdomifyDataModule] = None
 
-    def steps(self) -> List[Callable]:
-        if self.mode == "download":
-            return [
+    def download_steps(self) -> List[Callable]:
+        return super(ExperimentFlow, self).download_steps() + [
                 self.choose_rd_flow,
                 self.run_download,
                 self.build_datamodule,
                 self.fix_seeds
 
             ]
-        elif self.mode == "build":
-            return [
-                self.check_config,
+
+    def build_steps(self) -> List[Callable]:
+        return super(ExperimentFlow, self).build_steps() + [
                 self.choose_rd_flow,
                 self.run_build,
                 self.build_datamodule,
@@ -622,9 +632,6 @@ class ExperimentFlow(Flow):
             self.rd_flow = RDAlphaFlow(self.run, self.ver, self.device)
         elif self.model == "rd_beta":
             self.rd_flow = RDBetaFlow(self.run, self.ver, self.device)
-        elif self.model == "rd_something":
-            self.rd_flow = RDSomethingFlow(self.run, self.ver, self.device)
-            raise NotImplementedError("add your own rd here")
         else:
             raise ValueError
 
@@ -650,57 +657,6 @@ class ExperimentFlow(Flow):
         else:
             raise ValueError
 
-    def fix_seeds(self):
-        """
-        https://pytorch.org/docs/stable/notes/randomness.html
-        """
-        seed = self.datamodule.config['seed']
-        torch.manual_seed(seed)
-        random.seed(seed)
-        np.random.seed(seed)
-
-
-# ===== for deploying ==== #
-class InferFlow(Flow):
-
-    exp_flow: ExperimentFlow
-    results: List[List[Tuple[str, float]]]
-
-    def __init__(self, run: Run, model: str, ver: str, sents: List[str], device: torch.device, on_init: bool = True):
-        self.run = run
-        self.model = model
-        self.ver = ver
-        self.sents = sents
-        self.device = device
-        super().__init__(on_init)
-
-    def steps(self) -> List[Callable]:
-        return [
-            self.download_experiment,
-            self.switch_to_eval,
-            self.wisdomify
-        ]
-
-    def download_experiment(self):
-        self.exp_flow = ExperimentFlow(self.run, self.model, self.ver,
-                                       "download", self.device)
-
-    def switch_to_eval(self):
-        self.exp_flow.rd_flow.rd.eval()
-
-    def wisdomify(self):
-        # get the X
-        wisdom2sent = [("", desc) for desc in self.sents]
-        inputs_builder, _ = self.exp_flow.datamodule.tensor_builders()
-        X = inputs_builder(wisdom2sent)
-        # get H_all for this.
-        P_wisdom = self.exp_flow.rd_flow.rd.P_wisdom(X)
-        results = list()
-        for S_word_prob in P_wisdom.tolist():
-            wisdom2prob = [
-                (wisdom, prob)
-                for wisdom, prob in zip(self.exp_flow.datamodule.wisdoms, S_word_prob)
-            ]
-            # sort and append
-            results.append(sorted(wisdom2prob, key=lambda x: x[1], reverse=True))
-        self.results = results
+    @property
+    def name(self):
+        return None

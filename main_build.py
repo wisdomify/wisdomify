@@ -12,18 +12,18 @@ def main():
     # --- so that we don't get "module level import should be on top" error --- #
     parser = argparse.ArgumentParser()
     # build what?
-    parser.add_argument("--what", type=str,
+    parser.add_argument("--data", type=str,
                         default="wisdoms")
     parser.add_argument("--ver", type=str,
                         default="a")
     parser.add_argument("--val_ratio", type=float,
-                        default=0.2)
+                        default=None)
     parser.add_argument("--seed", type=int,
-                        default=410)
+                        default=None)
     parser.add_argument("--upload", dest='upload', action='store_true',
                         default=False)  # set this flag up if you want to save the logs & the model
     args = parser.parse_args()
-    what: str = args.what
+    data: str = args.data
     ver: str = args.ver
     val_ratio: float = args.val_ratio
     seed: int = args.seed
@@ -31,15 +31,15 @@ def main():
     if not upload:
         print("########## WARNING: YOU CHOSE NOT TO UPLOAD. NOTHING BUT LOGS WILL BE SAVED TO WANDB #################")
     # flows, flows, oh I love flows
-    with connect_to_wandb() as run:
-        if what == "wisdoms":
-            flow = WisdomsFlow(run, ver, "build")
-        elif what == "wisdom2query":
-            flow = Wisdom2QueryFlow(run, ver, "build", val_ratio, seed)
-        elif what == "wisdom2def":
-            flow = Wisdom2DefFlow(run, ver, "build")
-        elif what == "wisdom2eg":
-            flow = Wisdom2EgFlow(run, ver, "build")
+    with connect_to_wandb(job_type="build", config=vars(args)) as run:
+        if data == "wisdoms":
+            flow = WisdomsFlow(run, ver)(mode="b")
+        elif data == "wisdom2query":
+            flow = Wisdom2QueryFlow(run, ver)(mode="b", val_ratio=val_ratio, seed=seed)
+        elif data == "wisdom2def":
+            flow = Wisdom2DefFlow(run, ver)(mode="b")
+        elif data == "wisdom2eg":
+            flow = Wisdom2EgFlow(run, ver)(mode="b")
         else:
             raise ValueError
         if upload:

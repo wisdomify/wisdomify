@@ -63,8 +63,8 @@ class WisdomifyDataModule(LightningDataModule):
         """
         prepare: download all data needed for this from wandb to local.
         """
-        self.train_flow()
-        self.val_test_flow()
+        self.train_flow()(mode="d")
+        self.val_test_flow()(mode="d")
 
     def setup(self, stage: Optional[str] = None) -> None:
         """
@@ -72,9 +72,9 @@ class WisdomifyDataModule(LightningDataModule):
         """
         # --- set up the builders --- #
         # build the datasets
-        train_flow = self.train_flow()
+        train_flow = self.train_flow()(mode="d")
+        val_test_flow = self.val_test_flow()(mode="d")
         train = [(row[0], row[1]) for row in train_flow.all_table.data]
-        val_test_flow = self.val_test_flow()
         val, test = [(row[0], row[1]) for row in val_test_flow.val_table.data], \
                     [(row[0], row[1]) for row in val_test_flow.test_table.data]
         self.train_dataset = self.build_dataset(train, self.wisdoms)
@@ -109,8 +109,8 @@ class WisdomifyDataModule(LightningDataModule):
     def train_flow(self) -> flows.DatasetFlow:
         raise NotImplementedError
 
-    def val_test_flow(self) -> flows.DatasetFlow:
-        return flows.Wisdom2QueryFlow(self.run, self.config['val_test_ver'], "download")
+    def val_test_flow(self) -> flows.Wisdom2QueryFlow:
+        return flows.Wisdom2QueryFlow(self.run, self.config['val_test_ver'])
 
     def tensor_builders(self) -> Tuple[InputsBuilder, TargetsBuilder]:
         raise NotImplementedError
@@ -119,7 +119,7 @@ class WisdomifyDataModule(LightningDataModule):
 class Wisdom2DefDataModule(WisdomifyDataModule):
 
     def train_flow(self) -> flows.Wisdom2DefFlow:
-        return flows.Wisdom2DefFlow(self.run, self.config['train_ver'], "download")
+        return flows.Wisdom2DefFlow(self.run, self.config['train_ver'])
 
     def tensor_builders(self) -> Tuple[InputsBuilder, TargetsBuilder]:
         return Wisdom2DefInputsBuilder(self.tokenizer, self.k, self.device), TargetsBuilder(self.device)
@@ -128,7 +128,7 @@ class Wisdom2DefDataModule(WisdomifyDataModule):
 class Wisdom2EgDataModule(WisdomifyDataModule):
 
     def train_flow(self) -> flows.Wisdom2EgFlow:
-        return flows.Wisdom2EgFlow(self.run, self.config['train_ver'], "download")
+        return flows.Wisdom2EgFlow(self.run, self.config['train_ver'])
 
     def tensor_builders(self) -> Tuple[InputsBuilder, TargetsBuilder]:
         return Wisdom2EgInputsBuilder(self.tokenizer, self.k, self.device), TargetsBuilder(self.device)

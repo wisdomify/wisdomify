@@ -27,30 +27,30 @@ def main():
     # --- set up the device to train the model with --- #
     device = load_device(use_gpu)
     # --- init a run  --- #
-    config = load_config()
-    with connect_to_wandb("train", config) as run:
+    config = load_config()[model][ver]
+    with connect_to_wandb(job_type="train", config=config) as run:
         # --- build an experiment --- #
-        flow = ExperimentFlow(run, model, ver, config,  "build", device)
+        flow = ExperimentFlow(run, model, ver, device)(mode="b", config=config)
         # --- instantiate the training logger --- #
         # A new W&B run will be created when training starts
         # if you have not created one manually before with wandb.init().
         logger = WandbLogger(log_model=False)
         # --- instantiate the trainer --- #
         # -- trainer는 flow로 만들지 않는다. 계속 옵션을 바꾸고 싶을때가 많을거라서, 그냥 이대로 두는게 좋다.
-        trainer = pl.Trainer(max_epochs=flow.rd_flow.config['max_epochs'],
+        trainer = pl.Trainer(max_epochs=config['max_epochs'],
                              # wisdomify does not support multi-gpu training, as of right now
                              gpus=1 if device.type == "cuda" else 0,
                              # lightning_logs will be saved under this directory
                              default_root_dir=ROOT_DIR,
                              # each step means each batch. Don't set this too low
                              # https://youtu.be/3JgpG4K6HxA
-                             log_every_n_steps=flow.rd_flow.config["log_every_n_steps"],
+                             log_every_n_steps=config["log_every_n_steps"],
                              # do not save checkpoints every epoch - we need this especially for sweeping
                              # https://github.com/PyTorchLightning/pytorch-lightning/issues/5867#issuecomment-775223087
-                             enable_checkpointing=flow.rd_flow.config["enable_checkpointing"],
+                             enable_checkpointing=config["enable_checkpointing"],
                              # set this to zero to prevent "calling metric.compute before metric.update" error
                              # https://forums.pytorchlightning.ai/t/validation-sanity-check/174/6
-                             num_sanity_val_steps=flow.rd_flow.config["num_sanity_val_steps"],
+                             num_sanity_val_steps=config["num_sanity_val_steps"],
                              logger=logger)
         # --- start training with validation --- #
         trainer.fit(model=flow.rd_flow.rd, datamodule=flow.datamodule)
@@ -64,7 +64,7 @@ def main():
             artifact.add_file(flow.rd_flow.rd_bin_path)
             artifact.add_dir(flow.rd_flow.tok_dir_path, "tokenizer")
             # add the config
-            artifact.metadata = flow.rd_flow.config
+            artifact.metadata = config
             #  upload to wandb
             run.log_artifact(artifact, aliases=[ver, "latest"])
 

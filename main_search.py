@@ -21,7 +21,7 @@ def main():
     size: int = args.size
 
     with connect_to_es() as es:
-        flow = SearchFlow(es, wisdom, index_name, size)
+        flow = SearchFlow(es, index_name, size)(wisdom)
         res = flow.res
 
     print(f"total hits:{res['hits']['total']}")
