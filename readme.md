@@ -16,17 +16,6 @@ A BERT-based reverse-dictionary of Korean proverbs.
 5. 같은 가치를 공유하는 사람은 언제든 환영한다!
 
 
-## Contributors
-contributor | roles | what have I done?
---- | --- | --- 
-김유빈 | ... | [MVP 구현하기](https://github.com/wisdomify/wisdomify/issues/2) / [Collab 데모 구현하기](https://github.com/wisdomify/wisdomify/issues/12) / [테스트 지표 정의 및 구현하기](https://github.com/wisdomify/wisdomify/issues/16) / [리팩토링: `Wisdomifier` 구현하기](https://github.com/wisdomify/wisdomify/issues/39) / [리팩토링 및 `RDBeta`        구현](https://github.com/wisdomify/wisdomify/issues/68)
-김민성 | ... | ...
-김종윤 | ... | ...
-오수지 | ... | ...
-임용택 | ... | ...
-최유라 | ... | ...
-
-
 ## Quick Start
 (Weights & Biases 연동 (#98) 마무리되는대로 업데이트 예정. 어찌되었든 목표는 이렇게)
 
@@ -383,3 +372,16 @@ python3 -m wisdomify.main.eval --ver="0"
 - Hinton, G. Vinyals, O. Dean, J. (2015). *Distilling the Knowledge in a Neural Network*
 - Junbum, L. (2020). *KcBERT: Korean Comments BERT*
 - Yan, H. Li, X. Qiu, X. Deng, B. (2020). *BERT for Monolingual and Cross-Lingual Reverse Dictionary*
+
+
+
+## Contributors
+contributor | roles | what have I done?
+--- | --- | --- 
+김유빈 | ... | [MVP 구현하기](https://github.com/wisdomify/wisdomify/issues/2) / [Collab 데모 구현하기](https://github.com/wisdomify/wisdomify/issues/12) / [테스트 지표 정의 및 구현하기](https://github.com/wisdomify/wisdomify/issues/16) / [리팩토링: `Wisdomifier` 구현하기](https://github.com/wisdomify/wisdomify/issues/39) / [리팩토링 및 `RDBeta`        구현](https://github.com/wisdomify/wisdomify/issues/68)
+김민성 | ... | ...
+김종윤 | ... | ...
+오수지 | ... | ...
+임용택 | ... | ...
+최유라 | ... | ...
+
