@@ -10,9 +10,9 @@ from wisdomify import flows
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str,
-                        default="rd_beta")
+                        default="rd_alpha")
     parser.add_argument("--ver", type=str,
-                        default="v1")
+                        default="a")
     parser.add_argument("--desc", type=str,
                         default="오전 내내 비가 안오길래 산책하러 밖을 나왔더니 갑자기 비가 쏟아지기 시작했다")
     parser.add_argument("--use_gpu", dest="use_gpu", action="store_true", default=False)

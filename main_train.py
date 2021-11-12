@@ -4,7 +4,7 @@ import argparse
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from wisdomify.connectors import connect_to_wandb
-from wisdomify.loaders import load_device
+from wisdomify.loaders import load_device, load_config
 from wisdomify.constants import ROOT_DIR
 from wisdomify.flows import ExperimentFlow
 
@@ -22,12 +22,15 @@ def main():
     ver: str = args.ver
     use_gpu: bool = args.use_gpu
     upload: bool = args.upload
+    if not upload:
+        print("########## WARNING: YOU CHOSE NOT TO UPLOAD. NOTHING BUT LOGS WILL BE SAVED TO WANDB #################")
     # --- set up the device to train the model with --- #
     device = load_device(use_gpu)
     # --- init a run  --- #
-    with connect_to_wandb() as run:
+    config = load_config()
+    with connect_to_wandb("train", config) as run:
         # --- build an experiment --- #
-        flow = ExperimentFlow(run, model, ver, "build", device)
+        flow = ExperimentFlow(run, model, ver, config,  "build", device)
         # --- instantiate the training logger --- #
         # A new W&B run will be created when training starts
         # if you have not created one manually before with wandb.init().

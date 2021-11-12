@@ -6,7 +6,7 @@ from wisdomify.models import (
     RDAlpha,
     RDBeta
 )
-from wisdomify.loaders import load_conf, load_device
+from wisdomify.loaders import load_config, load_device
 from wisdomify.builders import Wisdom2SubwordsBuilder, WiskeysBuilder, XBuilder, Wisdom2DefXBuilder, YBuilder
 import torch
 
@@ -98,7 +98,7 @@ class RDAlphaTest(RDCommonTest.Test):
         # version - 0 and 1
         super().setUpClass()
         device = load_device()
-        config = load_conf()['rd_alpha']['v0']
+        config = load_config()['rd_alpha']['v0']
         bert = config['bert']
         wisdoms = cls.get_wisdoms_v0()
         k = config['k']
@@ -134,7 +134,7 @@ class RDBetaTest(RDCommonTest.Test):
         # version - 2
         super().setUpClass()
         device = load_device()
-        config = load_conf()['rd_beta']['v0']
+        config = load_config()['rd_beta']['v0']
         bert = config['bert']
         wisdoms = cls.get_wisdoms_v0()
         k = config['k']

@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from wisdomify.builders import Wisdom2EgXBuilder
-from wisdomify.loaders import load_conf, load_device
+from wisdomify.loaders import load_config, load_device
 from transformers import AutoTokenizer
 
 # 예시 문장.
@@ -13,7 +13,7 @@ VER: str = "0"
 
 
 def main():
-    conf = load_conf()
+    conf = load_config()
     device = load_device()
     vers = conf['versions']
     selected_ver = vers[VER]

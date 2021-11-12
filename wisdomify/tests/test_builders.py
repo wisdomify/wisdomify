@@ -2,7 +2,7 @@
 at the moment, the tests test for version_0 only.
 """
 import unittest
-from wisdomify.loaders import load_conf, load_device
+from wisdomify.loaders import load_config, load_device
 from wisdomify.builders import (
     Wisdom2SubwordsBuilder,
     WiskeysBuilder,
@@ -24,7 +24,7 @@ class TensorBuilderTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        config = load_conf()['rd_alpha']['v0']
+        config = load_config()['rd_alpha']['v0']
         cls.tokenizer = AutoTokenizer.from_pretrained('beomi/kcbert-base')
         cls.wisdoms = cls.get_wisdoms_v0()
         cls.tokenizer.add_tokens(cls.wisdoms)

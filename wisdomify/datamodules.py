@@ -73,10 +73,10 @@ class WisdomifyDataModule(LightningDataModule):
         # --- set up the builders --- #
         # build the datasets
         train_flow = self.train_flow()
-        train = [(row[0], row[1]) for _, row in train_flow.raw_table.iterrows()]
+        train = [(row[0], row[1]) for row in train_flow.all_table.data]
         val_test_flow = self.val_test_flow()
-        val, test = [(row[0], row[1]) for _, row in val_test_flow.val_table.iterrows()], \
-                    [(row[0], row[1]) for _, row in val_test_flow.test_table.iterrows()]
+        val, test = [(row[0], row[1]) for row in val_test_flow.val_table.data], \
+                    [(row[0], row[1]) for row in val_test_flow.test_table.data]
         self.train_dataset = self.build_dataset(train, self.wisdoms)
         self.val_dataset = self.build_dataset(val, self.wisdoms)
         self.test_dataset = self.build_dataset(test, self.wisdoms)
@@ -101,9 +101,9 @@ class WisdomifyDataModule(LightningDataModule):
     def build_dataset(self, wisdom2desc: List[Tuple[str, str]], wisdoms: List[str]) -> WisdomifyDataset:
         """
         """
-        x_builder, y_builder = self.tensor_builders()
-        X = x_builder(wisdom2desc)
-        y = y_builder(wisdom2desc, wisdoms)
+        inputs_builder, targets_builder = self.tensor_builders()
+        X = inputs_builder(wisdom2desc)
+        y = targets_builder(wisdom2desc, wisdoms)
         return WisdomifyDataset(X, y)
 
     def train_flow(self) -> flows.DatasetFlow:

@@ -1,4 +1,4 @@
-from wisdomify.loaders import load_conf, load_device
+from wisdomify.loaders import load_config, load_device
 from wisdomify.builders import WisKeysBuilder
 from transformers import BertTokenizer, BertModel
 import torch

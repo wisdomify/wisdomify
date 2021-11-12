@@ -11,7 +11,7 @@ load_dotenv(find_dotenv())
 ROOT_DIR = Path(__file__).resolve().parent.parent.__str__()
 WANDB_DIR = path.join(ROOT_DIR, "wandb")  # for saving wandb logs
 # --- for configuring experiments --- #
-CONF_JSON = path.join(ROOT_DIR, "conf.json")
+CONFIG_YAML = path.join(ROOT_DIR, "config.yaml")
 CORPORA_DIR = path.join(ROOT_DIR, "corpora")
 ARTIFACTS_DIR = path.join(ROOT_DIR, "artifacts")
 # corpora
@@ -33,12 +33,11 @@ NEWS_DIR = path.join(CORPORA_DIR, "news")  # 뉴스데이터
 KOREA_UNIV_DIR = path.join(CORPORA_DIR, "korea_univ")  # 고려대 코퍼스
 
 # --- url's --- #
-WISDOM2DEF_RAW_A = "https://docs.google.com/spreadsheets/d/1n550JrAYnyy2j1CQAeXPjeuw0zD5RYNbpR4wKFTq8DI/export?format=tsv&gid=0"
-WISDOM2DEF_RAW_B = "https://docs.google.com/spreadsheets/d/1n550JrAYnyy2j1CQAeXPjeuw0zD5RYNbpR4wKFTq8DI/export?format=tsv&gid=1300142415"
-WISDOM2QUERY_RAW_A = "https://docs.google.com/spreadsheets/d/17t-WFD9e8a9VUu2nda56I_akeyYJ9RYilUCIVTra7Es/export?format=tsv&gid=1307694002"
-WISDOMS_A = "https://docs.google.com/spreadsheets/d/1--hzu43sd8nk8-R_Qf2jTZ0iuGQCIgRo3bwQ63SYVbo/export?format=tsv&gid=0"
-WISDOMS_B = "https://docs.google.com/spreadsheets/d/1--hzu43sd8nk8-R_Qf2jTZ0iuGQCIgRo3bwQ63SYVbo/export?format=tsv&gid=822745026"
-
+WISDOM2DEF_RAW_A = "https://docs.google.com/spreadsheets/d/1n550JrAYnyy2j1CQAeXPjeuw0zD5RYNbpR4wKFTq8DI/export?format=tsv&gid=0"  # noqa
+WISDOM2DEF_RAW_B = "https://docs.google.com/spreadsheets/d/1n550JrAYnyy2j1CQAeXPjeuw0zD5RYNbpR4wKFTq8DI/export?format=tsv&gid=1300142415"  # noqa
+WISDOM2QUERY_RAW_A = "https://docs.google.com/spreadsheets/d/17t-WFD9e8a9VUu2nda56I_akeyYJ9RYilUCIVTra7Es/export?format=tsv&gid=1307694002"  # noqa
+WISDOMS_A = "https://docs.google.com/spreadsheets/d/1--hzu43sd8nk8-R_Qf2jTZ0iuGQCIgRo3bwQ63SYVbo/export?format=tsv&gid=0"  # noqa
+WISDOMS_B = "https://docs.google.com/spreadsheets/d/1--hzu43sd8nk8-R_Qf2jTZ0iuGQCIgRo3bwQ63SYVbo/export?format=tsv&gid=822745026"  # noqa
 # --- wandb --- #
 WANDB_ENTITY = "wisdomify"
 WANDB_PROJECT = "wisdomify"

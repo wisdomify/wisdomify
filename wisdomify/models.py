@@ -48,7 +48,10 @@ class RD(pl.LightningModule):
         # --- to be used for getting H_desc --- #
         self.desc_mask: Optional[torch.Tensor] = None  # (N, L)
         # --- to be used to evaluate the model --- #
-        self.rd_metric = RDMetric()
+        # have different metric objects for each phase
+        self.metric_train = RDMetric()
+        self.metric_val = RDMetric()
+        self.metric_test = RDMetric()
         # --- load the model to device --- #
         self.to(device)  # always make sure to do this.
         # -- hyper params --- #
@@ -131,26 +134,27 @@ class RD(pl.LightningModule):
         train_loss = train_loss.sum()  # (N,) -> (1,)
         P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)
         # so that the metrics accumulate over the course of this epoch
-        self.rd_metric.update(P_wisdom, y)
         # why dict? - just a boilerplate
         return {
             # you cannot change the keyword for the loss
             "loss": train_loss,
+            "P_wisdom": P_wisdom.detach(),
+            "y": y.detach()
         }
 
     def on_train_batch_end(self, outputs: dict, *args, **kwargs) -> None:
         # watch the loss for this batch
         self.log("Train/Loss", outputs['loss'])
-
-    def on_train_epoch_start(self) -> None:
-        # so that the metrics do not accumulate to the next epoch
-        self.rd_metric.reset()
+        self.metric_train.update(outputs['P_wisdom'], outputs['y'])
 
     def training_epoch_end(self, outputs: List[dict]) -> None:
         # to see an average performance over the batches in this specific epoch
         avg_loss = torch.stack([output['loss'] for output in outputs]).mean()
-        rank_mean, rank_median, rank_std, top1, top3, top5 = self.rd_metric.compute()
         self.log("Train/Average Loss", avg_loss)
+
+    def on_train_epoch_end(self) -> None:
+        rank_mean, rank_median, rank_std, top1, top3, top5 = self.metric_train.compute()
+        self.metric_train.reset()
         self.log("Train/Rank Mean", rank_mean)
         self.log("Train/Rank Median", rank_median)
         self.log("Train/Rank Standard Deviation", rank_std)
@@ -163,13 +167,17 @@ class RD(pl.LightningModule):
 
     def on_validation_batch_end(self, outputs: dict, *args, **kwargs) -> None:
         self.log("Validation/Loss", outputs['loss'])
+        self.metric_val.update(outputs['P_wisdom'], outputs['y'])
 
     def validation_epoch_end(self, outputs: List[dict]) -> None:
         # to see an average performance over the batches in this specific epoch
         avg_loss = torch.stack([output['loss'] for output in outputs]).mean()
-        # log the metrics
-        rank_mean, rank_median, rank_std, top1, top3, top5 = self.rd_metric.compute()
         self.log("Validation/Average Loss", avg_loss)
+
+    def on_validation_epoch_end(self) -> None:
+        # log the metrics
+        rank_mean, rank_median, rank_std, top1, top3, top5 = self.metric_val.compute()
+        self.metric_val.reset()
         self.log("Validation/Rank Mean", rank_mean)
         self.log("Validation/Rank Median", rank_median)
         self.log("Validation/Rank Standard Deviation", rank_std)
@@ -177,28 +185,20 @@ class RD(pl.LightningModule):
         self.log("Validation/Top 3 Accuracy", top3)
         self.log("Validation/Top 5 Accuracy", top5)
 
-    def on_validation_epoch_start(self) -> None:
-        # so that the metrics do not accumulate to the next epoch
-        self.rd_metric.reset()
-
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         X, y = batch
         P_wisdom = self.P_wisdom(X)
-        self.rd_metric.update(preds=P_wisdom, targets=y)
+        self.metric_test.update(preds=P_wisdom, targets=y)
 
     def test_epoch_end(self, outputs: List[dict]) -> None:
         # log the metrics
-        rank_mean, rank_median, rank_std, top1, top3, top5 = self.rd_metric.compute()
+        rank_mean, rank_median, rank_std, top1, top3, top5 = self.metric_test.compute()
         self.log("Test/Rank Mean", rank_mean)
         self.log("Test/Rank Median", rank_median)
         self.log("Test/Rank Standard Deviation", rank_std)
         self.log("Test/Top 1 Accuracy", top1)
         self.log("Test/Top 3 Accuracy", top3)
         self.log("Test/Top 5 Accuracy", top5)
-
-    def on_test_epoch_start(self) -> None:
-        # so that the metrics do not accumulate to the next epoch
-        self.rd_metric.reset()
 
     def configure_optimizers(self) -> torch.optim.Optimizer:
         """

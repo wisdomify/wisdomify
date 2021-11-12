@@ -16,7 +16,7 @@ from more_itertools import chunked
 from tqdm import tqdm
 from transformers import BertTokenizerFast, AutoConfig, AutoModelForMaskedLM, BertForMaskedLM, AutoTokenizer
 from wandb.sdk.wandb_run import Run
-from wisdomify.loaders import load_conf
+from wisdomify.loaders import load_config
 from wisdomify.models import RD, RDAlpha, RDBeta
 from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder
 from wisdomify.connectors import connect_to_es
@@ -27,10 +27,6 @@ from wisdomify.preprocess import parse, cleanse, normalise, augment, upsample, s
 
 # ==== the superclass of all flows ==== #
 class Flow:
-
-    def __init__(self, on_init: bool):
-        if on_init:
-            self.__call__()
 
     def __call__(self, *args, **kwargs):
         for idx, step in enumerate(self.steps()):
@@ -51,22 +47,22 @@ from wisdomify.docs import (
 
 class SearchFlow(Flow):
 
-    query: dict
-    highlight: dict
-    res: dict
-
-    def __init__(self, es: Elasticsearch, wisdom: str, index: str, size: int, on_init: bool = True):
+    def __init__(self, es: Elasticsearch, index: str, size: int):
         self.es = es
-        self.wisdom = wisdom
         self.index = index
         self.size = size
-        super().__init__(on_init)
+        self.query: Optional[dict] = None
+        self.highlight: Optional[dict] = None
+        self.res: Optional[dict] = None
 
     def steps(self):
         return [
             self.build,
             self.search
         ]
+
+    def __call__(self, wisdom: str):
+        self.wisdom = wisdom
 
     def build(self):
         self.query = {
@@ -96,17 +92,15 @@ class SearchFlow(Flow):
 
 class IndexFlow(Flow):
 
-    name2story: Dict[str, Story]
-    stories: Generator[Story, None, None]
-
-    def __init__(self, es: Elasticsearch, index_name: str, batch_size: int,  on_init: bool = True):
+    def __init__(self, es: Elasticsearch, index_name: str, bach_size: int,  on_init: bool = True):
         """
         :param es:
         """
         self.es = es
         self.index_name = index_name
         self.batch_size = batch_size
-        super().__init__(on_init)
+        name2story: Optional[Dict[str, Story]] = None
+        stories: Optional[Generator[Story, None, None]] = None
 
     def steps(self) -> List[Callable]:
         # skip the steps
@@ -310,8 +304,8 @@ class Wisdom2QueryFlow(DatasetFlow):
         table2name = (
             (wandb.Table(dataframe=self.raw_df), "raw"),
             (wandb.Table(dataframe=self.all_df), "all"),
-            (wandb.Table(dataframe=self.all_df), "val"),
-            (wandb.Table(dataframe=self.all_df), "test")
+            (wandb.Table(dataframe=self.val_df), "val"),
+            (wandb.Table(dataframe=self.test_df), "test")
         )
         for table, name in table2name:
             artifact.add(table, name)
@@ -430,9 +424,10 @@ class RDFlow(Flow):
     wisdoms: List[str]
     artifact: wandb.Artifact
 
-    def __init__(self, run: Run, ver: str, device: torch.device):
+    def __init__(self, run: Run, ver: str,  device: torch.device,  config: dict = None):
         self.run = run
         self.ver = ver
+        self.config = config
         self.device = device
         super().__init__(on_init=False)
 
@@ -442,8 +437,14 @@ class RDFlow(Flow):
 
     def steps(self) -> List[Callable]:
         # a flow executes the steps, defined by steps
+        # the problem is, when you download, you don't need config.
+        # but when you build, you need config.
+        # and you just want to add one class and one class only.
+        # that's all...
+        # make config optional maybe?
         if self.mode == "download":
             return [
+                self.use_artifact,
                 self.download_artifact,
                 self.save_paths,
                 self.save_config,
@@ -456,23 +457,26 @@ class RDFlow(Flow):
             ]
         elif self.mode == "build":
             return [
-                self.load_config,
+                self.save_paths,
+                self.check_config,
                 self.download_wisdoms,
                 self.download_bert_mlm,
                 self.download_tokenizer,
                 self.build_wisdom2subwords,
                 self.build_rd,
-                self.save_paths,
                 self.make_dirs,
             ]
         else:
             raise ValueError
 
+    def use_artifact(self):
+        self.artifact = self.run.use_artifact(f"{self.name}:{self.ver}")
+
     def download_artifact(self):
-        self.run.use_artifact(f"{self.name}:{self.ver}").download()
+        self.artifact.download()
 
     def save_paths(self):
-        self.artifact_path = path.join(ARTIFACTS_DIR, f"{self.name}:{self.ver}")
+        self.artifact_path = path.join(ARTIFACTS_DIR, "artifacts")
         self.rd_bin_path = path.join(self.artifact_path, "rd.bin")
         self.tok_dir_path = path.join(self.artifact_path, "tokenizer")
 
@@ -500,8 +504,9 @@ class RDFlow(Flow):
     def build_rd(self):
         raise NotImplementedError
 
-    def load_config(self):
-        self.config = load_conf()[self.name][self.ver]
+    def check_config(self):
+        if not self.config:
+            raise ValueError("A config must be provided to build an RD, but it is not given")
 
     def load_tokenizer(self):
         self.tokenizer = BertTokenizerFast.from_pretrained(self.tok_dir_path)
@@ -584,10 +589,12 @@ class ExperimentFlow(Flow):
     rd_flow: RDFlow
     datamodule: datamodules.WisdomifyDataModule
 
-    def __init__(self, run: Run, model: str, ver: str, mode: str, device: torch.device, on_init: bool = True):
+    def __init__(self, run: Run, model: str, ver: str, mode: str,
+                 device: torch.device, config: dict = None, on_init: bool = True):
         self.run = run
         self.model = model
         self.ver = ver
+        self.config = config
         self.mode = mode
         self.device = device
         super().__init__(on_init)
@@ -603,6 +610,7 @@ class ExperimentFlow(Flow):
             ]
         elif self.mode == "build":
             return [
+                self.check_config,
                 self.choose_rd_flow,
                 self.run_build,
                 self.build_datamodule,
@@ -610,24 +618,15 @@ class ExperimentFlow(Flow):
             ]
 
     def choose_rd_flow(self):
-        if self.model == RDAlphaFlow.name:
+        if self.model == "rd_alpha":
             self.rd_flow = RDAlphaFlow(self.run, self.ver, self.device)
-        elif self.model == RDBetaFlow.name:
+        elif self.model == "rd_beta":
             self.rd_flow = RDBetaFlow(self.run, self.ver, self.device)
-        elif self.model == RDSomethingFlow.name:
+        elif self.model == "rd_something":
             self.rd_flow = RDSomethingFlow(self.run, self.ver, self.device)
             raise NotImplementedError("add your own rd here")
         else:
             raise ValueError
-
-    def fix_seeds(self):
-        """
-        https://pytorch.org/docs/stable/notes/randomness.html
-        """
-        seed = self.datamodule.config['seed']
-        torch.manual_seed(seed)
-        random.seed(seed)
-        np.random.seed(seed)
 
     def run_download(self):
         self.rd_flow(mode="download")
@@ -650,6 +649,15 @@ class ExperimentFlow(Flow):
                                                               self.device)
         else:
             raise ValueError
+
+    def fix_seeds(self):
+        """
+        https://pytorch.org/docs/stable/notes/randomness.html
+        """
+        seed = self.datamodule.config['seed']
+        torch.manual_seed(seed)
+        random.seed(seed)
+        np.random.seed(seed)
 
 
 # ===== for deploying ==== #

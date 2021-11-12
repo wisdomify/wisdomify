@@ -1,8 +1,8 @@
-from wisdomify.loaders import load_conf
+from wisdomify.loaders import load_config
 
 
 def main():
-    conf = load_conf()['versions']['0']
+    conf = load_config()['versions']['0']
     bert_model = conf['bert_model']
     k = conf['k']
     wisdoms = conf['wisdoms']

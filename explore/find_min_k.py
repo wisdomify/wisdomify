@@ -1,10 +1,10 @@
 from transformers import AutoTokenizer
-from wisdomify.loaders import load_conf, load_device
+from wisdomify.loaders import load_config, load_device
 from wisdomify.builders import Wisdom2SubwordsBuilder
 
 
 def main():
-    conf = load_conf()['versions']['0']
+    conf = load_config()['versions']['0']
     device = load_device()
     bert_model = conf['bert_model']
     wisdoms = conf['wisdoms']

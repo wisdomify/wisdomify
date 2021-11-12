@@ -28,16 +28,18 @@ def main():
     val_ratio: float = args.val_ratio
     seed: int = args.seed
     upload: bool = args.upload
+    if not upload:
+        print("########## WARNING: YOU CHOSE NOT TO UPLOAD. NOTHING BUT LOGS WILL BE SAVED TO WANDB #################")
     # flows, flows, oh I love flows
     with connect_to_wandb() as run:
         if what == "wisdoms":
             flow = WisdomsFlow(run, ver, "build")
         elif what == "wisdom2query":
-            flow = Wisdom2QueryFlow(run, ver, "upload", val_ratio, seed)
+            flow = Wisdom2QueryFlow(run, ver, "build", val_ratio, seed)
         elif what == "wisdom2def":
-            flow = Wisdom2DefFlow(run, ver, "upload")
+            flow = Wisdom2DefFlow(run, ver, "build")
         elif what == "wisdom2eg":
-            flow = Wisdom2EgFlow(run, ver, "upload")
+            flow = Wisdom2EgFlow(run, ver, "build")
         else:
             raise ValueError
         if upload:
