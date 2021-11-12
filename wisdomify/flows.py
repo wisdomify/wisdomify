@@ -19,17 +19,17 @@ from wandb.sdk.wandb_run import Run
 from wisdomify.models import RD, RDAlpha, RDBeta
 from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder
 from wisdomify.connectors import connect_to_es
-from wisdomify.constants import WISDOMS_A, WISDOMS_B, WISDOM2QUERY_RAW_A, WISDOM2DEF_RAW_A, WISDOM2DEF_RAW_B, \
-    ARTIFACTS_DIR
+from wisdomify.constants import WISDOMS_A, WISDOMS_B, WISDOM2QUERY_RAW_A, WISDOM2DEF_RAW_A, WISDOM2DEF_RAW_B
 from wisdomify.preprocess import parse, cleanse, normalise, augment, upsample, stratified_split
+from termcolor import colored
 
 
 # ==== the superclass of all flows ==== #
 class Flow:
-
     def __call__(self, *args, **kwargs):
-        for idx, step in enumerate(self.steps()):
+        for step in self.steps():
             step()
+            print(f"{type(self).__name__}:{colored(step.__name__, color='cyan')}")
 
     def steps(self) -> List[Callable]:
         raise NotImplementedError
@@ -461,7 +461,7 @@ class RDFlow(TwoWayFlow):
                 self.save_paths,
                 self.save_config,  # at download, you don't have access to config
                 self.load_tokenizer,
-                self.load_bert_mlm,
+                self.build_bert_mlm,
                 self.download_wisdoms,
                 self.build_wisdom2subwords,
                 self.build_rd,
@@ -479,10 +479,9 @@ class RDFlow(TwoWayFlow):
             ]
 
     def download_artifact(self):
-        self.artifact.download()
+        self.artifact_path = self.artifact.download()
 
     def save_paths(self):
-        self.artifact_path = path.join(ARTIFACTS_DIR, "artifacts")
         self.rd_bin_path = path.join(self.artifact_path, "rd.bin")
         self.tok_dir_path = path.join(self.artifact_path, "tokenizer")
         # and make directories as well, if they don't exist
@@ -508,11 +507,11 @@ class RDFlow(TwoWayFlow):
     def build_rd(self):
         raise NotImplementedError
 
+    def build_bert_mlm(self):
+        self.bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(self.config['bert']))
+
     def load_tokenizer(self):
         self.tokenizer = BertTokenizerFast.from_pretrained(self.tok_dir_path)
-
-    def load_bert_mlm(self):
-        self.bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(self.config['bert']))
 
     def load_rd(self):
         self.rd.load_state_dict(torch.load(self.rd_bin_path))
@@ -643,4 +642,6 @@ class ExperimentFlow(TwoWayFlow):
 
     @property
     def name(self):
-        return None
+        # otherwise, you would get:
+        # (wisdomifyenv) eubinecto@Eu-Bins-MacBook-Air wisdomify % python3 main_eval.py --model=rd_
+        return self.model

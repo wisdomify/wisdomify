@@ -23,7 +23,7 @@ def main():
     # --- init a run instance --- #
     with connect_to_wandb(job_type="eval", config=config) as run:
         # --- load a pre-trained experiment --- #
-        flow = ExperimentFlow(run, model, ver, device)(mode="d")
+        flow = ExperimentFlow(run, model, ver, device)(mode="d", config=config)
         flow.rd_flow.rd.eval()
         # --- instantiate the training logger --- #
         logger = WandbLogger(log_model=False)

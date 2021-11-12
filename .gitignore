@@ -135,7 +135,6 @@ data/lightning_logs
 /data
 /wisdomify.zip
 
-*/artifacts/*
-*/wandb/*
 wandb
+artifacts
 corpora
