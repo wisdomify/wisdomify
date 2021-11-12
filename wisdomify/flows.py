@@ -19,7 +19,8 @@ from wandb.sdk.wandb_run import Run
 from wisdomify.models import RD, RDAlpha, RDBeta
 from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder
 from wisdomify.connectors import connect_to_es
-from wisdomify.constants import WISDOMS_A, WISDOMS_B, WISDOM2QUERY_RAW_A, WISDOM2DEF_RAW_A, WISDOM2DEF_RAW_B
+from wisdomify.constants import WISDOMS_A, WISDOMS_B, WISDOM2QUERY_RAW_A, WISDOM2DEF_RAW_A, WISDOM2DEF_RAW_B, \
+    ARTIFACTS_DIR
 from wisdomify.preprocess import parse, cleanse, normalise, augment, upsample, stratified_split
 from termcolor import colored
 
@@ -190,31 +191,14 @@ class TwoWayFlow(Flow):
             raise ValueError
 
     def download_steps(self):
-        return [
-            self.fix_seeds,  # download should be preceded by fixing seeds
-            self.use_artifact
-        ]
+        raise NotImplementedError
 
     def build_steps(self):
-        return [
-            self.fix_seeds  # build should be preceded by fixing seeds
-        ]
+        raise NotImplementedError
 
+    # --- common steps to reuse --- #
     def use_artifact(self):
         self.artifact = self.run.use_artifact(f"{self.name}:{self.ver}")
-
-    def check_config(self):
-        if not self.config:
-            raise ValueError
-
-    def fix_seeds(self):
-        """
-        https://pytorch.org/docs/stable/notes/randomness.html
-        """
-        seed = self.config['seed']
-        torch.manual_seed(seed)
-        random.seed(seed)
-        np.random.seed(seed)
 
     @property
     def name(self):
@@ -235,14 +219,16 @@ class DatasetFlow(TwoWayFlow):
         self.all_table: Optional[wandb.Table] = None
         self.val_table: Optional[wandb.Table] = None
         self.test_table: Optional[wandb.Table] = None
+        self.artifact_path: Optional[str] = None
 
     def download_steps(self):
-        return super(DatasetFlow, self).download_steps() + [
+        return [
+            self.use_artifact,
             self.download_tables
         ]
 
     def build_steps(self):
-        return super(DatasetFlow, self).build_steps() + [
+        return [
             self.download_raw_df,
             self.preprocess,
             self.val_test_split,
@@ -456,8 +442,9 @@ class RDFlow(TwoWayFlow):
         self.artifact: Optional[wandb.Artifact] = None
 
     def download_steps(self):
-        return super(RDFlow, self).download_steps() + [
-                self.download_artifact,
+        return [
+                self.use_artifact,
+                self.checkout_artifact,
                 self.save_paths,
                 self.save_config,  # at download, you don't have access to config
                 self.load_tokenizer,
@@ -469,7 +456,7 @@ class RDFlow(TwoWayFlow):
             ]
 
     def build_steps(self):
-        return super(RDFlow, self).build_steps() + [
+        return [
                 self.save_paths,
                 self.download_bert_mlm,
                 self.download_tokenizer,
@@ -478,10 +465,12 @@ class RDFlow(TwoWayFlow):
                 self.build_rd
             ]
 
-    def download_artifact(self):
-        self.artifact_path = self.artifact.download()
+    def checkout_artifact(self):
+        self.artifact_path = self.artifact.checkout()
 
     def save_paths(self):
+        if not self.artifact_path:
+            self.artifact_path = path.join(ARTIFACTS_DIR, self.name)
         self.rd_bin_path = path.join(self.artifact_path, "rd.bin")
         self.tok_dir_path = path.join(self.artifact_path, "tokenizer")
         # and make directories as well, if they don't exist
@@ -593,21 +582,20 @@ class ExperimentFlow(TwoWayFlow):
         self.datamodule: Optional[WisdomifyDataModule] = None
 
     def download_steps(self) -> List[Callable]:
-        return super(ExperimentFlow, self).download_steps() + [
+        return [
+                self.fix_seeds,  # an experiment must be preceded by fixing seeds
                 self.choose_rd_flow,
                 self.run_download,
-                self.build_datamodule,
-                self.fix_seeds
+                self.build_datamodule
 
             ]
 
     def build_steps(self) -> List[Callable]:
-        return super(ExperimentFlow, self).build_steps() + [
-                self.check_config,
+        return [
+                self.fix_seeds,  # an experiment must be preceded by fixing seeds
                 self.choose_rd_flow,
                 self.run_build,
-                self.build_datamodule,
-                self.fix_seeds
+                self.build_datamodule
             ]
 
     def choose_rd_flow(self):
@@ -640,8 +628,16 @@ class ExperimentFlow(TwoWayFlow):
         else:
             raise ValueError
 
+    def fix_seeds(self):
+        """
+        https://pytorch.org/docs/stable/notes/randomness.html
+        """
+        seed = self.config['seed']
+        torch.manual_seed(seed)
+        random.seed(seed)
+        np.random.seed(seed)
+
     @property
     def name(self):
         # otherwise, you would get:
-        # (wisdomifyenv) eubinecto@Eu-Bins-MacBook-Air wisdomify % python3 main_eval.py --model=rd_
-        return self.model
+        return None
