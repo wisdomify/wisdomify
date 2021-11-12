@@ -113,14 +113,14 @@ def wisdomifySearch():
                         <table style="width:100%">
                           <tr>
                             <th>속담</th>
-                            <th>확률</th>
+                            <th>확률 (%)</th>
                           </tr>
                         
                         {% for results in desc_result %}
                             {% for res in results %}
                             <tr>
                                 <td>{{ res[0] }}</td>
-                                <td>{{ res[1] }}</td>
+                                <td>{{ res[1] * 100 }}</td>
                             </tr>
                             {% endfor %}
                         </table>
