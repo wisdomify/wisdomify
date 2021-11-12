@@ -97,7 +97,6 @@ class RDAlphaTest(RDCommonTest.Test):
     @classmethod
     def setUpClass(cls):
         # version - 0 and 1
-        super().setUpClass()
         device = load_device(use_gpu=False)
         config = load_config()['rd_alpha']['a']
         bert = config['bert']
@@ -107,7 +106,7 @@ class RDAlphaTest(RDCommonTest.Test):
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert))
         tokenizer = AutoTokenizer.from_pretrained(bert)
         wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, device)(wisdoms)
-        cls.rd = RDAlpha(bert_mlm, wisdom2subwords, k, lr, device)
+        cls.rd = RDAlpha(k, lr, bert_mlm, wisdom2subwords, device)
         cls.initialize(Wisdom2DefInputsBuilder(tokenizer, k, device), TargetsBuilder(device),
                        wisdoms, bert_mlm.config.hidden_size, len(wisdoms), k)
 
@@ -133,7 +132,6 @@ class RDBetaTest(RDCommonTest.Test):
     @classmethod
     def setUpClass(cls):
         # version - 2
-        super().setUpClass()
         device = load_device(use_gpu=False)
         config = load_config()['rd_beta']['a']
         bert = config['bert']
@@ -147,7 +145,7 @@ class RDBetaTest(RDCommonTest.Test):
         bert_mlm.resize_token_embeddings(len(tokenizer))
         wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, device)(wisdoms)
         wiskeys = WiskeysBuilder(tokenizer, device)(wisdoms)
-        cls.rd = RDBeta(bert_mlm, wisdom2subwords, wiskeys, k, lr, device)
+        cls.rd = RDBeta(k, lr, bert_mlm, wisdom2subwords, wiskeys, device)
         cls.initialize(Wisdom2DefInputsBuilder(tokenizer, k, device), TargetsBuilder(device),
                        wisdoms, bert_mlm.config.hidden_size, len(wisdoms), k)
 
