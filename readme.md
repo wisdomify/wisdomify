@@ -280,15 +280,17 @@ python3 -m wisdomify.main.eval --ver="0"
 ```
 
 
-## Future Work
-1. "`S_wisdom = S_wisdom_literal + S_wisdom_figurative` <<  `S_wisdom = S_wisdom_literal`"라는 가설을 입증
-1. 빈도수 TOP 100 속담 검색
-2. 맥락 → 속담 검색
-3. 한국어 → 한국어 속담 검색
-4. 한국어 → 영어 속담 검색
-5. 한국어 → 한국어 & 영어 동시 검색 (bilingual BERT 개발)
-6. "3번, 4번 << 5번"이라는 가설을 입증
-7. 논문을 써서 자연어처리 학회에 제출하기!
+## Milestones
+1. 한국어 → 한국어 속담 검색
+2. "`S_wisdom = S_wisdom_literal` < `S_wisdom = S_wisdom_literal + S_wisdom_figurative`"라는 가설을 입증
+3. "`loss = cross_entropy(S_wisdom, y)` < `loss = cross_entropy(S_wisdom_literal, S_wisdom_figurative)`"라는 가설을 입증
+4. 빈도수 TOP 100 속담 검색
+5. 테스트 셋의 top 3 accuracy를 90%까지 끌어올리기
+6. 한국어 → 영어 속담 검색 (한국어 속담 - 영어 속담 병렬 말뭉치 활용)
+7. 한국어 → 한국어 & 영어 동시 검색 (병렬 말뭉치로 bilingual BERT 개발)
+8. "3번, 4번 << 5번"이라는 가설을 입증
+9. 2번, 3번 8번 가설이 인공지능이 아닌 실제 사람들에게도 적용되는 것인지 실험을 통해 확인
+10. 9번의 결론을 정리해서 석사 disseration 쓰고, 자연어처리 & SLA 학회에 동시 제출
 
 ## References
 - Devlin,  J. Cheng, M. Lee, K. Toutanova, K. (2018). *: Pre-training of Deep Bidirectional Transformers for Language Understanding*. 
