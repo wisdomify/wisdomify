@@ -287,10 +287,10 @@ python3 -m wisdomify.main.eval --ver="0"
 4. 빈도수 TOP 100 한국어 → 한국어 & 영어 동시 검색 (병렬 말뭉치로 bilingual BERT 개발)
 5. 모델링 & 데이터 수집을 통해, Test/Top 3 Accuracy를 90%까지 끌어올리기
 6. 그 과정 속에서, 다음의 가설 3개를 검증하기
-  1. 사람들은 속담을 이해하기 위해 말 그대로의 의미와 비유적인 의미와 전부 고려한다. 어떻게? - `S_wisdom = S_wisdom_literal` < `S_wisdom = S_wisdom_literal + S_wisdom_figurative`.
-  2. 사람들은 속담을 이해하기 위해 말 그대로의 의미로부터 비유적인 의미를 도출한다. 어떻게? - `loss = cross_entropy(S_wisdom, y)` < `loss = cross_entropy(S_wisdom, y) + KLDivergence(S_wisdom_figurative, S_wisdom_literal)'.
-  3. L2 learners는 L2 속담을 학습할 때 대응하는 L1 속담을 동시에 학습하면 속담을 더 깊게 이해한다. - 4번 모델을  2번, 3번 모델과 비교 & 대조.
-7. 6번의 결론을 정리해서 석사 disseration 쓰고, 자연어처리 & SLA 학회에 동시 제출
+  1. 사람들은 속담을 이해하기 위해 말 그대로의 의미와 비유적인 의미와 전부 고려한다. 어떻게? - `S_wisdom = S_wisdom_literal` 의 성능과 `S_wisdom = S_wisdom_literal + S_wisdom_figurative`의 성능을 비교.
+  2. 사람들은 속담을 이해하기 위해 말 그대로의 의미로부터 비유적인 의미를 도출한다. 어떻게? - `loss = cross_entropy(S_wisdom, y)` 의 성능과 `loss = cross_entropy(S_wisdom, y) + KLDivergence(S_wisdom_figurative, S_wisdom_literal)`의 성능을 비교
+  3. L2 learners는 L2 속담을 학습할 때 대응하는 L1 속담을 동시에 학습하면 속담을 더 깊게 이해한다. 어떻게? - 4번 모델을  2번, 3번 모델과 비교.
+7. 6번의 결론을 정리해서 석사 disseration을 쓰고, 자연어처리 & SLA 학회에 동시 제출
 
 ## References
 - Devlin,  J. Cheng, M. Lee, K. Toutanova, K. (2018). *: Pre-training of Deep Bidirectional Transformers for Language Understanding*. 
