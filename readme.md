@@ -281,11 +281,14 @@ python3 -m wisdomify.main.eval --ver="0"
 
 
 ## Future Work
+1. "`S_wisdom = S_wisdom_literal + S_wisdom_figurative` <<  `S_wisdom = S_wisdom_literal`"라는 가설을 입증
 1. 빈도수 TOP 100 속담 검색
 2. 맥락 → 속담 검색
 3. 한국어 → 한국어 속담 검색
 4. 한국어 → 영어 속담 검색
-
+5. 한국어 → 한국어 & 영어 동시 검색 (bilingual BERT 개발)
+6. "3번, 4번 << 5번"이라는 가설을 입증
+7. 논문을 써서 자연어처리 학회에 제출하기!
 
 ## References
 - Devlin,  J. Cheng, M. Lee, K. Toutanova, K. (2018). *: Pre-training of Deep Bidirectional Transformers for Language Understanding*. 
