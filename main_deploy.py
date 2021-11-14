@@ -7,6 +7,11 @@ from wisdomify.apis import WisdomifyView, StorytellView
 app = Flask(__name__)
 
 
+@app.route('/healthz', methods=['GET'])
+def checkHealth():
+    return "Alive", 200
+
+
 if __name__ == '__main__':
 
     StorytellView.register(app)
