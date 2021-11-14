@@ -21,7 +21,7 @@ def main():
     ex_mask = torch.zeros_like(H_copy)
     ex_mask[ex_positions] = 1
     print(ex_mask)
-    print(ex_mask.shape) # (N, L, H)
+    print(ex_mask.shape)  # (N, L, H)
     
     print("="*101)
     H_ex = H_all.clone().detach()

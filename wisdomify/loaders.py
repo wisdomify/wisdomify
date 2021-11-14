@@ -11,7 +11,7 @@ def load_config() -> dict:
         return yaml.safe_load(fh)
 
 
-def load_device(use_gpu: bool) -> torch.device:
+def load_device(use_gpu: bool = False) -> torch.device:
     if use_gpu:
         if not torch.cuda.is_available():
             raise ValueError("cuda is unavailable")

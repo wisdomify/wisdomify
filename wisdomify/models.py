@@ -31,14 +31,18 @@ class RD(pl.LightningModule):
     def predict_dataloader(self) -> EVAL_DATALOADERS:
         pass
 
-    def __init__(self, bert_mlm: BertForMaskedLM,
-                 wisdom2subwords: torch.Tensor, k: int, lr: float, device: torch.device):
+    def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM,
+                 wisdom2subwords: torch.Tensor, device: torch.device):
         """
         :param bert_mlm: a bert model for masked language modeling
         :param wisdom2subwords: (|W|, K)
         :return: (N, K, |V|); (num samples, k, the size of the vocabulary of subwords)
         """
         super().__init__()
+        # -- hyper params --- #
+        # should be saved to self.hparams
+        # https://github.com/PyTorchLightning/pytorch-lightning/issues/4390#issue-730493746
+        self.save_hyperparameters(Namespace(k=k, lr=lr))
         # -- the only neural network we need -- #
         self.bert_mlm = bert_mlm
         # -- to be used to compute S_wisdom -- #
@@ -52,10 +56,6 @@ class RD(pl.LightningModule):
         self.metric_train = RDMetric()
         self.metric_val = RDMetric()
         self.metric_test = RDMetric()
-        # -- hyper params --- #
-        # should be saved to self.hparams
-        # https://github.com/PyTorchLightning/pytorch-lightning/issues/4390#issue-730493746
-        self.save_hyperparameters(Namespace(k=k, lr=lr))
         # --- load the model to device --- #
         self.to(device)  # always make sure to do this.
 
@@ -253,15 +253,13 @@ class RDBeta(RD):
     trained on: wisdom2def only.
     """
 
-    def __init__(self, bert_mlm: BertForMaskedLM,
-                 wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor,
-                 k: int, lr: float, device: torch.device):
-        super().__init__(bert_mlm, wisdom2subwords, k, lr, device)
-
+    def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM,
+                 wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor, device: torch.device):
+        super().__init__(k, lr, bert_mlm, wisdom2subwords, device)
         self.wiskeys = wiskeys   # (|W|,)
         self.hidden_size = bert_mlm.config.hidden_size
         self.dr_rate = 0.0
-        
+        # fully- connected layers
         self.cls_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
         self.wisdom_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
         self.example_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)

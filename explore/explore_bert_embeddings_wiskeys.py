@@ -1,12 +1,12 @@
 from wisdomify.loaders import load_config, load_device
-from wisdomify.builders import WisKeysBuilder
+from wisdomify.tensors import WiskeysBuilder
 from transformers import AutoTokenizer, AutoModelForMaskedLM
 import torch
 
 
 def main():
     conf = load_config()['versions']['0']
-    device = load_device()
+    device = load_device(use_gpu=False)
     bert_model = conf['bert_model']
     wisdoms = conf['wisdoms']
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
@@ -18,7 +18,7 @@ def main():
     model.resize_token_embeddings(len(tokenizer))
     # https://huggingface.co/transformers/_modules/transformers/modeling_bert.html
     word_embeddings: torch.nn.Embedding = model.bert.embeddings.word_embeddings
-    wiskeys = WisKeysBuilder(tokenizer, device)(wisdoms)  # (|W|,)
+    wiskeys = WiskeysBuilder(tokenizer, device)(wisdoms)  # (|W|,)
     print(wiskeys)
     print(word_embeddings)
     W = word_embeddings(wiskeys)  # (|W|, E=H)
@@ -28,4 +28,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

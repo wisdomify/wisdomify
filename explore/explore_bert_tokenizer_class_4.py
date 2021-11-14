@@ -1,6 +1,6 @@
 
 # pip3 install transformers.
-from transformers import BertTokenizer, RobertaTokenizer
+from transformers import BertTokenizer
 
 BATCH = [
     ("나는 테슬라의 비전이 좋아.", "하하, 그거 좋은 [MASK]네."),  # pun
@@ -36,6 +36,7 @@ def main():
     for tokens in decoded:
         print(tokens)
     # the model will not attend to the padded tokens, thanks to the attention mask.
+
 
 if __name__ == '__main__':
     main()

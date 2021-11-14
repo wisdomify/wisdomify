@@ -1,63 +1,33 @@
-# Wisdomify
-<a href="https://colab.research.google.com/drive/1WH-ukPOV69lL41wkSPH8mi33AzCa3vQd?usp=sharing"><img src="https://colab.research.google.com/assets/colab-badge.svg" height=20></a>
-![](https://github.com/eubinecto/wisdomify/workflows/pytest/badge.svg)
-<a href="https://wandb.ai/wisdomify/wisdomify?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20></a>
-<a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://ainize.ai/images/run_on_ainize_button.svg" height="22"/></a>
+# Wisdomify - A BERT-based reverse-dictionary of Korean proverbs
+<a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://ainize.ai/images/run_on_ainize_button.svg" height="20.2"/></a> ![](https://github.com/eubinecto/wisdomify/workflows/pytest/badge.svg) <a href="https://wandb.ai/wisdomify/wisdomify?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20></a> [![Total alerts](https://img.shields.io/lgtm/alerts/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/alerts/) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/context:python)
 
-A BERT-based reverse-dictionary of Korean proverbs.
-- 김유빈 : 모델링 / 데이터 수집 / 프로젝트 설계 / back-end
-- 김종윤 : 데이터 수집 / 프로젝트 설계 / front-end / back-end
-- 임용택 : 모델링 / deploy / back-end
 
-Related Projects:
-- Model design/analysis, proposal: [wisdomify/wisdomify](https://github.com/wisdomify/wisdomify)
-- Data collect, Feature engineering: [wisdomify/storyteller](https://github.com/wisdomify/storyteller)
-- Web service, Front-End: [wisdomify/platanus](https://github.com/wisdomify/platanus)
 
-Objectives:
-1. 빈도수 TOP 100 속담 검색을 목표로 한다.
-2. 맥락 → 속담 검색을 목표로 한다.
-3. 한국어 → 한국어 속담 검색이 가능하도록 한다.
-4. 영어 → 한국어 속담 검색이 가능하도록 한다.
-5. 우리는 해적. 우리와 같은 가치를 공유하는 사람이라면 기꺼이 동료로 받아들인다. 
+## What is Wisdomify?
+
+Wisdomify는 우리말 속담 역사전(Reverse-Dictionary of Korean Proverbs)입니다. 즉, 기존의 속담 사전이 "속담 → 정의, 용례" 의 검색을 도와준다면 Wisdomify는 "정의, 용례 → 속담" 검색을 도와줍니다.    
+ 
+예를 들어 아래와 같은 검색이 가능합니다
+--- | 
+ `커피가 없으니 홍차라도 마시자!`라는 문장에 `꿩 대신 닭` (56%)을 추천 |
+<img width="793" alt="image" src="https://user-images.githubusercontent.com/56193069/141527671-a9b93b0d-3c4c-4703-811c-1909cba37827.png"> |
+`맛집에 간날 하필이면 휴무라니`라는 문장에는 `가는 날이 장날` (99%)을 추천 |
+<img width="795" alt="image" src="https://user-images.githubusercontent.com/56193069/141527646-8ffd225a-48bb-40cd-80d1-fcf28ec5996d.png"> |
+
+이러한 똑똑한 역사전을 만들어 낼 수 있다면 사람들의 능동적인 어휘학습을 효과적으로 도와줄 수 있을 것입니다. 이를 바탕으로 우리는 Wisdomify를 통해, **어휘학습의 미래는 똑똑한 검색엔진이다**
+라는 가치 제안을 하고자 합니다.
+
 
 ## Quick Start
 
-Check the dependencies:
-```text
-more-itertools  # for batch-processing generators 
-pandas #  for preprocessing data
-elasticsearch-dsl  # for collecting examples
-scikit-learn  # for split 
-wandb  # for tracking & visualising experiments
-metaflow  # for orchestrating the project as DAG's
-python-dotenv  # for accessing secrets
-pytorch-lightning  # for model-centric design
-transformers  # for transfer learning
-```
-Clone the project and set up a virtualenv for the project:
-```bash
-git clone https://github.com/eubinecto/wisdomify.git
-cd wisdomify
-virtualenv wisdomifyenv
-source wisdomifyenv/bin/activate  # activate the virtualenv
-pip3 install -r ./requirements.txt  # install the required libraries onto the virtualenv
-```
-
-**[Requirement]: Weight and Bias Authentication**
-
-This project uses "Weight and Bias (W&B)" for storing dataset and recording model experiment.
-
-Therefore, if you try to whether 'train', 'eval' or 'infer' this model, you will be requested to authenticate via W&B login process.
-
-The authentication process will be done only once when you run any script below 'main' directory.
-
-
-
-Wisdomify a sentence:
-
-```text
-python3 -m wisdomify.main.infer --ver="0" --desc="까불지말고 침착하여라"
+Weights & Biases 클라우드에서 학습된 모델을 버전컨트롤 하고 있으며, 때문에 다음의
+```shell
+git clone https://github.com/wisdomify/wisdomify.git  # 프로젝트 클론
+cd wisdomify # 루트 디렉토리
+virtualenv wisdomifyenv  # 가상환경 생성
+source wisdomifyenv/bin/activate  # 가상환경 활성화
+pip3 install -r requirements.txt  # 의존 라이브러리 설치
+python3 main_infer.py --model=rd_alpha --ver=b --desc="까불지말고 침착하여라"  # Wisdomify! 
 ```
 ```text
 ### desc: 까불지말고 침착하여라 ###
@@ -75,12 +45,10 @@ python3 -m wisdomify.main.infer --ver="0" --desc="까불지말고 침착하여�
 
 
 ## Related Work
-- 기반이 되는 모델은 사전훈련된 **BERT** (Devlin et al., 2018)
-- 정확히는 한국어 구어체를 사전학습한 **KcBERT**를 사용함 (Junbum, 2020)
-- 사전훈련된 KcBERT를 **reverse-dictionary** task에 맞게 fine-tune함 (Yan et al., 2020)
+기반이 되는 모델은 사전훈련된 **BERT** (Devlin et al., 2018)입니다. 사전학습된 모델로는 한국어 구어체를 사전학습한 **KcBERT**를(Junbum, 2020) 사용하고 있으며, 해당 모델을 **reverse-dictionary** task에 맞게 미세조정(Yan et al., 2020)을 진행하는 것이 목표입니다. 
 
 
-How did I end up with Wisdomify?:
+## How did we end up with Wisdomify?
 1. Word2Vec: `King = Queen - woman`, 이런게 된다는게 너무 재미있고 신기하다. 이걸로 게임을 만들어볼 수 있지 않을까? - [Toy 프로젝트: *word-chemist*](https://github.com/eubinecto/word-chemist)
 2. 생각보다 잘 되는데? 그럼 Word2Vec로 reverse-dictionary도 구현할 수 있지 않을까? - [학사 졸업 프로젝트 - Idiomify](https://github.com/eubinecto/idiomify)
 3. Sum of Word2Vectors로 reverse-dictionary를 구현하기에는 분명한 한계가 보인다. 문장의 맥락을 이해하는 Language Model은 없는가? - [논문 리뷰: *Attention is All you Need*](https://www.notion.so/Attention-is-All-you-Need-25bb9df8717940f899c1c6eb2a87aa43)    
@@ -96,9 +64,12 @@ How did I end up with Wisdomify?:
 
 ## Methods
 
-### The loss function
+### The loss function 
+#### `RDAlpha`
 
-앞서 언급한 논문 (Yan et al., 2020)에서 제시한 reverse-dictionary task를 위한 loss:
+
+
+앞서 언급한 논문 (Yan et al., 2020)에서 제시한 reverse-dictionary task를 위한 loss를 사용
 
 [BERT for monolingual reverse-dictionary](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414#fdc245ac3f9b44bfa7fd1a506ae7dde2)|
 --- |
@@ -106,96 +77,10 @@ How did I end up with Wisdomify?:
 <img width="857" alt="image" src="https://user-images.githubusercontent.com/56193069/140656500-4d1508e4-0230-482b-9fa1-8b3d8d5f8219.png"> |
 
 
-### `conf.json`
-The `conf.json` on project directory must have format as following. The value type and meaning are written as value of json.
-
-The hyper parameters for the model must be written below "_experiment version.model"
-
-```json
-"_experiment version": {
-      "_주의사항!": "추후 버전 추가에 따라 파라미터가 추가되면 해당 파라미터를 아래 설명 추가해주세요",
-      "exp_name": "(Str) 해당 실험의 간략한 이름을 적어주세요.",
-      "exp_desc": "(Str) 해당 실험에 대한 정보를 간결하지만 명확하게 적어주세요.",
-      "wandb": {
-        "_주의사항!": "이 곳의 명세는 반드시 W&B 페이지에 접속하여 사용할 아티펙트의 이름, 명세를 정확하게 확인하세요.",
-        "load": {
-          "_주의 (RD)!": "RD 관련 명세는 infer와 eval에만 사용됩니다. Train시 빈칸으로 두어도 무방합니다. (특별한 케이스가 아니면 동일하게 해주세요.)",
-          "rd_name": "(Str) WandB에서 로드할 RD 아티펙트의 이름을 적어주세요.",
-          "rd_ver": "(Str) WandB에서 로드할 RD 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
-          "mlm_name": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 이름을 적어주세요.",
-          "mlm_ver": "(Str) WandB에서 로드할 BERT mlm 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
-          "tokenizer_name": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
-          "tokenizer_ver": "(Str) WandB에서 로드할 BERT tokenizer 아티펙트의 버전을 적어주세요. (default: latest, 아무것도 적지 않으면 됩니다.)",
-          "data_name": "(Str) 해당 모델 트레이닝에 사용된 데이터 이름",
-          "data_version": "(Str) 해당 모델 트레이닝에 사용된 데이터 버전",
-          "data_type": "(Str) 해당 모델 트레이닝에 사용된 데이터의 타입 (definition, example)"
-        },
-        "save": {
-          "_주의 1": "mlm, tokenizer 그리고 rd의 이름은 반드시 'mlm_' / 'tokenizer_' / 'rd_' 로 시작해야합니다.",
-          "_주의 2": "mlm 혹은 tokenizer를 W&B에 저장하지 않을 시, 빈 string으로 이름을 설정하면됩니다.",
-          "rd_name": "(Str) WandB에서 로드할 RD 아티펙트의 이름을 적어주세요.",
-          "rd_desc": "(Str) WandB에서 로드할 RD 아티펙트의 설명을 적어주세요. (default: None)",
-          "mlm_name": "(Str) WandB에 저장할 BERT mlm 아티펙트의 이름을 적어주세요.",
-          "mlm_desc": "(Str) WandB에 저장할 BERT mlm 아티펙트의 설명을 적어주세요. (default: None)",
-          "tokenizer_name": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 이름을 적어주세요.",
-          "tokenizer_desc": "(Str) WandB에 저장할 BERT tokenizer 아티펙트의 설명을 적어주세요. (default: None)"
-        }
-      },
-      "model": {
-        "rd_model": "(Str) 사용할 RD_model 클래스 이름을 적어주세요. (해당 클래스가 작성되어 있지 않으면 NotImplementedError 발생합니다.)",
-        "X_mode": "(Str) 사용할 XBuilder 클래스 이름을 적어주세요. (해당 클래스가 작성되어 있지 않으면 NotImplementedError 발생합니다.)",
-        "y_mode": "(Str) 사용할 YBuilder 클래스 이름을 적어주세요. (해당 클래스가 작성되어 있지 않으면 NotImplementedError 발생합니다.)",
-        "k": "(Int) 최대 길이 설정",
-        "lr": "(Float) learning rate 설정",
-        "max_epochs": "(Int) 최대 에폭값",
-        "batch_size": "(Int) 배치사이즈",
-        "repeat": "(Int) 반복 횟수",
-        "num_workers": "(Int) 워커 개수 (해당 컴퓨터 사양에 맞춰 작성하세요. CPU의 경우 코어 개수이하여야합니다.)",
-        "shuffle": "(Bool) 셔플여부"
-      },
-      "wisdoms": "(List[Str]) - 검색할 속담 리스트"
-    },
-```
-The hyper parameters used for `version_0` is:
-
-```json
-"model": {
-  "rd_model": "RDAlpha",
-  "X_mode": "XBuilder",
-  "y_mode": "YBuilder",
-  "k": 11,
-  "lr": 0.00001,
-  "max_epochs": 40,
-  "batch_size": 30,
-  "num_workers": 0,
-  "shuffle": true
-},
-"wisdoms": [
-  "가는 날이 장날",
-  "갈수록 태산",
-  "꿩 대신 닭",
-  "등잔 밑이 어둡다",
-  "소문난 잔치에 먹을 것 없다",
-  "핑계 없는 무덤 없다",
-  "고래 싸움에 새우 등 터진다",
-  "서당개 삼 년이면 풍월을 읊는다",
-  "원숭이도 나무에서 떨어진다",
-  "산 넘어 산"
-]
-```
-
 ### Training
 
-```text
-python3 -m wisdomify.main.train --ver="0"
-```
-- 훈련셋에서 로스가 0에 수렴할 때 까지 훈련을 진행함. 가능한 빠른 시일 내에 프로토타입을 만들어보는것이 목표였으므로, 일단 validation/test set 구축을 스킵,
-오버피팅이 되더라도 훈련 셋에만 핏을 함.
-- 사이즈가 상당히 크므로, 나중에 knowledge distilation (Hinton, 2015)으로 경량화하는 것도 고려해봐야할 것.
 
-### Dataset
-- 10개의 속담 별로 5개의 서로다른 정의를 구글링으로 손수 수집. 사이즈가 작으므로 그냥 repo에 업로드 함: [wisdom2def](https://github.com/eubinecto/wisdomify/blob/main/data/wisdom2def.tsv)
-- 추후 데이터를 더 수집하게 되면 kaggle이나 dropbox에 업로드 해서 접근하는 편이 나을 것.
+
 
 ### Evaluation
 
@@ -394,13 +279,19 @@ python3 -m wisdomify.main.eval --ver="0"
 9: ('서당개 삼 년이면 풍월을 읊는다', 4.33282611178587e-11)
 ```
 
-## Future Work
-- wisdomify task에 적합한 BERT 모델 선정하기 https://github.com/eubinecto/wisdomify/issues/1#issue-930238726
-- 10개의 속담에서 현용되는 모든 우리말 속담으로 search space를 확장하기 https://github.com/eubinecto/wisdomify/issues/7#issue-931145700
-- 우리말 속담의 용례를 각 속담 별로 적어도 30개는 수집하기  https://github.com/eubinecto/wisdomify/issues/4#issue-930691961
-- 우리말 속담 용례 말뭉치로 domain adoption 진행하기 (Gururangan et al., 2020)
-- feature engineering: `[ClS]`의 hidden representation에 sentiment classifier를 달아서 로스함수에 활용하기
-- 모델의 접근성을 높이기 위해 웹에 모델을 deploy하기. back-end로는 django (유빈), front-end로는 vue.js (종윤)를 사용하자
+
+## Milestones
+1. 빈도수 TOP 10 한국어 → 한국어 속담 검색
+2. 빈도수 TOP 100 한국어 → 한국어 속담 검색
+3. 빈도수 TOP 100 한국어 → 영어 속담 검색 (한국어 속담 - 영어 속담 병렬 말뭉치 활용)
+4. 빈도수 TOP 100 한국어 → 한국어 & 영어 동시 검색 (병렬 말뭉치로 bilingual BERT 개발)
+5. 모델링 & 데이터 수집을 통해, Test/Top 3 Accuracy를 90%까지 끌어올리기
+6. 그 과정 속에서, 다음의 가설 3개를 검증하기 (가설은 Applied Lingusitics의 Literature Review를 기반으로 세움)
+    1. BERT또한 사람처럼 속담을 이해하기 위해 말 그대로의 의미와 비유적인 의미를 전부 고려해야할 것이다. 어떻게? - `S_wisdom = S_wisdom_literal` 의 성능과 `S_wisdom = S_wisdom_literal + S_wisdom_figurative`의 성능을 비교.
+    2. BERT또한 사람처럼 속담을 이해하기 위해 말 그대로의 의미로부터 비유적인 의미를 도출해야할 것이다. 어떻게? - `loss = cross_entropy(S_wisdom, y)` 의 성능과 `loss = cross_entropy(S_wisdom, y) + KLDivergence(S_wisdom_figurative, S_wisdom_literal)`의 성능을 비교
+    3. BERT또한 제 2외국어 학습자처럼 외국어 속담과 모국어 속담을 동시에 학습할 때 속담을 더 깊게 이해할 것이다. 어떻게? - 4번 모델을  2번, 3번 모델과 비교.
+7. 그리고, 마지막으로는 어휘학습을 위해서 Wisdomify를 어떻게 효과적으로 활용할 수 있는지, 그 가치를 제안하고, 시험을 바탕으로 입증하고 비판적 분석하기. (e.g. 설단현상 문제 (아.... 이거 단어가 뭐였더라?)의 효과적인 해결책!)
+8. 6번과 7번의 결론을 정리해서 석사 disseration을 쓰고, 자연어처리 & SLA 학회에 동시 제출
 
 ## References
 - Devlin,  J. Cheng, M. Lee, K. Toutanova, K. (2018). *: Pre-training of Deep Bidirectional Transformers for Language Understanding*. 
@@ -408,3 +299,15 @@ python3 -m wisdomify.main.eval --ver="0"
 - Hinton, G. Vinyals, O. Dean, J. (2015). *Distilling the Knowledge in a Neural Network*
 - Junbum, L. (2020). *KcBERT: Korean Comments BERT*
 - Yan, H. Li, X. Qiu, X. Deng, B. (2020). *BERT for Monolingual and Cross-Lingual Reverse Dictionary*
+
+
+## Contributors
+contributor | roles | what have I done?
+--- | --- | --- 
+김유빈 | ... | [MVP 구현하기](https://github.com/wisdomify/wisdomify/issues/2) / [Collab 데모 구현하기](https://github.com/wisdomify/wisdomify/issues/12) / [테스트 지표 정의 및 구현하기](https://github.com/wisdomify/wisdomify/issues/16) / [리팩토링: `Wisdomifier` 구현하기](https://github.com/wisdomify/wisdomify/issues/39) / [리팩토링 및 `RDBeta`        구현](https://github.com/wisdomify/wisdomify/issues/68)
+김민성 | ... | ...
+김종윤 | ... | ...
+오수지 | ... | ...
+임용택 | ... | ...
+최유라 | ... | ...
+

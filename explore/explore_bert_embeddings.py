@@ -1,5 +1,3 @@
-from wisdomify.loaders import load_config, load_device
-from wisdomify.builders import WisKeysBuilder
 from transformers import BertTokenizer, BertModel
 import torch
 
@@ -20,20 +18,10 @@ def main():
     # https://huggingface.co/transformers/_modules/transformers/modeling_bert.html
     word_embeddings: torch.nn.Embedding = bert.embeddings.word_embeddings  # "token embeddings"
     token_type_embeddings: torch.nn.Embedding = bert.embeddings.token_type_embeddings  # "segment embeddings"
-    position_embeddings: torch.nn.Embedding = bert.embeddings.position_embeddings # "posiiton embeddings"
+    position_embeddings: torch.nn.Embedding = bert.embeddings.position_embeddings  # "posiiton embeddings"
     print(word_embeddings.weight.shape)  # (?=V, ?=768)
     print(token_type_embeddings.weight.shape)  # (?=2, 768)
     print(position_embeddings.weight.shape)  # (?=L, 768)
-
-
-
-
-
-
-
-
-
-
 
     lefts = [left for left, _ in BATCH]
     rights = [right for _, right in BATCH]
@@ -57,4 +45,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

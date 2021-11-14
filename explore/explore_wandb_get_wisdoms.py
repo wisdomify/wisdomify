@@ -1,6 +1,6 @@
 import wandb
 import os
-from wisdomify.paths import ROOT_DIR, ARTIFACTS_DIR
+from wisdomify.constants import ROOT_DIR, ARTIFACTS_DIR
 import types
 
 
