@@ -1,3 +1,4 @@
+import argparse
 import json
 
 import requests as requests
@@ -27,8 +28,22 @@ class WisdomifyView(FlaskView):
     """
     sents -> wisdoms
     """
-    model = 'rd_beta'
-    ver = 'a'
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ver", type=str,
+                        default='a',
+                        required=True,
+                        help="This parameter is used for wisdomifyAPI deployment."
+                             "The parameter should be the model version described on WandB.")
+    parser.add_argument("--model", type=str,
+                        default='rd_beta',
+                        required=True,
+                        help="This parameter is used for wisdomifyAPI deployment."
+                             "The parameter should be the model name described on WandB.")
+
+    args = parser.parse_args()
+    ver = args.ver
+    model = args.model
+
     config = load_config()[model][ver]
     device = load_device(False)
     with connect_to_wandb(job_type="infer", config=config) as run:
@@ -78,9 +93,9 @@ class StorytellView(FlaskView):
         size = 10000
 
         res = self.es.search(index=index_name,
-                        query=query,
-                        highlight=highlight,
-                        size=size)
+                             query=query,
+                             highlight=highlight,
+                             size=size)
 
         parsed = [
             f"index: {hit['_index']}, highlight:{hit['highlight']['sents'][0]}"
