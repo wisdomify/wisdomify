@@ -10,4 +10,4 @@ RUN pip install -r requirements.txt
 
 # Deploy
 EXPOSE 8080
-CMD ["python3", "-m", "wisdomify.main_deploy"]
+CMD ["python3", "main_deploy.py"]
