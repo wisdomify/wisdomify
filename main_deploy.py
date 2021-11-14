@@ -2,7 +2,7 @@ import argparse
 
 from flask import Flask
 
-from wisdomify.apis import WisdomifyView, StorytellerView
+from wisdomify.apis import WisdomifyView, StorytellView
 
 app = Flask(__name__)
 
@@ -22,7 +22,8 @@ def check_params():
 
 
 if __name__ == '__main__':
-    # check_params()
-    StorytellerView.register(app)
+    check_params()
+
+    StorytellView.register(app)
     WisdomifyView.register(app)
     app.run(host='0.0.0.0', port=8080, debug=True, threaded=False)
