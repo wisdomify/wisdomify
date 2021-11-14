@@ -1,75 +1,61 @@
 import json
-import os
-from functools import reduce
 
 import requests as requests
 from elasticsearch import Elasticsearch
-from flask import jsonify
-from transformers import BertTokenizerFast, AutoModelForMaskedLM
+from flask import jsonify, request
+from flask_classful import FlaskView
 
+from wisdomify import flows
+from wisdomify.connectors import connect_to_wandb
 from wisdomify.constants import (
     ES_USERNAME,
     ES_PASSWORD,
-    ES_CLOUD_ID, ROOT_DIR,
+    ES_CLOUD_ID,
 )
 from wisdomify.docs import Story
 from wisdomify.loaders import load_config, load_device
-from wisdomify.models import RDBeta, RD
-from wisdomify.tensors import WiskeysBuilder, Wisdom2SubwordsBuilder, Wisdom2EgInputsBuilder
+from wisdomify.wisdomifier import Wisdomifier
 
 
 def get_wisdom():
     byte_json = requests.get(
         'https://api.wandb.ai/artifactsV2/gcp-us/wisdomify/QXJ0aWZhY3Q6MzcwMjQ4MTQ=/2b3ca62907826459a957675957540776')
-    return list(reduce(lambda i, j: i + j, json.loads(byte_json.content)['data']))
+    return json.loads(byte_json.content)['data']
 
 
-class WisdomifierAPI:
-    def __init__(self):
-        self.config = load_config()['rd_beta']['a']
-        self.device = load_device(False)
-        self.wisdoms = get_wisdom()
+class WisdomifyView(FlaskView):
+    """
+    sents -> wisdoms
+    """
+    model = 'rd_beta'
+    ver = 'a'
+    config = load_config()[model][ver]
+    device = load_device(False)
+    with connect_to_wandb(job_type="infer", config=config) as run:
+        # --- init a wisdomifier --- #
+        flow = flows.ExperimentFlow(run, model, ver, device)("d", config)
+    # --- wisdomifier is independent of wandb run  --- #
+    wisdomifier = Wisdomifier(flow.rd_flow.rd, flow.datamodule)
 
-        self.tok_dir = os.path.join(ROOT_DIR, 'resource', 'tokenizer')
-        self.rd_ckpt_path = os.path.join(ROOT_DIR, 'resource', 'rd.ckpt')
+    def index(self):
+        form = request.json
+        sent = form['sent']
 
-        self.bert_mlm = AutoModelForMaskedLM.from_pretrained(self.config['bert'])
-        self.tokenizer = BertTokenizerFast.from_pretrained(self.tok_dir)  # path
+        results = self.wisdomifier(sents=[sent])
 
-        self.bert_mlm.resize_token_embeddings(len(self.tokenizer))
-        self.wiskeys = WiskeysBuilder(self.tokenizer, self.device)(self.wisdoms)
-        self.wisdom2subwords = Wisdom2SubwordsBuilder(self.tokenizer, self.config['k'], self.device)(self.wisdoms)
-        self.rd = RDBeta.load_from_checkpoint(self.rd_ckpt_path,  # path
-                                              bert_mlm=self.bert_mlm,
-                                              wisdom2subwords=self.wisdom2subwords,
-                                              wiskeys=self.wiskeys,
-                                              device=self.device)
-
-        self.inputs_builder = Wisdom2EgInputsBuilder(self.tokenizer, self.config['k'], self.device)
-
-    def infer(self, sent):
-        sents = [sent]
-        wisdom2sent = [("", sent) for sent in sents]
-        X = self.inputs_builder(wisdom2sent)
-
-        P_wisdom = self.rd.P_wisdom(X)
-        results = list()
-        for S_word_prob in P_wisdom.tolist():
-            wisdom2prob = [
-                (wisdom, prob)
-                for wisdom, prob in zip(self.wisdoms, S_word_prob)
-            ]
-            # sort and append
-            results.append(sorted(wisdom2prob, key=lambda x: x[1], reverse=True))
-
-        return results
+        return jsonify(results)
 
 
-class StorytellerAPI:
-    def __init__(self):
-        self.es = Elasticsearch(ES_CLOUD_ID, http_auth=(ES_USERNAME, ES_PASSWORD))
+class StorytellView(FlaskView):
+    """
+    wisdoms -> examples & definitions
+    """
+    es = Elasticsearch(ES_CLOUD_ID, http_auth=(ES_USERNAME, ES_PASSWORD))
 
-    def infer(self, wisdom):
+    def index(self):
+        form = request.json
+        wisdom = form['wisdom']
+
         query = {
             'match_phrase': {
                 'sents': {
@@ -92,9 +78,9 @@ class StorytellerAPI:
         size = 10000
 
         res = self.es.search(index=index_name,
-                             query=query,
-                             highlight=highlight,
-                             size=size)
+                        query=query,
+                        highlight=highlight,
+                        size=size)
 
         parsed = [
             f"index: {hit['_index']}, highlight:{hit['highlight']['sents'][0]}"
