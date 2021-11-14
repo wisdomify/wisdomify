@@ -18,32 +18,6 @@ Wisdomify는 우리말 속담 역사전(Reverse-Dictionary of Korean Proverbs)�
 라는 가치 제안을 하고자 합니다.
 
 
-## Quick Start
-
-Weights & Biases 클라우드에서 학습된 모델을 버전컨트롤 하고 있으며, 때문에 다음의
-```shell
-git clone https://github.com/wisdomify/wisdomify.git  # 프로젝트 클론
-cd wisdomify # 루트 디렉토리
-virtualenv wisdomifyenv  # 가상환경 생성
-source wisdomifyenv/bin/activate  # 가상환경 활성화
-pip3 install -r requirements.txt  # 의존 라이브러리 설치
-python3 main_infer.py --model=rd_alpha --ver=b --desc="까불지말고 침착하여라"  # Wisdomify! 
-```
-```text
-### desc: 까불지말고 침착하여라 ###
-0: (원숭이도 나무에서 떨어진다, 0.3917)
-1: (산넘어 산, 0.2828)
-2: (등잔 밑이 어둡다, 0.2192)
-3: (가는 날이 장날, 0.0351)
-4: (고래 싸움에 새우 등 터진다, 0.0264)
-5: (꿩 대신 닭, 0.0241)
-6: (갈수록 태산, 0.0197)
-7: (핑계 없는 무덤 없다, 0.0009)
-8: (서당개 삼 년이면 풍월을 읊는다, 0.0001)
-9: (소문난 잔치에 먹을 것 없다, 0.0000)
-```
-
-
 ## Related Work
 기반이 되는 모델은 사전훈련된 **BERT** (Devlin et al., 2018)입니다. 사전학습된 모델로는 한국어 구어체를 사전학습한 **KcBERT**를(Junbum, 2020) 사용하고 있으며, 해당 모델을 **reverse-dictionary** task에 맞게 미세조정(Yan et al., 2020)을 진행하는 것이 목표입니다. 
 
@@ -62,35 +36,19 @@ python3 main_infer.py --model=rd_alpha --ver=b --desc="까불지말고 침착하
      찾는 것 - Wisdomify: 자기주도적으로 우리말 속담을 학습하는 것을 도와주는 reverse-dictionary.
      
 
-## Methods
+## Models
 
-### The loss function 
-#### `RDAlpha`
-
-
-
-앞서 언급한 논문 (Yan et al., 2020)에서 제시한 reverse-dictionary task를 위한 loss를 사용
-
-[BERT for monolingual reverse-dictionary](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414#fdc245ac3f9b44bfa7fd1a506ae7dde2)|
---- |
-<img width="849" alt="image" src="https://user-images.githubusercontent.com/56193069/140656471-10a555a5-56b9-4117-b26d-ab2b25d142b6.png"> |
-<img width="857" alt="image" src="https://user-images.githubusercontent.com/56193069/140656500-4d1508e4-0230-482b-9fa1-8b3d8d5f8219.png"> |
+모델 | 설명 | Train & Validation / Top 1 Accuracy over steps | 테스트
+--- | --- | --- | --- 
+`RDAlpha:a` |  앞서 언급한 논문 (Yan et al., 2020)에서 제시한 [reverse-dictionary task를 위한 loss](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414#fdc245ac3f9b44bfa7fd1a506ae7dde2)를 사용 | <img width="1350" alt="image" src="https://user-images.githubusercontent.com/56193069/141698647-5fdb49fd-9fc5-4554-b24e-0706dddf1f79.png"> <a href="https://wandb.ai/wisdomify/wisdomify/runs/2a9b7ww3?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20> | <img width="1000" alt="image" src="https://user-images.githubusercontent.com/56193069/141698914-eb46e279-dea7-47f0-a82c-2a454782363c.png"> <a href="https://wandb.ai/wisdomify/wisdomify/runs/2f2ulasu/overview?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20>
+ `RDBeta:a` | `RDAlpha`와 같은 로스를 사용, 하지만 구조를 살짝 변경하여 속담을 단일 토큰으로 취급하는 경우도 고려| <img width="1359" alt="image" src="https://user-images.githubusercontent.com/56193069/141698631-68e601a4-976e-4423-9a1e-b058ead1a2a3.png"> <a href="https://wandb.ai/wisdomify/wisdomify/runs/2a9b7ww3?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20> | <img width="1000" alt="image" src="https://user-images.githubusercontent.com/56193069/141698920-48e2885b-6e30-493d-acb3-811eb20d7315.png"> <a href="https://wandb.ai/wisdomify/wisdomify/runs/3rk6ebph/overview?workspace="><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20>
 
 
-### Training
+ 
 
 
-
-
-### Evaluation
-
-```text
-python3 -m wisdomify.main.eval --ver="0"
-```
 
 ## Examples
-
-### Positive examples
 
 - *갈수록 어렵다*
 ```
@@ -121,7 +79,6 @@ python3 -m wisdomify.main.eval --ver="0"
 8: ('꿩 대신 닭', 8.55061716720229e-06)
 9: ('서당개 삼 년이면 풍월을 읊는다', 3.365390739418217e-07)
 ```
-
 
 - *너 때문에 관계없는 내가 피해봤잖아*
 ```
@@ -216,10 +173,9 @@ python3 -m wisdomify.main.eval --ver="0"
 8: ('갈수록 태산', 1.0781625860545319e-05)
 9: ('고래 싸움에 새우 등 터진다', 3.4537756619101856e-06)
 ```
-
-### Negative examples
-
-검색할 수 있는 속담이 모두 부정적인 속담이라서 그런지, 긍정적인 문장이 입력으로 들어오면 제대로 예측을 하지 못한다:
+ 
+검색할 수 있는 속담이 모두 부정적인 속담이라서 그런지, 긍정적인 문장이 입력으로 들어오면 제대로 예측을 하지 못한다.
+ 
 - *결과가 좋아서 기쁘다*
 ```
 0: ('산넘어 산', 0.9329468011856079)
@@ -235,7 +191,7 @@ python3 -m wisdomify.main.eval --ver="0"
 ```
 
 "소문난 잔치에 먹을 것 없다"와 동일한 의미를 지님에도 불구하고, "실제로는 별거 없네"를 입력으로 받으면 "산 넘어 산"이 1등으로 출력. 하지만
-훈련 셋에 포함된 샘플인 "소문과 실제가 일치하지 않는다"를 입력으로 받으면 정확하게 예측함. 즉 모델이 훈련셋에 오버피팅이 된 상태임을 확인할 수 있다:
+훈련 셋에 포함된 샘플인 "소문과 실제가 일치하지 않는다"를 입력으로 받으면 정확하게 예측함. 즉 모델이 훈련셋에 오버피팅이 된 상태임을 확인할 수 있다
 - *실제로는 별거없네* (훈련 셋에 포함되지 않은 정의)
 ```
 ### desc: 실제로는 별거없네 ###
@@ -278,7 +234,6 @@ python3 -m wisdomify.main.eval --ver="0"
 8: ('고래 싸움에 새우 등 터진다', 3.0059517541758396e-08)
 9: ('서당개 삼 년이면 풍월을 읊는다', 4.33282611178587e-11)
 ```
-
 
 ## Milestones
 1. 빈도수 TOP 10 한국어 → 한국어 속담 검색
