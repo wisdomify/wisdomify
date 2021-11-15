@@ -38,13 +38,11 @@ Wisdomify는 우리말 속담 역사전(Reverse-Dictionary of Korean Proverbs)�
 
 ## Models
 
-모델 | 설명 | Train & Validation / Top 1 Accuracy over steps | 테스트
+모델 | 설명 | 학습 지표 | 테스트 지표
 --- | --- | --- | --- 
-`RDAlpha:a` |  앞서 언급한 논문 (Yan et al., 2020)에서 제시한 [reverse-dictionary task를 위한 loss](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414#fdc245ac3f9b44bfa7fd1a506ae7dde2)를 사용 | <img width="1350" alt="image" src="https://user-images.githubusercontent.com/56193069/141698647-5fdb49fd-9fc5-4554-b24e-0706dddf1f79.png"> <a href="https://wandb.ai/wisdomify/wisdomify/runs/2a9b7ww3?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20> | <img width="1000" alt="image" src="https://user-images.githubusercontent.com/56193069/141698914-eb46e279-dea7-47f0-a82c-2a454782363c.png"> <a href="https://wandb.ai/wisdomify/wisdomify/runs/2f2ulasu/overview?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20>
- `RDBeta:a` | `RDAlpha`와 같은 로스를 사용, 하지만 구조를 살짝 변경하여 속담을 단일 토큰으로 취급하는 경우도 고려| <img width="1359" alt="image" src="https://user-images.githubusercontent.com/56193069/141698631-68e601a4-976e-4423-9a1e-b058ead1a2a3.png"> <a href="https://wandb.ai/wisdomify/wisdomify/runs/2a9b7ww3?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20> | <img width="1000" alt="image" src="https://user-images.githubusercontent.com/56193069/141698920-48e2885b-6e30-493d-acb3-811eb20d7315.png"> <a href="https://wandb.ai/wisdomify/wisdomify/runs/3rk6ebph/overview?workspace="><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20>
+`RDAlpha:a` |  앞서 언급한 논문 (Yan et al., 2020)에서 제시한 [reverse-dictionary task를 위한 loss](https://www.notion.so/BERT-for-Monolingual-and-Cross-Lingual-Reverse-Dictionary-29f901d082594db2bd96c54754e39414#fdc245ac3f9b44bfa7fd1a506ae7dde2)를 사용 | <a href="https://wandb.ai/wisdomify/wisdomify/runs/2a9b7ww3?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20> | <a href="https://wandb.ai/wisdomify/wisdomify/runs/2f2ulasu/overview?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20>
+ `RDBeta:a` | `RDAlpha`와 같은 로스를 사용, 하지만 구조를 살짝 변경하여 속담을 단일 토큰으로 취급하는 경우도 고려|<a href="https://wandb.ai/wisdomify/wisdomify/runs/2a9b7ww3?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20> | <a href="https://wandb.ai/wisdomify/wisdomify/runs/3rk6ebph/overview?workspace="><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20>
 
-
- 
 
 
 
