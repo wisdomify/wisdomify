@@ -45,8 +45,9 @@ class WisdomifyView(FlaskView):
     def index(self):
         form = request.args
         sent = form['sent']
+        size = int(form['size']) if 'size' in form.keys() else 10
 
-        results = self.wisdomifier(sents=[sent])[0]
+        results = self.wisdomifier(sents=[sent])[0][:size]
         response = jsonify(
             list(zip(*sorted(results, key=lambda k: k[1], reverse=True)))
         )
