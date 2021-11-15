@@ -276,7 +276,6 @@ class WisdomsFlow(DatasetFlow):
         else:
             raise ValueError
         self.raw_df = pd.read_csv(io.StringIO(text), delimiter="\t")
-        pass
 
     def preprocess(self):
         # we do not preprocess wisdoms
