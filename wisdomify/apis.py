@@ -1,4 +1,5 @@
 import argparse
+import re
 
 from flask import jsonify, request
 from flask_classful import FlaskView
@@ -74,7 +75,7 @@ class StorytellView(FlaskView):
             return jsonify([
                 {
                     "index": hit['_index'],
-                    "highlight": hit['highlight']['sents'][0]
+                    "highlight": re.sub('[<em></em>]', '', hit['highlight']['sents'][0])
                 }
                 for hit in res['hits']['hits']
             ])
