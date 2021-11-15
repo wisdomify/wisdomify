@@ -244,7 +244,7 @@ Wisdomify는 우리말 속담 역사전(Reverse-Dictionary of Korean Proverbs)�
     2. BERT또한 사람처럼 속담을 이해하기 위해 말 그대로의 의미로부터 비유적인 의미를 도출해야할 것이다. 어떻게? - `loss = cross_entropy(S_wisdom, y)` 의 성능과 `loss = cross_entropy(S_wisdom, y) + KLDivergence(S_wisdom_figurative, S_wisdom_literal)`의 성능을 비교
     3. BERT또한 제 2외국어 학습자처럼 외국어 속담과 모국어 속담을 동시에 학습할 때 속담을 더 깊게 이해할 것이다. 어떻게? - 4번 모델을  2번, 3번 모델과 비교.
 7. 그리고, 마지막으로는 어휘학습을 위해서 Wisdomify를 어떻게 효과적으로 활용할 수 있는지, 그 가치를 제안하고, 시험을 바탕으로 입증하고 비판적 분석하기. (e.g. 설단현상 문제 (아.... 이거 단어가 뭐였더라?)의 효과적인 해결책!)
-8. 6번과 7번의 결론을 정리해서 석사 disseration을 쓰고, 자연어처리 & SLA 학회에 동시 제출
+8. 6번과 7번의 결론을 정리해서 석사 disseration을 쓰고, 자연어처리 & SLA 학회에 동시 제출 (프로젝트 참여자 = 공동저자)
 
 ## References
 - Devlin,  J. Cheng, M. Lee, K. Toutanova, K. (2018). *: Pre-training of Deep Bidirectional Transformers for Language Understanding*. 
