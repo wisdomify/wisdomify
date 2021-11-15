@@ -1,16 +1,12 @@
 import argparse
 
-from elasticsearch import Elasticsearch
 from flask import jsonify, request
 from flask_classful import FlaskView
+from flask_cors import cross_origin
 
 from wisdomify import flows
 from wisdomify.connectors import connect_to_wandb, connect_to_es
-from wisdomify.constants import (
-    ES_USERNAME,
-    ES_PASSWORD,
-    ES_CLOUD_ID,
-)
+
 from wisdomify.docs import Story
 from wisdomify.flows import SearchFlow
 from wisdomify.loaders import load_config, load_device
@@ -45,13 +41,18 @@ class WisdomifyView(FlaskView):
     # --- wisdomifier is independent of wandb run  --- #
     wisdomifier = Wisdomifier(flow.rd_flow.rd, flow.datamodule)
 
+    @cross_origin(origin='*')
     def index(self):
-        form = request.json
+        form = request.args
         sent = form['sent']
+        size = int(form['size']) if 'size' in form.keys() else 10
 
-        results = self.wisdomifier(sents=[sent])
+        results = self.wisdomifier(sents=[sent])[0][:size]
+        response = jsonify(
+            list(zip(*sorted(results, key=lambda k: k[1], reverse=True)))
+        )
 
-        return jsonify(results)
+        return response
 
 
 class StorytellView(FlaskView):
@@ -59,23 +60,24 @@ class StorytellView(FlaskView):
     wisdoms -> examples & definitions
     """
     es = connect_to_es()
-
     index_name = ",".join(name for name in Story.all_names())
-    size = 10000
+    size = 5
 
     def index(self):
-        form = request.json
+        form = request.args
         wisdom = form['wisdom']
 
         flow = SearchFlow(self.es, self.index_name, self.size)(wisdom)
         res = flow.res
 
-        parsed = [
-            f"index: {hit['_index']}, highlight:{hit['highlight']['sents'][0]}"
-            for hit in res['hits']['hits']
-        ]
+        if res:
+            return jsonify([
+                {
+                    "index": hit['_index'],
+                    "highlight": hit['highlight']['sents'][0]
+                }
+                for hit in res['hits']['hits']
+            ])
 
-        if parsed:
-            return jsonify(parsed)
         else:
-            return f"No data for '{wisdom}'", 404
+            return jsonify(f"No data for '{wisdom}'"), 404
