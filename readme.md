@@ -1,5 +1,8 @@
 # Wisdomify - A BERT-based reverse-dictionary of Korean proverbs
-<a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://ainize.ai/images/run_on_ainize_button.svg" height="20.2"/></a> ![](https://github.com/eubinecto/wisdomify/workflows/pytest/badge.svg) <a href="https://wandb.ai/wisdomify/wisdomify?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20></a> [![Total alerts](https://img.shields.io/lgtm/alerts/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/alerts/) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/context:python)
+![](https://github.com/eubinecto/wisdomify/workflows/pytest/badge.svg) <a href="https://wandb.ai/wisdomify/wisdomify?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20></a> [![Total alerts](https://img.shields.io/lgtm/alerts/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/alerts/) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/context:python)
+
+<a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://ainize.ai/images/run_on_ainize_button.svg" height="27"/></a>
+<a href="http://main-wisdomify-wisdomify.endpoint.ainize.ai/apidocs/"><img src="https://camo.githubusercontent.com/b4f029ddb4096e772880f724ea18c705c71e915da0c42cb7bad2ed3f6ae55030/687474703a2f2f6a657373656d696c6c61722e6769746875622e696f2f766965772d696e2d737761676765722d627574746f6e2f627574746f6e2e737667" height="27"></a>
 
 
 
