@@ -9,7 +9,7 @@ from wisdomify import flows
 from wisdomify.connectors import connect_to_wandb, connect_to_es
 
 from wisdomify.docs import Story
-from wisdomify.flows import SearchFlow
+from wisdomify.flows import SearchFlow, Wisdom2DefFlow
 from wisdomify.loaders import load_config, load_device
 from wisdomify.wisdomifier import Wisdomifier
 
@@ -64,7 +64,12 @@ class StorytellView(FlaskView):
     index_name = ",".join(name for name in Story.all_names())
     size = 5
 
-    def index(self):
+    config = {'data': 'wisdoms', 'ver': 'a', 'val_ratio': None, 'seed': 410, 'upload': False}
+    run = connect_to_wandb(job_type="download", config=config)
+    wisdom2DefFlow = Wisdom2DefFlow(run, config['ver'])
+    wisdom2DefFlow.download_raw_df()
+
+    def egs(self):
         form = request.args
         wisdom = form['wisdom']
 
@@ -82,3 +87,18 @@ class StorytellView(FlaskView):
 
         else:
             return jsonify(f"No data for '{wisdom}'"), 404
+
+    def defs(self):
+        form = request.args
+        wisdom = form['wisdom']
+
+        defs = self.wisdom2DefFlow.raw_df\
+            .loc[self.wisdom2DefFlow.raw_df['wisdom'] == wisdom]['def']\
+            .to_list()
+
+        if defs:
+            return jsonify(defs)
+
+        else:
+            return jsonify(f"No data for '{wisdom}'"), 404
+
