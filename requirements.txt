@@ -18,3 +18,4 @@ Flask-Classful~=0.14.2
 Flask-Cors~=3.0.10
 more-itertools~=8.11.0
 soynlp~=0.0.493
+flasgger~=0.9.5
