@@ -1,14 +1,9 @@
 # Wisdomify - A BERT-based reverse-dictionary of Korean proverbs
 ![](https://github.com/eubinecto/wisdomify/workflows/pytest/badge.svg) <a href="https://wandb.ai/wisdomify/wisdomify?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20></a> [![Total alerts](https://img.shields.io/lgtm/alerts/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/alerts/) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/context:python)
 
-<!-- <a href="http://main-wisdomify-wisdomify.endpoint.ainize.ai/apidocs/"><img src="https://camo.githubusercontent.com/b4f029ddb4096e772880f724ea18c705c71e915da0c42cb7bad2ed3f6ae55030/687474703a2f2f6a657373656d696c6c61722e6769746875622e696f2f766965772d696e2d737761676765722d627574746f6e2f627574746f6e2e737667" height="27"></a>
-<a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://ainize.ai/images/run_on_ainize_button.svg" height="27"/></a> (ver0)
-<a href="https://main-platanus-wisdomify.endpoint.ainize.ai/"><img src="https://ainize.ai/images/run_on_ainize_button.svg" height="27"/></a> (ver1) -->
-
---- | Ver 0 | Ver 1
---- | --- | ---
-API | --- | <a href="http://main-wisdomify-wisdomify.endpoint.ainize.ai/apidocs/"><img src="https://camo.githubusercontent.com/b4f029ddb4096e772880f724ea18c705c71e915da0c42cb7bad2ed3f6ae55030/687474703a2f2f6a657373656d696c6c61722e6769746875622e696f2f766965772d696e2d737761676765722d627574746f6e2f627574746f6e2e737667" height="27"></a>
-APP | <a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://ainize.ai/images/run_on_ainize_button.svg" height="27"/></a> | <a href="https://main-platanus-wisdomify.endpoint.ainize.ai/"><img src="https://ainize.ai/images/run_on_ainize_button.svg" height="27"/></a>
+<a href="http://main-wisdomify-wisdomify.endpoint.ainize.ai/apidocs/"><img src="https://img.shields.io/badge/API-View%20in%20Swagger-green" height="23"></a>
+<a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://img.shields.io/badge/APP%20(v0)-Run%20in%20Ainize-blueviolet" height="23"/></a>
+<a href="https://main-platanus-wisdomify.endpoint.ainize.ai/"><img src="https://img.shields.io/badge/APP%20(v1)-Run%20in%20Ainize-blueviolet" height="23"/></a>
 
 ## What is Wisdomify?
 
