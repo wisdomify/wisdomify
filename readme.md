@@ -1,9 +1,9 @@
 # Wisdomify - A BERT-based reverse-dictionary of Korean proverbs
 ![](https://github.com/eubinecto/wisdomify/workflows/pytest/badge.svg) <a href="https://wandb.ai/wisdomify/wisdomify?workspace=user-eubinecto"><img src="https://raw.githubusercontent.com/wandb/assets/main/wandb-github-badge-28-gray.svg" height=20></a> [![Total alerts](https://img.shields.io/lgtm/alerts/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/alerts/) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/wisdomify/wisdomify.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wisdomify/wisdomify/context:python)
 
-<a href="http://main-wisdomify-wisdomify.endpoint.ainize.ai/apidocs/"><img src="https://img.shields.io/badge/API-▶%EF%B8%8FView%20in%20Swagger-green" height="23"></a>
-<a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://img.shields.io/badge/APP%20(v0)-▶%EF%B8%8FRun%20in%20Ainize-blueviolet" height="23"/></a>
-<a href="https://main-platanus-wisdomify.endpoint.ainize.ai/"><img src="https://img.shields.io/badge/APP%20(v1)-▶%EF%B8%8FRun%20in%20Ainize-blueviolet" height="23"/></a>
+<a href="http://main-wisdomify-wisdomify.endpoint.ainize.ai/apidocs/"><img src="https://img.shields.io/badge/API-▶%EF%B8%8FView%20in%20Swagger-yellowgreen?style=flat-square&logo=Swagger" height="23"></a>
+<a href="https://issue-25-wisdomify-eubinecto.endpoint.ainize.ai/search"><img src="https://img.shields.io/badge/APP%20(v0)-▶%EF%B8%8FRun%20in%20Ainize-blueviolet?style=flat-square" height="23"/></a>
+<a href="https://main-platanus-wisdomify.endpoint.ainize.ai/"><img src="https://img.shields.io/badge/APP%20(v1)-▶%EF%B8%8FRun%20in%20Ainize-blueviolet?style=flat-square" height="23"/></a>
 
 ## What is Wisdomify?
 
