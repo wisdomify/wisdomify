@@ -16,7 +16,7 @@ from more_itertools import chunked
 from tqdm import tqdm
 from transformers import BertTokenizerFast, AutoConfig, AutoModelForMaskedLM, BertForMaskedLM, AutoTokenizer
 from wandb.sdk.wandb_run import Run
-from wisdomify.models import RD, RDAlpha, RDBeta
+from wisdomify.models import RD, RDAlpha, RDBeta, RDBetaAttention
 from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder
 from wisdomify.connectors import connect_to_es
 from wisdomify.constants import WISDOMS_A, WISDOMS_B, WISDOM2QUERY_RAW_A, WISDOM2DEF_RAW_A, WISDOM2DEF_RAW_B, \
@@ -557,6 +557,32 @@ class RDBetaFlow(RDFlow):
         return "rd_beta"
 
 
+class RDBetaFlow(RDFlow):
+
+    def build_rd(self):
+        # add tokens only if you are building it.
+        # if you are downloading a tokenizer from wand Artifact (i.e. mode == d), you don't need to do this
+        # as the tokens would have been already added
+        self.tokenizer.add_tokens(self.wisdoms)
+        self.bert_mlm.resize_token_embeddings(len(self.tokenizer))
+        wiskeys = WiskeysBuilder(self.tokenizer, self.device)(self.wisdoms)
+        self.rd = RDBetaAttention(self.config['k'], self.config['lr'],
+                         self.bert_mlm, self.wisdom2subwords, wiskeys, self.device)
+
+    def load_rd(self):
+        self.bert_mlm.resize_token_embeddings(len(self.tokenizer))
+        wiskeys = WiskeysBuilder(self.tokenizer, self.device)(self.wisdoms)
+        self.rd = RDBetaAttention.load_from_checkpoint(self.rd_ckpt_path,
+                                              bert_mlm=self.bert_mlm,
+                                              wisdom2subwords=self.wisdom2subwords,
+                                              wiskeys=wiskeys,
+                                              device=self.device)
+
+    @property
+    def name(self):
+        return "rd_beta_attn"
+
+
 class RDSomethingFlow(RDFlow):
     """
     TODO: a new rd flow
@@ -622,6 +648,8 @@ class ExperimentFlow(TwoWayFlow):
             self.rd_flow = RDAlphaFlow(self.run, self.ver, self.device)
         elif self.model == "rd_beta":
             self.rd_flow = RDBetaFlow(self.run, self.ver, self.device)
+        elif self.model == "rd_beta_attn":
+            self.rd_flow = RDBetaAttnFlow(self.run, self.ver, self.device)
         else:
             raise ValueError
 
