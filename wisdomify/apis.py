@@ -45,6 +45,7 @@ class WisdomifyView(FlaskView):
     @cross_origin(origin='*')
     def index(self):
         """
+        Wisdomify endpoint returning a list of wisdoms along with scores from prediction.
         ---
         parameters:
           - name: sent
@@ -109,6 +110,7 @@ class StorytellView(FlaskView):
 
     def egs(self):
         """
+        Storyteller endpoint returning a list of dictionary containing index and highlighted sentence from ElasticSearch.
         ---
         parameters:
           - name: wisdom
@@ -172,6 +174,7 @@ class StorytellView(FlaskView):
 
     def defs(self):
         """
+        Storyteller endpoint returning a list of definition of the wisdom.
         ---
         parameters:
           - name: wisdom
