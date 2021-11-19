@@ -16,7 +16,7 @@ from more_itertools import chunked
 from tqdm import tqdm
 from transformers import BertTokenizerFast, AutoConfig, AutoModelForMaskedLM, BertForMaskedLM, AutoTokenizer
 from wandb.sdk.wandb_run import Run
-from wisdomify.models import RD, RDAlpha, RDBeta
+from wisdomify.models import RD, RDAlpha, RDBeta, RDGamma
 from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder
 from wisdomify.connectors import connect_to_es
 from wisdomify.constants import WISDOMS_A, WISDOMS_B, WISDOM2QUERY_RAW_A, WISDOM2DEF_RAW_A, WISDOM2DEF_RAW_B, \
@@ -557,7 +557,7 @@ class RDBetaFlow(RDFlow):
         return "rd_beta"
 
 
-class RDSomethingFlow(RDFlow):
+class RDGammaFlow(RDFlow):
     """
     TODO: a new rd flow
     """
@@ -573,14 +573,18 @@ class RDSomethingFlow(RDFlow):
         get use of these data to build your rd, and save to:
         self.rd <= RDSomething(...)
         """
-        self.rd = ...
+        self.rd = RDGamma(self.config['k'], self.config['lr'],
+                          self.bert_mlm, self.wisdom2subwords, self.device)
 
     def load_rd(self):
-        pass
+        self.rd = RDGamma.load_from_checkpoint(self.rd_ckpt_path,
+                                               bert_mlm=self.bert_mlm,
+                                               wisdom2subwords=self.wisdom2subwords,
+                                               device=self.device)
 
     @property
     def name(self):
-        return "rd_something"
+        return "rd_gamma"
 
 
 # ======= experiment flows ======= #
@@ -622,8 +626,10 @@ class ExperimentFlow(TwoWayFlow):
             self.rd_flow = RDAlphaFlow(self.run, self.ver, self.device)
         elif self.model == "rd_beta":
             self.rd_flow = RDBetaFlow(self.run, self.ver, self.device)
+        elif self.model == "rd_gamma":
+            self.rd_flow = RDGammaFlow(self.run, self.ver, self.device)
         else:
-            raise ValueError
+            raise ValueError(f"Invalid model:{self.model}")
 
     def run_download(self):
         self.rd_flow(mode="d", config=self.config)

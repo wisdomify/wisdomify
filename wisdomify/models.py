@@ -262,7 +262,7 @@ class RDBeta(RD):
         # fully- connected layers
         self.cls_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
         self.wisdom_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
-        self.example_fc = FCLayer(self.hidden_size, self.hidden_size//3, self.dr_rate)
+        self.desc_fc = FCLayer(self.hidden_size, self.hidden_size // 3, self.dr_rate)
         self.final_fc = FCLayer(self.hidden_size, self.hidden_size, self.dr_rate, False)
 
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
@@ -279,21 +279,59 @@ class RDBeta(RD):
         
         H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
         H_wisdom = torch.mean(self.H_k(H_all), dim=1)  # (N, L, H) -> (N, K, H) -> (N, H)
-        H_eg = torch.mean(self.H_desc(H_all), dim=1)  # (N, L, H) -> (N, L - (K + 3), H) -> (N, H)
+        H_desc = torch.mean(self.H_desc(H_all), dim=1)  # (N, L, H) -> (N, L - (K + 3), H) -> (N, H)
         
         # Dropout -> tanh -> fc_layer
         H_cls = self.cls_fc(H_cls)  # (N, H) -> (N, H//3)
         H_wisdom = self.wisdom_fc(H_wisdom)  # (N, H) -> (N, H//3)
-        H_eg = self.example_fc(H_eg)  # (N, H) -> (N, H//3)
+        H_desc = self.desc_fc(H_desc)  # (N, H) -> (N, H//3)
         
         # Concat -> fc_layer
-        H_concat = torch.cat([H_cls, H_wisdom, H_eg], dim=-1)  # (N, H//3) X 3 -> (N, H)
+        H_concat = torch.cat([H_cls, H_wisdom, H_desc], dim=-1)  # (N, H//3) X 3 -> (N, H)
         H_final = self.final_fc(H_concat)  # (N, H) -> (N, H)
         S_wisdom_figurative = torch.einsum("nh,hw->nw", H_final, W_embed.T)  # (N, H) * (H, |W|)-> (N, |W|)
         return S_wisdom_figurative
-    
+
 
 class RDGamma(RD):
+    """
+    S_wisdom  = S_wisdom_literal + S_wisdom_figurative
+    but the way we get S_wisdom_figurative is much simplified, compared with RDBeta.
+    """
+    def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor,
+                 device: torch.device):
+        super().__init__(k, lr, bert_mlm, wisdom2subwords, device)
+        # (N, K, H) -> (N, H)
+        # a linear pooler
+        self.pooler = torch.nn.Linear(self.hparams['k'], 1)  # (K, 1)
+
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
+        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
+        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
+        return S_wisdom
+
+    def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
+        # --- draw the embeddings for wisdoms from  the embeddings of wisdom2subwords -- #
+        # this is to use as less of newly initialised weights as possible
+        wisdom2subwords_embeddings_ = self.bert_mlm.bert\
+            .embeddings.word_embeddings(self.wisdom2subwords)  # (W, K)  -> (W, K, H)
+        wisdom2subwords_embeddings = torch.einsum('wkh->whk', wisdom2subwords_embeddings_)  # (W, K, H) -> (W, H, K)
+        wisdom_embeddings_ = self.pooler(wisdom2subwords_embeddings)  # (W, H, K) * (K, 1) -> (W, H, 1)
+        wisdom_embeddings = wisdom_embeddings_.squeeze()  # (W, H)
+
+        # --- draw H_wisdom from H_desc with attention --- #
+        H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
+        H_desc = self.H_desc(H_all)  # (N, L, H) -> (N, K, H)
+        sims = torch.einsum("nh,nkh->nk", H_cls, H_desc)  # (N, H) * (N, K, H) -> (N, K)  (reduce over H)
+        attentions = torch.softmax(sims, dim=1)  # (N, K) - normalise -> (N, K)
+        H_wisdom = torch.einsum("nk,nkh->nh", attentions, H_desc)  # (N, K) * (N, K, H) -> (N, H) (reduce over K)
+
+        # --- now compare H_wisdom with all the wisdoms --- #
+        S_wisdom_figurative = torch.einsum("nh,wh->nw", H_wisdom, wisdom_embeddings)  # (N, H) * (W, H) -> (N, W)
+        return S_wisdom_figurative
+
+
+class RDDelta(RD):
     """
     The third prototype.
     S_wisdom = S_wisdom_literal + S_wisdom_figurative
