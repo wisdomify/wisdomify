@@ -46,7 +46,7 @@ class RD(pl.LightningModule):
         # -- the only neural network we need -- #
         self.bert_mlm = bert_mlm
         # -- to be used to compute S_wisdom -- #
-        self.wisdom2subwords = wisdom2subwords  # (|W|, K)
+        self.register_buffer("wisdom2subwords", wisdom2subwords)  # (|W|, K)
         # --- to be used for getting H_k --- #
         self.wisdom_mask: Optional[torch.Tensor] = None  # (N, L)
         # --- to be used for getting H_desc --- #
@@ -56,8 +56,6 @@ class RD(pl.LightningModule):
         self.metric_train = RDMetric()
         self.metric_val = RDMetric()
         self.metric_test = RDMetric()
-        # --- load the model to device --- #
-        self.to(device)  # always make sure to do this.
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:
         """
@@ -256,7 +254,7 @@ class RDBeta(RD):
     def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM,
                  wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor, device: torch.device):
         super().__init__(k, lr, bert_mlm, wisdom2subwords, device)
-        self.wiskeys = wiskeys   # (|W|,)
+        self.register_buffer("wiskeys", wiskeys)   # (|W|,)
         self.hidden_size = bert_mlm.config.hidden_size
         self.dr_rate = 0.0
         # fully- connected layers

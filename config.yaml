@@ -10,7 +10,7 @@ rd_alpha:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 40
+    max_epochs: 50
     batch_size: 30
     num_workers: 4
     shuffle: true
@@ -27,7 +27,7 @@ rd_alpha:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 40
+    max_epochs: 50
     batch_size: 30
     num_workers: 4
     shuffle: true
@@ -46,7 +46,7 @@ rd_beta:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 23
+    max_epochs: 50
     batch_size: 30
     num_workers: 4
     shuffle: true
@@ -63,7 +63,7 @@ rd_beta:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 23
+    max_epochs: 50
     batch_size: 30
     num_workers: 4
     shuffle: true
@@ -74,7 +74,7 @@ rd_gamma:
   desc: The third version of RD. S_wisdom = S_wisdom_literal + S_wisdom_figurative (much simplified)
   a:
     bert: beomi/kcbert-base
-    desc: the first version of RDBeta - trained on `wisdom2def:a`
+    desc: the first version of RDGamma - trained on `wisdom2def:a`
     seed: 410
     train_type: wisdom2def
     train_ver: a
@@ -82,11 +82,27 @@ rd_gamma:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 23
+    max_epochs: 50
     batch_size: 30
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
     enable_checkpointing: false
     num_sanity_val_steps: 0
-
+  b:
+    bert: beomi/kcbert-base
+    desc: the second version of RDGamma - the same as version a, but with increased epochs
+    seed: 410
+    train_type: wisdom2def
+    train_ver: b
+    wisdoms_ver: a
+    val_test_ver: a
+    k: 11
+    lr: 0.00001
+    max_epochs: 50
+    batch_size: 30
+    num_workers: 4
+    shuffle: true
+    log_every_n_steps: 1
+    enable_checkpointing: false
+    num_sanity_val_steps: 0

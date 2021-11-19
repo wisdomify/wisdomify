@@ -36,7 +36,7 @@ class Wisdom2SubwordsBuilder(TensorBuilder):
                                  return_tensors="pt")
         input_ids = encoded['input_ids']
         input_ids[input_ids == pad_id] = mask_id  # replace them with masks
-        return input_ids.to(self.device)
+        return input_ids
 
 
 class WiskeysBuilder(TensorBuilder):
@@ -51,7 +51,7 @@ class WiskeysBuilder(TensorBuilder):
                                  return_tensors="pt")
         input_ids = encoded['input_ids']  # (W, 1)
         input_ids = input_ids.squeeze()  # (W, 1) -> (W,)
-        return input_ids.to(self.device)
+        return input_ids
 
 
 class InputsBuilder(TensorBuilder):
@@ -70,11 +70,12 @@ class InputsBuilder(TensorBuilder):
         wisdom_mask = torch.where(input_ids == mask_id, 1, 0)
         desc_mask = torch.where(((input_ids != cls_id) & (input_ids != sep_id) & (input_ids != mask_id)), 1, 0)
         
-        return torch.stack([input_ids,
-                            encodings['token_type_ids'],
-                            encodings['attention_mask'],
-                            wisdom_mask,
-                            desc_mask], dim=1).to(self.device)
+        inputs = torch.stack([input_ids,
+                             encodings['token_type_ids'],
+                             encodings['attention_mask'],
+                             wisdom_mask,
+                             desc_mask], dim=1)
+        return inputs
 
     def encode(self, wisdom2desc: List[Tuple[str, str]]) -> BatchEncoding:
         raise NotImplementedError
@@ -133,7 +134,9 @@ class TargetsBuilder(TensorBuilder):
         :param wisdoms:
         :return: (N, )
         """
-        return torch.LongTensor([
+        targets = torch.LongTensor([
             wisdoms.index(wisdom)
             for wisdom in [wisdom for wisdom, _ in wisdom2desc]
-        ]).to(self.device)
+        ])
+        return targets
+
