@@ -10,7 +10,7 @@ from wisdomify.connectors import connect_to_wandb, connect_to_es
 
 from wisdomify.docs import Story
 from wisdomify.flows import SearchFlow, Wisdom2DefFlow
-from wisdomify.loaders import load_config, load_device
+from wisdomify.loaders import load_config
 from wisdomify.wisdomifier import Wisdomifier
 
 
@@ -35,10 +35,9 @@ class WisdomifyView(FlaskView):
     model = args.model
 
     config = load_config()[model][ver]
-    device = load_device(False)
     with connect_to_wandb(job_type="infer", config=config) as run:
         # --- init a wisdomifier --- #
-        flow = flows.ExperimentFlow(run, model, ver, device)("d", config)
+        flow = flows.ExperimentFlow(run, model, ver)("d", config)
     # --- wisdomifier is independent of wandb run  --- #
     wisdomifier = Wisdomifier(flow.rd_flow.rd, flow.datamodule)
 
