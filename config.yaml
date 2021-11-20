@@ -11,7 +11,7 @@ rd_alpha:
     k: 11
     lr: 0.00001
     max_epochs: 50
-    batch_size: 30
+    batch_size: 128
     num_workers: 4
     shuffle: true
     log_every_n_steps: 2
@@ -28,7 +28,7 @@ rd_alpha:
     k: 11
     lr: 0.00001
     max_epochs: 50
-    batch_size: 30
+    batch_size: 128
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -45,7 +45,7 @@ rd_alpha:
     k: 11
     lr: 0.00001
     max_epochs: 50
-    batch_size: 30
+    batch_size: 128
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -64,7 +64,7 @@ rd_beta:
     k: 11
     lr: 0.00001
     max_epochs: 50
-    batch_size: 30
+    batch_size: 128
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -81,7 +81,7 @@ rd_beta:
     k: 11
     lr: 0.00001
     max_epochs: 50
-    batch_size: 30
+    batch_size: 128
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -101,7 +101,7 @@ rd_gamma:
     lr: 0.00001
     pooler_size: 30
     max_epochs: 50
-    batch_size: 30
+    batch_size: 128
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -119,7 +119,7 @@ rd_gamma:
     lr: 0.00001
     pooler_size: 30
     max_epochs: 50
-    batch_size: 30
+    batch_size: 128
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -139,7 +139,7 @@ rd_gamma_sync:
     lr: 0.00001
     pooler_size: 30
     max_epochs: 50
-    batch_size: 30
+    batch_size: 128
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -157,7 +157,7 @@ rd_gamma_sync:
     lr: 0.00001
     pooler_size: 30
     max_epochs: 50
-    batch_size: 30
+    batch_size: 128
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -175,7 +175,7 @@ rd_gamma_sync:
     lr: 0.00001
     pooler_size: 30
     max_epochs: 100
-    batch_size: 30
+    batch_size: 128
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
