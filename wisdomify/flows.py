@@ -16,7 +16,7 @@ from more_itertools import chunked
 from tqdm import tqdm
 from transformers import BertTokenizerFast, AutoConfig, AutoModelForMaskedLM, BertForMaskedLM, AutoTokenizer
 from wandb.sdk.wandb_run import Run
-from wisdomify.models import RD, RDAlpha, RDBeta, RDGamma, RDGammaSync
+from wisdomify.models import RD, RDAlpha, RDBeta, RDGamma
 from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder
 from wisdomify.connectors import connect_to_es
 from wisdomify.constants import WISDOMS_A, WISDOMS_B, WISDOM2QUERY_RAW_A, WISDOM2DEF_RAW_A, WISDOM2DEF_RAW_B, \
@@ -582,32 +582,6 @@ class RDGammaFlow(RDFlow):
         return "rd_gamma"
 
 
-class RDGammaSyncFlow(RDFlow):
-    def build_rd(self):
-        """
-        at this point, you have access to:
-        self.bert_mlm
-        self.tokenizer
-        self.device
-        self.wisdoms
-        self.wisdom2subwords
-        self.config
-        get use of these data to build your rd, and save to:
-        self.rd <= RDSomething(...)
-        """
-        self.rd = RDGammaSync(self.config['k'], self.config['lr'], self.config['pooler_size'],
-                              self.bert_mlm, self.wisdom2subwords)
-
-    def load_rd(self):
-        self.rd = RDGammaSync.load_from_checkpoint(self.rd_ckpt_path,
-                                                   bert_mlm=self.bert_mlm,
-                                                   wisdom2subwords=self.wisdom2subwords)
-
-    @property
-    def name(self):
-        return "rd_gamma_sync"
-
-
 # ======= experiment flows ======= #
 # this is here to prevent circular import error
 from wisdomify.datamodules import WisdomifyDataModule, Wisdom2EgDataModule, Wisdom2DefDataModule # noqa
@@ -648,8 +622,6 @@ class ExperimentFlow(TwoWayFlow):
             self.rd_flow = RDBetaFlow(self.run, self.ver)
         elif self.model == "rd_gamma":
             self.rd_flow = RDGammaFlow(self.run, self.ver)
-        elif self.model == "rd_gamma_sync":
-            self.rd_flow = RDGammaSyncFlow(self.run, self.ver)
         else:
             raise ValueError(f"Invalid model:{self.model}")
 
