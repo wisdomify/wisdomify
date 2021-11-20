@@ -326,7 +326,8 @@ class RDGamma(RD):
             attentions = torch.softmax(sims, dim=1)  # (N, K) - normalise -> (N, K)
             H_wisdom = torch.einsum("nk,nkh->nh", attentions, H_desc)  # (N, K) * (N, K, H) -> (N, H) (reduce over K)
         elif mode == "pooling":
-            H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
+            H_k_ = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
+            H_k = torch.einsum("nkh->nhk", H_k_)
             H_wisdom = self.pooler(H_k)  # (N, K, H)  -> (N, H)
         else:
             raise ValueError(f"Invalid mode: {mode}")
