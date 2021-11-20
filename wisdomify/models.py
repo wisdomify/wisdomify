@@ -329,6 +329,15 @@ class RDGamma(RD):
             H_k_ = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
             H_k = torch.einsum("nkh->nhk", H_k_)
             H_wisdom = self.pooler(H_k).squeeze()  # (N, K, H)  -> (N, H, 1) -> (N, H)
+        elif mode == "both":
+            H_k_ = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
+            H_k = torch.einsum("nkh->nhk", H_k_)
+            H_wisdom_ = self.pooler(H_k).squeeze()  # (N, K, H)  -> (N, H, 1) -> (N, H)
+            # do not use H_cls, but use the one pooled from H_k
+            H_desc = self.H_desc(H_all)  # (N, L, H) -> (N, K, H)
+            sims = torch.einsum("nh,nkh->nk", H_wisdom_, H_desc)  # (N, H) * (N, K, H) -> (N, K)  (reduce over H)
+            attentions = torch.softmax(sims, dim=1)  # (N, K) - normalise -> (N, K)
+            H_wisdom = torch.einsum("nk,nkh->nh", attentions, H_desc)  # (N, K) * (N, K, H) -> (N, H) (reduce over K)
         else:
             raise ValueError(f"Invalid mode: {mode}")
 

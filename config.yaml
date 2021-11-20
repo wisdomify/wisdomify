@@ -203,3 +203,22 @@ rd_gamma:
     log_every_n_steps: 1
     enable_checkpointing: false
     num_sanity_val_steps: 0
+  c_both:
+    bert: beomi/kcbert-base
+    desc: the same as b, but with max_epochs = 100 & pooler size = hidden_size
+    seed: 410
+    train_type: wisdom2def
+    train_ver: b
+    wisdoms_ver: a
+    val_test_ver: a
+    k: 11
+    lr: 0.00001
+    pooler_size: 768
+    mode: both
+    max_epochs: 100
+    batch_size: 128
+    num_workers: 4
+    shuffle: true
+    log_every_n_steps: 1
+    enable_checkpointing: false
+    num_sanity_val_steps: 0
