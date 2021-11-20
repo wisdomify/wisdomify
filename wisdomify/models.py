@@ -338,51 +338,6 @@ class RDGamma(RD):
         return S_wisdom_figurative
 
 
-class RDGammaSync(RDGamma):
-
-    def __init__(self, k: int, lr: float, pooler_size: int, gamma: float,
-                 bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor):
-        super().__init__(k, lr, pooler_size, bert_mlm, wisdom2subwords)
-        self.save_hyperparameters(Namespace(gamma=gamma))
-
-    def S_wisdom(self, H_all: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
-        S_wisdom_literal = self.S_wisdom_literal(H_k)
-        S_wisdom_figurative = self.S_wisdom_figurative(H_all)
-        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
-        return S_wisdom, S_wisdom_literal, S_wisdom_figurative
-
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
-        X, y = batch
-        H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
-        S_wisdom, S_wisdom_literal, S_wisdom_figurative = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
-        loss_cls = F.cross_entropy(S_wisdom, y).sum()  # (N, |W|), (N,) -> (N,) -> (1,)
-        P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)
-        S_wisdom_literal = torch.log_softmax(S_wisdom_literal, dim=1)
-        S_wisdom_figurative = torch.log_softmax(S_wisdom_figurative, dim=1)
-        # ... -> (1,)
-        # sync S_wisdom_literal with S_wisdom_figurative
-        loss_sync = nn.KLDivLoss(reduction='batchmean', log_target=True)(S_wisdom_literal, S_wisdom_figurative)
-        # the total loss
-        loss = loss_cls * self.hparams['gamma'] + loss_sync * (1 - self.hparams['gamma'])
-        return {
-            # you cannot change the keyword for the loss
-            "loss": loss,
-            "P_wisdom": P_wisdom.detach(),
-            "y": y.detach()
-        }
-
-    def P_wisdom(self, X: torch.Tensor) -> torch.Tensor:
-        """
-        :param X: (N, 3, L)
-        :return P_wisdom: (N, |W|), normalized over dim 1.
-        """
-        H_all = self.forward(X)
-        S_wisdom, _, _ = self.S_wisdom(H_all)
-        P_wisdom = F.softmax(S_wisdom, dim=1)
-        return P_wisdom
-
-
 class RDDelta(RD):
     """
     The third prototype.
