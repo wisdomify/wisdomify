@@ -142,3 +142,20 @@ rd_gamma_sync:
     log_every_n_steps: 1
     enable_checkpointing: false
     num_sanity_val_steps: 0
+  c:
+    bert: beomi/kcbert-base
+    desc: the same as version a, but with increased epochs
+    seed: 410
+    train_type: wisdom2def
+    train_ver: b
+    wisdoms_ver: a
+    val_test_ver: a
+    k: 11
+    lr: 0.00001
+    max_epochs: 100
+    batch_size: 30
+    num_workers: 4
+    shuffle: true
+    log_every_n_steps: 1
+    enable_checkpointing: false
+    num_sanity_val_steps: 0
