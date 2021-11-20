@@ -17,10 +17,9 @@ class TensorBuilder:
 
 
 class Wisdom2SubwordsBuilder(TensorBuilder):
-    def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
+    def __init__(self, tokenizer: BertTokenizerFast, k: int):
         self.tokenizer = tokenizer
         self.k = k
-        self.device = device
 
     def __call__(self, wisdoms: List[str]) -> torch.Tensor:
         mask_id = self.tokenizer.mask_token_id
@@ -40,9 +39,8 @@ class Wisdom2SubwordsBuilder(TensorBuilder):
 
 
 class WiskeysBuilder(TensorBuilder):
-    def __init__(self, tokenizer: BertTokenizerFast, device: torch.device):
+    def __init__(self, tokenizer: BertTokenizerFast):
         self.tokenizer = tokenizer
-        self.device = device
 
     def __call__(self, wisdoms: List[str]) -> torch.Tensor:
         # TODO: makes sure that the tokenizer treats each wisdom as a single token.
@@ -55,10 +53,9 @@ class WiskeysBuilder(TensorBuilder):
 
 
 class InputsBuilder(TensorBuilder):
-    def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
+    def __init__(self, tokenizer: BertTokenizerFast, k: int):
         self.tokenizer = tokenizer
         self.k = k
-        self.device = device
 
     def __call__(self, wisdom2desc: List[Tuple[str, str]]) -> torch.Tensor:
         encodings = self.encode(wisdom2desc)
@@ -125,9 +122,6 @@ class Wisdom2EgInputsBuilder(InputsBuilder):
 
 class TargetsBuilder(TensorBuilder):
 
-    def __init__(self, device: torch.device):
-        self.device = device
-
     def __call__(self, wisdom2desc: List[Tuple[str, str]], wisdoms: List[str]) -> torch.LongTensor:
         """
         :param wisdom2desc:
@@ -139,4 +133,3 @@ class TargetsBuilder(TensorBuilder):
             for wisdom in [wisdom for wisdom, _ in wisdom2desc]
         ])
         return targets
-

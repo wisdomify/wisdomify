@@ -32,7 +32,7 @@ class RD(pl.LightningModule):
         pass
 
     def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM,
-                 wisdom2subwords: torch.Tensor, device: torch.device):
+                 wisdom2subwords: torch.Tensor):
         """
         :param bert_mlm: a bert model for masked language modeling
         :param wisdom2subwords: (|W|, K)
@@ -252,8 +252,8 @@ class RDBeta(RD):
     """
 
     def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM,
-                 wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor, device: torch.device):
-        super().__init__(k, lr, bert_mlm, wisdom2subwords, device)
+                 wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor):
+        super().__init__(k, lr, bert_mlm, wisdom2subwords)
         self.register_buffer("wiskeys", wiskeys)   # (|W|,)
         self.hidden_size = bert_mlm.config.hidden_size
         self.dr_rate = 0.0
@@ -296,9 +296,8 @@ class RDGamma(RD):
     S_wisdom  = S_wisdom_literal + S_wisdom_figurative
     but the way we get S_wisdom_figurative is much simplified, compared with RDBeta.
     """
-    def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor,
-                 device: torch.device):
-        super().__init__(k, lr, bert_mlm, wisdom2subwords, device)
+    def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor):
+        super().__init__(k, lr, bert_mlm, wisdom2subwords)
         # (N, K, H) -> (N, H)
         # a linear pooler
         self.pooler = torch.nn.Linear(self.hparams['k'], 1)  # (K, 1)

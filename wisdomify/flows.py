@@ -424,9 +424,8 @@ class Wisdom2EgFlow(DatasetFlow):
 # === model flows === #
 class RDFlow(TwoWayFlow):
 
-    def __init__(self, run: Run, ver: str, device: torch.device):
+    def __init__(self, run: Run, ver: str):
         super().__init__(run, ver)
-        self.device = device
         self.rd: Optional[RD] = None
         self.tokenizer: Optional[BertTokenizerFast] = None
         self.artifact: Optional[wandb.Artifact] = None
@@ -489,7 +488,7 @@ class RDFlow(TwoWayFlow):
         self.tokenizer = AutoTokenizer.from_pretrained(self.config['bert'])
 
     def build_wisdom2subwords(self):
-        self.wisdom2subwords = Wisdom2SubwordsBuilder(self.tokenizer, self.config['k'], self.device)(self.wisdoms)
+        self.wisdom2subwords = Wisdom2SubwordsBuilder(self.tokenizer, self.config['k'])(self.wisdoms)
 
     def build_rd(self):
         raise NotImplementedError
@@ -518,13 +517,12 @@ class RDAlphaFlow(RDFlow):
 
     def build_rd(self):
         self.rd = RDAlpha(self.config['k'], self.config['lr'],
-                          self.bert_mlm, self.wisdom2subwords, self.device)
+                          self.bert_mlm, self.wisdom2subwords)
 
     def load_rd(self):
         self.rd = RDAlpha.load_from_checkpoint(self.rd_ckpt_path,
                                                wisdom2subwords=self.wisdom2subwords,
-                                               bert_mlm=self.bert_mlm,
-                                               device=self.device)
+                                               bert_mlm=self.bert_mlm)
 
     @property
     def name(self):
@@ -539,18 +537,17 @@ class RDBetaFlow(RDFlow):
         # as the tokens would have been already added
         self.tokenizer.add_tokens(self.wisdoms)
         self.bert_mlm.resize_token_embeddings(len(self.tokenizer))
-        wiskeys = WiskeysBuilder(self.tokenizer, self.device)(self.wisdoms)
+        wiskeys = WiskeysBuilder(self.tokenizer)(self.wisdoms)
         self.rd = RDBeta(self.config['k'], self.config['lr'],
-                         self.bert_mlm, self.wisdom2subwords, wiskeys, self.device)
+                         self.bert_mlm, self.wisdom2subwords, wiskeys)
 
     def load_rd(self):
         self.bert_mlm.resize_token_embeddings(len(self.tokenizer))
-        wiskeys = WiskeysBuilder(self.tokenizer, self.device)(self.wisdoms)
+        wiskeys = WiskeysBuilder(self.tokenizer)(self.wisdoms)
         self.rd = RDBeta.load_from_checkpoint(self.rd_ckpt_path,
                                               bert_mlm=self.bert_mlm,
                                               wisdom2subwords=self.wisdom2subwords,
-                                              wiskeys=wiskeys,
-                                              device=self.device)
+                                              wiskeys=wiskeys)
 
     @property
     def name(self):
@@ -574,13 +571,12 @@ class RDGammaFlow(RDFlow):
         self.rd <= RDSomething(...)
         """
         self.rd = RDGamma(self.config['k'], self.config['lr'],
-                          self.bert_mlm, self.wisdom2subwords, self.device)
+                          self.bert_mlm, self.wisdom2subwords)
 
     def load_rd(self):
         self.rd = RDGamma.load_from_checkpoint(self.rd_ckpt_path,
                                                bert_mlm=self.bert_mlm,
-                                               wisdom2subwords=self.wisdom2subwords,
-                                               device=self.device)
+                                               wisdom2subwords=self.wisdom2subwords)
 
     @property
     def name(self):
@@ -594,10 +590,9 @@ from wisdomify.datamodules import WisdomifyDataModule, Wisdom2EgDataModule, Wisd
 
 class ExperimentFlow(TwoWayFlow):
 
-    def __init__(self, run: Run, model: str, ver: str, device: torch.device):
+    def __init__(self, run: Run, model: str, ver: str):
         super().__init__(run, ver)
         self.model = model
-        self.device = device
         # top be filled
         self.config: Optional[dict] = None
         self.mode: Optional[str] = None
@@ -623,11 +618,11 @@ class ExperimentFlow(TwoWayFlow):
 
     def choose_rd_flow(self):
         if self.model == "rd_alpha":
-            self.rd_flow = RDAlphaFlow(self.run, self.ver, self.device)
+            self.rd_flow = RDAlphaFlow(self.run, self.ver)
         elif self.model == "rd_beta":
-            self.rd_flow = RDBetaFlow(self.run, self.ver, self.device)
+            self.rd_flow = RDBetaFlow(self.run, self.ver)
         elif self.model == "rd_gamma":
-            self.rd_flow = RDGammaFlow(self.run, self.ver, self.device)
+            self.rd_flow = RDGammaFlow(self.run, self.ver)
         else:
             raise ValueError(f"Invalid model:{self.model}")
 
@@ -642,14 +637,12 @@ class ExperimentFlow(TwoWayFlow):
             self.datamodule = Wisdom2DefDataModule(self.rd_flow.config,
                                                    self.rd_flow.tokenizer,
                                                    self.rd_flow.wisdoms,
-                                                   self.run,
-                                                   self.device)
+                                                   self.run)
         elif self.rd_flow.config["train_type"] == "wisdom2eg":
             self.datamodule = Wisdom2EgDataModule(self.rd_flow.config,
                                                   self.rd_flow.tokenizer,
                                                   self.rd_flow.wisdoms,
-                                                  self.run,
-                                                  self.device)
+                                                  self.run)
         else:
             raise ValueError
 

@@ -1,9 +1,10 @@
+import torch.cuda
 import wandb
 import argparse
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from wisdomify.connectors import connect_to_wandb
-from wisdomify.loaders import load_device, load_config
+from wisdomify.loaders import load_config
 from wisdomify.constants import ROOT_DIR
 from wisdomify.flows import ExperimentFlow
 from termcolor import colored
@@ -25,12 +26,12 @@ def main():
     if not upload:
         print(colored("WARNING: YOU CHOSE NOT TO UPLOAD. NOTHING BUT LOGS WILL BE SAVED TO WANDB", color="red"))
     # --- set up the device to train the model with --- #
-    device = load_device(use_gpu)
+    gpus = torch.cuda.device_count() if use_gpu else 0
     # --- init a run  --- #
     config = load_config()[model][ver]
     with connect_to_wandb(job_type="train", config=config) as run:
         # --- build an experiment --- #
-        flow = ExperimentFlow(run, model, ver, device)(mode="b", config=config)
+        flow = ExperimentFlow(run, model, ver)(mode="b", config=config)
         # --- instantiate the training logger --- #
         # A new W&B run will be created when training starts
         # if you have not created one manually before with wandb.init().
@@ -38,8 +39,8 @@ def main():
         # --- instantiate the trainer --- #
         # -- trainer는 flow로 만들지 않는다. 계속 옵션을 바꾸고 싶을때가 많을거라서, 그냥 이대로 두는게 좋다.
         trainer = pl.Trainer(max_epochs=config['max_epochs'],
-                             # wisdomify does not support multi-gpu training, as of right now
-                             gpus=1 if device.type == "cuda" else 0,
+                             # wisdomify now supports multi-gpu training! (hardware-agnostic)
+                             gpus=gpus,
                              # lightning_logs will be saved under this directory
                              default_root_dir=ROOT_DIR,
                              # each step means each batch. Don't set this too low
