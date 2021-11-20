@@ -6,7 +6,7 @@ from wisdomify.models import (
     RDAlpha,
     RDBeta
 )
-from wisdomify.loaders import load_config, load_device
+from wisdomify.loaders import load_config
 from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder, InputsBuilder,\
      Wisdom2DefInputsBuilder, TargetsBuilder
 import torch
@@ -97,7 +97,6 @@ class RDAlphaTest(RDCommonTest.Test):
     @classmethod
     def setUpClass(cls):
         # version - 0 and 1
-        device = load_device(use_gpu=False)
         config = load_config()['rd_alpha']['a']
         bert = config['bert']
         wisdoms = cls.get_wisdoms_a()
@@ -105,9 +104,9 @@ class RDAlphaTest(RDCommonTest.Test):
         lr = config['lr']
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert))
         tokenizer = AutoTokenizer.from_pretrained(bert)
-        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, device)(wisdoms)
-        cls.rd = RDAlpha(k, lr, bert_mlm, wisdom2subwords, device)
-        cls.initialize(Wisdom2DefInputsBuilder(tokenizer, k, device), TargetsBuilder(device),
+        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k)(wisdoms)
+        cls.rd = RDAlpha(k, lr, bert_mlm, wisdom2subwords)
+        cls.initialize(Wisdom2DefInputsBuilder(tokenizer, k), TargetsBuilder(),
                        wisdoms, bert_mlm.config.hidden_size, len(wisdoms), k)
 
     def test_forward_dim(self):
@@ -132,7 +131,6 @@ class RDBetaTest(RDCommonTest.Test):
     @classmethod
     def setUpClass(cls):
         # version - 2
-        device = load_device(use_gpu=False)
         config = load_config()['rd_beta']['a']
         bert = config['bert']
         wisdoms = cls.get_wisdoms_a()
@@ -143,10 +141,10 @@ class RDBetaTest(RDCommonTest.Test):
         # need to add the wisdoms to the tokenizer, and resize the embedding table as well
         tokenizer.add_tokens(wisdoms)
         bert_mlm.resize_token_embeddings(len(tokenizer))
-        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k, device)(wisdoms)
-        wiskeys = WiskeysBuilder(tokenizer, device)(wisdoms)
-        cls.rd = RDBeta(k, lr, bert_mlm, wisdom2subwords, wiskeys, device)
-        cls.initialize(Wisdom2DefInputsBuilder(tokenizer, k, device), TargetsBuilder(device),
+        wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k)(wisdoms)
+        wiskeys = WiskeysBuilder(tokenizer)(wisdoms)
+        cls.rd = RDBeta(k, lr, bert_mlm, wisdom2subwords, wiskeys)
+        cls.initialize(Wisdom2DefInputsBuilder(tokenizer, k), TargetsBuilder(),
                        wisdoms, bert_mlm.config.hidden_size, len(wisdoms), k)
 
     def test_forward_dim(self):
