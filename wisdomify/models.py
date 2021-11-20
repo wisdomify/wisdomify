@@ -299,11 +299,12 @@ class RDGamma(RD):
     but the way we get S_wisdom_figurative is much simplified, compared with RDBeta.
     """
 
-    def __init__(self, k: int, lr: float, pooler_size: int, bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor):
+    def __init__(self, k: int, lr: float, pooler_size: int, mode: str,
+                 bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor):
         super().__init__(k, lr, bert_mlm, wisdom2subwords)
         # (N, K, H) -> (N, H)
         # a linear pooler
-        self.save_hyperparameters(Namespace(pooler_size=pooler_size))
+        self.save_hyperparameters(Namespace(pooler_size=pooler_size, mode=mode))
         # a pooler is a multilayer perceptron that pools wisdom_embeddings out of wisdom2subwords_embeddings
         self.pooler = torch.nn.Sequential(
             torch.nn.Linear(self.hparams['k'], pooler_size),
@@ -317,6 +318,21 @@ class RDGamma(RD):
         S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
         return S_wisdom
 
+    def H_wisdom(self, H_all: torch.Tensor, mode: str) -> torch.Tensor:
+        if mode == "attention":
+            H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
+            H_desc = self.H_desc(H_all)  # (N, L, H) -> (N, K, H)
+            sims = torch.einsum("nh,nkh->nk", H_cls, H_desc)  # (N, H) * (N, K, H) -> (N, K)  (reduce over H)
+            attentions = torch.softmax(sims, dim=1)  # (N, K) - normalise -> (N, K)
+            H_wisdom = torch.einsum("nk,nkh->nh", attentions, H_desc)  # (N, K) * (N, K, H) -> (N, H) (reduce over K)
+        elif mode == "pooling":
+            H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
+            H_wisdom = self.pooler(H_k)  # (N, K, H)  -> (N, H)
+        else:
+            raise ValueError(f"Invalid mode: {mode}")
+
+        return H_wisdom
+
     def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
         # --- draw the embeddings for wisdoms from  the embeddings of wisdom2subwords -- #
         # this is to use as less of newly initialised weights as possible
@@ -327,62 +343,7 @@ class RDGamma(RD):
         wisdom_embeddings = wisdom_embeddings_.squeeze()  # (W, H)
 
         # --- draw H_wisdom from H_desc with attention --- #
-        H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
-        H_desc = self.H_desc(H_all)  # (N, L, H) -> (N, K, H)
-        sims = torch.einsum("nh,nkh->nk", H_cls, H_desc)  # (N, H) * (N, K, H) -> (N, K)  (reduce over H)
-        attentions = torch.softmax(sims, dim=1)  # (N, K) - normalise -> (N, K)
-        H_wisdom = torch.einsum("nk,nkh->nh", attentions, H_desc)  # (N, K) * (N, K, H) -> (N, H) (reduce over K)
-
+        H_wisdom = self.H_wisdom(H_all, self.hparams['mode'])
         # --- now compare H_wisdom with all the wisdoms --- #
         S_wisdom_figurative = torch.einsum("nh,wh->nw", H_wisdom, wisdom_embeddings)  # (N, H) * (W, H) -> (N, W)
         return S_wisdom_figurative
-
-
-class RDDelta(RD):
-    """
-    The third prototype.
-    S_wisdom = S_wisdom_literal + S_wisdom_figurative
-    trained on = wisdom2def & wisdom2eg with two-stage training.
-    This is to be implemented & experimented after experimenting with RDAlpha & RDBeta is done.
-    """
-
-    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError
-
-    def forward(self, X: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        param X: (N, 4, L) - wisdom_mask 추가.
-        return: what should this return?
-        """
-        raise NotImplementedError
-        # input_ids = X[:, 0]
-        # token_type_ids = X[:, 1]
-        # attention_mask = X[:, 2]
-        # wisdom_mask = X[:, 3]  # this is new.  # (N, L).
-        # H_all = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 4, L) -> (N, L, 768)
-        # H_cls = H_all[:, 0]  # (N, L, 768) -> (N, 768)
-        # N = wisdom_mask.shape[0]  # get the batch size.
-        # H = H_all.shape[2]  # get the hidden size.
-        # wisdom_mask = wisdom_mask.unsqueeze(-1).expand(H_all.shape)
-        # H_k = torch.masked_select(H_all, wisdom_mask.bool())
-        # H_k = H_k.reshape(N, self.hparams['k'], H)  # (1, K * N) -> (N, K)
-        # return H_cls, H_k
-
-    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor],
-                      batch_idx: int) -> dict:
-        """
-        param: X (N, 4, L)
-        param:
-        """
-        raise NotImplementedError
-        # X, y = batch  # (N, 3, L), (N,)
-        # H_cls, H_k = self.forward(X)  # (N, 3, L) -> (N, H), (N, K, H)
-        # S_vocab = self.bert_mlm.cls(H_k)  # (N, K, 768) ->  (N, K, |V|)
-        # S_wisdom_literal = self.S_wisdom_literal(S_vocab)  # (N, K, |V|) -> (N, |W|)
-        # S_wisdom_figurative = self.S_wisdom_figurative(H_cls, H_k)  # (N, H),(N, K, H) -> (N, |W|)
-        # S_wisdom = S_wisdom_literal + S_wisdom_figurative  # (N, |W|) + (N, |W|) -> (N, |W|).
-        # loss = F.cross_entropy(S_wisdom, y)  # (N, |W|), (N,) -> (N,)
-        # loss = loss.sum()  # (N,) -> (1,) (scalar)
-        # return {
-        #     'loss': loss
-        # }
