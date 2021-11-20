@@ -5,7 +5,7 @@ metric:
   goal: maximize
 parameters:
   model:
-    value: rd_alpha
+    value: rd_gamma
   ver:
     value: sweep
   # --- the parameters to optimize --- #
@@ -15,6 +15,9 @@ parameters:
     # refer to here: https://wandb.ai/wisdomify/wisdomify/runs/694r8a31?workspace=user-eubinecto
     min: 12
     max: 80
+  # mlp의 크기.. 이건 테스트가 필요하다!
+  pooler_size:
+    values: [30, 40, 50, 60, 70, 80, 90, 100]
   lr:
     value: 0.00001
   # --- the parameters that are fixed --- #
