@@ -596,6 +596,7 @@ class RDGammaSyncFlow(RDFlow):
         self.rd <= RDSomething(...)
         """
         self.rd = RDGammaSync(self.config['k'], self.config['lr'], self.config['pooler_size'],
+                              self.config['gamma'],
                               self.bert_mlm, self.wisdom2subwords)
 
     def load_rd(self):
