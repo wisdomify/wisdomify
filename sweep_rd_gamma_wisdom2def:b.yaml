@@ -1,0 +1,47 @@
+program: main_sweep.py
+method: random
+metric:
+  name: Validation/Top 1 Accuracy
+  goal: maximize
+parameters:
+  model:
+    value: rd_gamma
+  ver:
+    value: sweep
+  # --- the parameters to optimize --- #
+  max_epochs:
+    distribution: int_uniform
+    # because 12 is when  the accuracy starts to plateau for rd-alpha:b
+    # refer to here: https://wandb.ai/wisdomify/wisdomify/runs/694r8a31?workspace=user-eubinecto
+    min: 12
+    max: 80
+  # mlp의 크기.. 이건 테스트가 필요하다!
+  pooler_size:
+    values: [30, 40, 50, 60, 70, 80, 90, 100]
+  lr:
+    value: 0.00001
+  # --- the parameters that are fixed --- #
+  batch_size:
+    # https://stats.stackexchange.com/questions/164876/what-is-the-trade-off-between-batch-size-and-number-of-iterations-to-train-a-neu
+    value: 128
+  bert:
+    value: beomi/kcbert-base
+  seed:
+    value: 410
+  train_type:
+    value: wisdom2def
+  # we run the sweep with bigger data
+  train_ver:
+    value: b
+  wisdoms_ver:
+    value: a
+  val_test_ver:
+    value: a
+  k:
+    value: 11
+  num_workers:
+    value: 4
+  shuffle:
+    value: 1
+  log_every_n_steps:
+    value: 2

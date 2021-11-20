@@ -299,11 +299,18 @@ class RDGamma(RD):
     but the way we get S_wisdom_figurative is much simplified, compared with RDBeta.
     """
 
-    def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor):
+    def __init__(self, k: int, lr: float, pooler_size, bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor):
         super().__init__(k, lr, bert_mlm, wisdom2subwords)
         # (N, K, H) -> (N, H)
         # a linear pooler
-        self.pooler = torch.nn.Linear(self.hparams['k'], 1)  # (K, 1)
+        self.save_hyperparameters(Namespace(pooler_size=pooler_size))
+        # a pooler is a multilayer perceptron that pools wisdom_embeddings out of wisdom2subwords_embeddings
+        self.pooler = torch.nn.Sequential(
+            torch.nn.Linear(self.hparams['k'], pooler_size),
+            torch.nn.ReLU(),
+            torch.nn.Linear(pooler_size, 1),
+            torch.nn.ReLU()
+        )
 
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
         H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
