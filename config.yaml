@@ -159,3 +159,39 @@ rd_gamma_sync:
     log_every_n_steps: 1
     enable_checkpointing: false
     num_sanity_val_steps: 0
+rd_simple:
+  desc: A naive version of rd.
+  a:
+    bert: beomi/kcbert-base
+    desc:  trained on `wisdom2def:a`
+    seed: 410
+    train_type: wisdom2def
+    train_ver: a
+    wisdoms_ver: a
+    val_test_ver: a
+    k: 11
+    lr: 0.00001
+    max_epochs: 50
+    batch_size: 30
+    num_workers: 4
+    shuffle: true
+    log_every_n_steps: 2
+    enable_checkpointing: false
+    num_sanity_val_steps: 0
+  b:
+    bert: beomi/kcbert-base
+    desc: trained on `wisdom2def:b`
+    seed: 410
+    train_type: wisdom2def
+    train_ver: b
+    wisdoms_ver: a
+    val_test_ver: a
+    k: 11
+    lr: 0.00001
+    max_epochs: 50
+    batch_size: 30
+    num_workers: 4
+    shuffle: true
+    log_every_n_steps: 1
+    enable_checkpointing: false
+    num_sanity_val_steps: 0

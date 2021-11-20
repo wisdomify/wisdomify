@@ -211,6 +211,20 @@ class RD(pl.LightningModule):
         return torch.optim.AdamW(self.parameters(), lr=self.hparams['lr'])
 
 
+# just a very naive model
+class RDSimple(RD):
+
+    def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor):
+        super().__init__(k, lr, bert_mlm, wisdom2subwords)
+        # (H, W)
+        self.classifier = torch.nn.Linear(self.bert_mlm.bert.config.hidden_size, wisdom2subwords.shape[0])
+
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
+        H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
+        S_wisdom = self.classifier(H_cls)  # (N, H)  * (H, W) -> (N, W)
+        return S_wisdom
+
+
 class RDAlpha(RD):
     """
     The first prototype.
