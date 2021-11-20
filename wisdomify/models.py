@@ -328,7 +328,7 @@ class RDGamma(RD):
         elif mode == "pooling":
             H_k_ = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
             H_k = torch.einsum("nkh->nhk", H_k_)
-            H_wisdom = self.pooler(H_k)  # (N, K, H)  -> (N, H)
+            H_wisdom = self.pooler(H_k).squeeze()  # (N, K, H)  -> (N, H, 1) -> (N, H)
         else:
             raise ValueError(f"Invalid mode: {mode}")
 
