@@ -359,6 +359,16 @@ class RDGammaSync(RDGamma):
             "y": y.detach()
         }
 
+    def P_wisdom(self, X: torch.Tensor) -> torch.Tensor:
+        """
+        :param X: (N, 3, L)
+        :return P_wisdom: (N, |W|), normalized over dim 1.
+        """
+        H_all = self.forward(X)
+        S_wisdom, _, _ = self.S_wisdom(H_all)
+        P_wisdom = F.softmax(S_wisdom, dim=1)
+        return P_wisdom
+
 
 class RDDelta(RD):
     """
