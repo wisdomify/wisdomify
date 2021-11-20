@@ -9,7 +9,7 @@ from wisdomify.constants import (
     ES_USERNAME,
     ES_PASSWORD,
     ES_CLOUD_ID,
-    WANDB_PROJECT, ROOT_DIR,
+    WANDB_PROJECT, ROOT_DIR, WANDB_ENTITY,
 )
 
 
@@ -25,4 +25,4 @@ def connect_to_wandb(job_type: str, config: dict) -> Run:
     job_type: either build, eval, infer or train.
     config: the hyper parameters for this experiment (needed for visualising the results on wandb)
     """
-    return wandb.init(dir=ROOT_DIR, project=WANDB_PROJECT, job_type=job_type, config=config)
+    return wandb.init(dir=ROOT_DIR, entity=WANDB_ENTITY, project=WANDB_PROJECT, job_type=job_type, config=config)

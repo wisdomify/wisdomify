@@ -2,7 +2,7 @@
 at the moment, the tests test for version_0 only.
 """
 import unittest
-from wisdomify.loaders import load_config, load_device
+from wisdomify.loaders import load_config
 from wisdomify.tensors import (
     Wisdom2SubwordsBuilder,
     WiskeysBuilder,
@@ -29,7 +29,6 @@ class TensorBuilderTest(unittest.TestCase):
         cls.wisdoms = cls.get_wisdoms_a()
         cls.tokenizer.add_tokens(cls.wisdoms)
         cls.k = config['k']
-        cls.device = load_device(use_gpu=False)
 
     @classmethod
     def get_wisdom2sent(cls) -> List[Tuple[str, str]]:
@@ -62,7 +61,7 @@ class Wisdom2SubwordsBuilderTest(TensorBuilderTest):
     def setUpClass(cls):
         super().setUpClass()
         cls.tokenizer.add_tokens(cls.wisdoms)  # treat wisdoms as single tokens
-        cls.wisdom2subwords_builder = Wisdom2SubwordsBuilder(cls.tokenizer, cls.k, cls.device)
+        cls.wisdom2subwords_builder = Wisdom2SubwordsBuilder(cls.tokenizer, cls.k)
 
     def test_build_wisdom2subwords_dim(self):
         wisdom2subwords = self.wisdom2subwords_builder(self.wisdoms)  # should be (V,K)
@@ -83,7 +82,7 @@ class WiskeysBuilderTest(TensorBuilderTest):
     def setUpClass(cls):
         super().setUpClass()
         cls.tokenizer.add_tokens(cls.wisdoms)  # treat wisdoms as single tokens
-        cls.wiskeys_builder = WiskeysBuilder(cls.tokenizer, cls.device)
+        cls.wiskeys_builder = WiskeysBuilder(cls.tokenizer)
 
     def test_build_wiskeys_dim(self):
         wiskeys = self.wiskeys_builder(self.wisdoms)
@@ -101,7 +100,7 @@ class Wisdom2DefInputsBuilderTest(TensorBuilderTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.wisdom2def_X_builder = Wisdom2DefInputsBuilder(cls.tokenizer, cls.k, cls.device)
+        cls.wisdom2def_X_builder = Wisdom2DefInputsBuilder(cls.tokenizer, cls.k)
 
     def test_build_X_dim(self):
         X = self.wisdom2def_X_builder(self.get_wisdom2sent())  # should be (N, 3, L)
@@ -114,7 +113,7 @@ class Wisdom2EgInputsBuilderTest(TensorBuilderTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.wisdom2eg_X_builder = Wisdom2EgInputsBuilder(cls.tokenizer, cls.k, cls.device)
+        cls.wisdom2eg_X_builder = Wisdom2EgInputsBuilder(cls.tokenizer, cls.k)
 
     @classmethod
     def get_wisdom2sent(cls) -> List[Tuple[str, str]]:
@@ -134,7 +133,7 @@ class TargetsBuilderTest(TensorBuilderTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.y_builder = TargetsBuilder(cls.device)
+        cls.y_builder = TargetsBuilder()
 
     def test_build_y_dim(self):
         y = self.y_builder(self.get_wisdom2sent(), self.wisdoms)  # should be (N,)

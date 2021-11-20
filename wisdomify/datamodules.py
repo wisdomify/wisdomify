@@ -42,14 +42,12 @@ class WisdomifyDataModule(LightningDataModule):
                  config: dict,
                  tokenizer: BertTokenizerFast,
                  wisdoms: List[str],
-                 run: Run,
-                 device: torch.device):
+                 run: Run):
         super().__init__()
         self.config = config
         self.tokenizer = tokenizer
         self.wisdoms = wisdoms
         self.run = run
-        self.device = device
         self.k = config["k"]
         self.batch_size = config['batch_size']
         self.shuffle = config['shuffle']
@@ -122,7 +120,7 @@ class Wisdom2DefDataModule(WisdomifyDataModule):
         return flows.Wisdom2DefFlow(self.run, self.config['train_ver'])
 
     def tensor_builders(self) -> Tuple[InputsBuilder, TargetsBuilder]:
-        return Wisdom2DefInputsBuilder(self.tokenizer, self.k, self.device), TargetsBuilder(self.device)
+        return Wisdom2DefInputsBuilder(self.tokenizer, self.k), TargetsBuilder()
 
 
 class Wisdom2EgDataModule(WisdomifyDataModule):
@@ -131,4 +129,4 @@ class Wisdom2EgDataModule(WisdomifyDataModule):
         return flows.Wisdom2EgFlow(self.run, self.config['train_ver'])
 
     def tensor_builders(self) -> Tuple[InputsBuilder, TargetsBuilder]:
-        return Wisdom2EgInputsBuilder(self.tokenizer, self.k, self.device), TargetsBuilder(self.device)
+        return Wisdom2EgInputsBuilder(self.tokenizer, self.k), TargetsBuilder()

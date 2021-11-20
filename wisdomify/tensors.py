@@ -17,10 +17,9 @@ class TensorBuilder:
 
 
 class Wisdom2SubwordsBuilder(TensorBuilder):
-    def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
+    def __init__(self, tokenizer: BertTokenizerFast, k: int):
         self.tokenizer = tokenizer
         self.k = k
-        self.device = device
 
     def __call__(self, wisdoms: List[str]) -> torch.Tensor:
         mask_id = self.tokenizer.mask_token_id
@@ -36,13 +35,12 @@ class Wisdom2SubwordsBuilder(TensorBuilder):
                                  return_tensors="pt")
         input_ids = encoded['input_ids']
         input_ids[input_ids == pad_id] = mask_id  # replace them with masks
-        return input_ids.to(self.device)
+        return input_ids
 
 
 class WiskeysBuilder(TensorBuilder):
-    def __init__(self, tokenizer: BertTokenizerFast, device: torch.device):
+    def __init__(self, tokenizer: BertTokenizerFast):
         self.tokenizer = tokenizer
-        self.device = device
 
     def __call__(self, wisdoms: List[str]) -> torch.Tensor:
         # TODO: makes sure that the tokenizer treats each wisdom as a single token.
@@ -51,14 +49,13 @@ class WiskeysBuilder(TensorBuilder):
                                  return_tensors="pt")
         input_ids = encoded['input_ids']  # (W, 1)
         input_ids = input_ids.squeeze()  # (W, 1) -> (W,)
-        return input_ids.to(self.device)
+        return input_ids
 
 
 class InputsBuilder(TensorBuilder):
-    def __init__(self, tokenizer: BertTokenizerFast, k: int, device: torch.device):
+    def __init__(self, tokenizer: BertTokenizerFast, k: int):
         self.tokenizer = tokenizer
         self.k = k
-        self.device = device
 
     def __call__(self, wisdom2desc: List[Tuple[str, str]]) -> torch.Tensor:
         encodings = self.encode(wisdom2desc)
@@ -70,11 +67,12 @@ class InputsBuilder(TensorBuilder):
         wisdom_mask = torch.where(input_ids == mask_id, 1, 0)
         desc_mask = torch.where(((input_ids != cls_id) & (input_ids != sep_id) & (input_ids != mask_id)), 1, 0)
         
-        return torch.stack([input_ids,
-                            encodings['token_type_ids'],
-                            encodings['attention_mask'],
-                            wisdom_mask,
-                            desc_mask], dim=1).to(self.device)
+        inputs = torch.stack([input_ids,
+                             encodings['token_type_ids'],
+                             encodings['attention_mask'],
+                             wisdom_mask,
+                             desc_mask], dim=1)
+        return inputs
 
     def encode(self, wisdom2desc: List[Tuple[str, str]]) -> BatchEncoding:
         raise NotImplementedError
@@ -124,16 +122,14 @@ class Wisdom2EgInputsBuilder(InputsBuilder):
 
 class TargetsBuilder(TensorBuilder):
 
-    def __init__(self, device: torch.device):
-        self.device = device
-
     def __call__(self, wisdom2desc: List[Tuple[str, str]], wisdoms: List[str]) -> torch.LongTensor:
         """
         :param wisdom2desc:
         :param wisdoms:
         :return: (N, )
         """
-        return torch.LongTensor([
+        targets = torch.LongTensor([
             wisdoms.index(wisdom)
             for wisdom in [wisdom for wisdom, _ in wisdom2desc]
-        ]).to(self.device)
+        ])
+        return targets
