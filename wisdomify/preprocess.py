@@ -37,6 +37,7 @@ def augment(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+# TODO: fix this - this is not compatible with Wisdom2def!
 def parse(df: pd.DataFrame) -> pd.DataFrame:
     """
     parse <em> ...</em>  to [WISDOM].

@@ -29,8 +29,8 @@ from termcolor import colored
 class Flow:
     def __call__(self, *args, **kwargs):
         for step in self.steps():
-            step()
             print(f"{type(self).__name__}:{colored(step.__name__, color='cyan')}")
+            step()
 
     def steps(self) -> List[Callable]:
         raise NotImplementedError
@@ -357,7 +357,7 @@ class Wisdom2DefFlow(DatasetFlow):
                           .pipe(cleanse) \
                           .pipe(normalise) \
                           .pipe(augment) \
-                          .pipe(upsample)
+                          .pipe(upsample, seed=self.config['seed'])
 
     def val_test_split(self):
         # we do not split wisdom2def
@@ -403,7 +403,7 @@ class Wisdom2EgFlow(DatasetFlow):
                           .pipe(cleanse) \
                           .pipe(normalise) \
                           .pipe(augment) \
-                          .pipe(upsample)
+                          .pipe(upsample, seed=self.config['seed'])
 
     def val_test_split(self):
         # we do not split wisdom2eg
@@ -556,7 +556,6 @@ class RDBetaFlow(RDFlow):
 
 class RDGammaFlow(RDFlow):
     """
-    TODO: a new rd flow
     """
     def build_rd(self):
         """
@@ -570,7 +569,7 @@ class RDGammaFlow(RDFlow):
         get use of these data to build your rd, and save to:
         self.rd <= RDSomething(...)
         """
-        self.rd = RDGamma(self.config['k'], self.config['lr'],
+        self.rd = RDGamma(self.config['k'], self.config['lr'], self.config['pooler_size'],
                           self.bert_mlm, self.wisdom2subwords)
 
     def load_rd(self):
@@ -596,7 +595,7 @@ class RDGammaSyncFlow(RDFlow):
         get use of these data to build your rd, and save to:
         self.rd <= RDSomething(...)
         """
-        self.rd = RDGammaSync(self.config['k'], self.config['lr'],
+        self.rd = RDGammaSync(self.config['k'], self.config['lr'], self.config['pooler_size'],
                               self.bert_mlm, self.wisdom2subwords)
 
     def load_rd(self):
