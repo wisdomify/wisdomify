@@ -138,6 +138,7 @@ rd_gamma_sync:
     k: 11
     lr: 0.00001
     pooler_size: 30
+    gamma: 0.8
     max_epochs: 50
     batch_size: 128
     num_workers: 4
@@ -156,6 +157,7 @@ rd_gamma_sync:
     k: 11
     lr: 0.00001
     pooler_size: 30
+    gamma: 0.8
     max_epochs: 50
     batch_size: 128
     num_workers: 4
@@ -174,6 +176,7 @@ rd_gamma_sync:
     k: 11
     lr: 0.00001
     pooler_size: 30
+    gamma: 0.8
     max_epochs: 100
     batch_size: 128
     num_workers: 4
