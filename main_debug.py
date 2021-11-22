@@ -30,6 +30,7 @@ def main():
         # a trainer should be within the context of wandb, so that the
         # data can be pulled from wandb on training
         trainer = pl.Trainer(fast_dev_run=True,
+                             gpus=gpus,
                              profiler="simple")
         # --- start training with validation --- #
         trainer.fit(model=flow.rd_flow.rd, datamodule=flow.datamodule)

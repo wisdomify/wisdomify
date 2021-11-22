@@ -29,6 +29,7 @@ def main():
         flow = ExperimentFlow(run, model, ver)(mode="b", config=config)
         # Run learning rate finder
         trainer = pl.Trainer(auto_lr_find=True,
+                             gpus=gpus,
                              enable_checkpointing=False,
                              logger=False)
         try:
