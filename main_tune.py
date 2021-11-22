@@ -40,8 +40,7 @@ def main():
             raise e
         else:
             lr_finder = results['lr_find']
-            # results is a dictionary, so logging it should work
-            run.log(lr_finder.results)
+            run.log({"results": lr_finder.results, "suggested_lr": lr_finder.suggestion()})
 
 
 if __name__ == '__main__':
