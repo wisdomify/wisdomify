@@ -13,20 +13,19 @@ from termcolor import colored
 def main():
     # --- prep the arguments --- #
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="rd_alpha")
-    parser.add_argument("--ver", type=str, default="a")
-    parser.add_argument("--use_gpu", dest="use_gpu", action='store_true', default=False)
-    parser.add_argument("--upload", dest='upload', action='store_true',
-                        default=False)  # set this flag up if you want to save the logs & the model
+    parser.add_argument("--m", "--model", type=str, default="rd_alpha")
+    parser.add_argument("--v", "--ver", type=str, default="a")
+    parser.add_argument("--g", "--gpu", dest="gpu", action='store_true', default=False)
+    parser.add_argument("--u", "--upload", dest='upload', action='store_true', default=False)
     args = parser.parse_args()
     model: str = args.model
     ver: str = args.ver
-    use_gpu: bool = args.use_gpu
+    gpu: bool = args.gpu
     upload: bool = args.upload
     if not upload:
         print(colored("WARNING: YOU CHOSE NOT TO UPLOAD. NOTHING BUT LOGS WILL BE SAVED TO WANDB", color="red"))
     # --- set up the device to train the model with --- #
-    gpus = torch.cuda.device_count() if use_gpu else 0
+    gpus = torch.cuda.device_count() if gpu else 0
     # --- init a run  --- #
     config = load_config()[model][ver]
     with connect_to_wandb(job_type="train", config=config) as run:

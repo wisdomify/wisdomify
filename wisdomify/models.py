@@ -14,6 +14,7 @@ from wisdomify.metrics import RDMetric
 
 class RD(pl.LightningModule):
     """
+    @eubinecto
     The superclass of all the reverse-dictionaries. This class houses any methods that are required by
     whatever reverse-dictionaries we define.
     """
@@ -120,9 +121,9 @@ class RD(pl.LightningModule):
         :param X: (N, 3, L)
         :return P_wisdom: (N, |W|), normalized over dim 1.
         """
-        H_all = self.forward(X)
-        S_wisdom = self.S_wisdom(H_all)
-        P_wisdom = F.softmax(S_wisdom, dim=1)
+        H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
+        S_wisdom = self.S_wisdom(H_all)  # (N, L, H) -> (N, W)
+        P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, W) -> (N, W)
         return P_wisdom
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
@@ -137,7 +138,9 @@ class RD(pl.LightningModule):
         return {
             # you cannot change the keyword for the loss
             "loss": train_loss,
+            # this is to update metrics after an epoch ends
             "P_wisdom": P_wisdom.detach(),
+            # the same as above; for updating metrics
             "y": y.detach()
         }
 
@@ -213,6 +216,7 @@ class RD(pl.LightningModule):
 
 class RDAlpha(RD):
     """
+    @eubinecto
     The first prototype.
     S_wisdom = S_wisdom_literal
     trained on: wisdom2def only.
@@ -248,6 +252,7 @@ class FCLayer(nn.Module):
 
 class RDBeta(RD):
     """
+    @ohsuz
     The second prototype.
     S_wisdom = S_wisdom_literal + S_wisdom_figurative
     trained on: wisdom2def only.
@@ -295,6 +300,7 @@ class RDBeta(RD):
 
 class RDGamma(RD):
     """
+    @eubinecto
     S_wisdom  = S_wisdom_literal + S_wisdom_figurative
     but the way we get S_wisdom_figurative is much simplified, compared with RDBeta.
     """
@@ -305,12 +311,12 @@ class RDGamma(RD):
         # (N, K, H) -> (N, H)
         # a linear pooler
         self.save_hyperparameters(Namespace(pooler_size=pooler_size, mode=mode))
-        # a pooler is a multilayer perceptron that pools wisdom_embeddings out of wisdom2subwords_embeddings
+        # a pooler is a multilayer perceptron that pools wisdom_embeddings from wisdom2subwords_embeddings
         self.pooler = torch.nn.Sequential(
             torch.nn.Linear(self.hparams['k'], pooler_size),
-            torch.nn.ReLU(),
+            torch.nn.ReLU(),  # for non-linearity
             torch.nn.Linear(pooler_size, 1),
-            torch.nn.ReLU()
+            torch.nn.ReLU()  # for another non-linearity
         )
 
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:

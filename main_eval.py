@@ -13,14 +13,14 @@ def main():
                         default="rd_gamma")
     parser.add_argument("--ver", type=str,
                         default="b")
-    parser.add_argument("--use_gpu", dest="use_gpu",
+    parser.add_argument("--gpu", dest="gpu",
                         action='store_true', default=False)
     args = parser.parse_args()
     model: str = args.model
     ver: str = args.ver
-    use_gpu: bool = args.use_gpu
+    gpu: bool = args.gpu
     config = load_config()[model][ver]
-    gpus = torch.cuda.device_count() if use_gpu else 0
+    gpus = torch.cuda.device_count() if gpu else 0
     # --- init a run instance --- #
     with connect_to_wandb(job_type="eval", config=config) as run:
         # --- load a pre-trained experiment --- #

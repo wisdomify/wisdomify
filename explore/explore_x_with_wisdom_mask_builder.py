@@ -14,7 +14,7 @@ VER: str = "0"
 
 def main():
     conf = load_config()
-    device = load_device(use_gpu=False)
+    device = load_device(gpu=False)
     vers = conf['versions']
     selected_ver = vers[VER]
     bert_model: str = selected_ver['bert_model']
