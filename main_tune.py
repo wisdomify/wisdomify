@@ -34,14 +34,14 @@ def main():
                              logger=False)
         try:
             results = trainer.tune(flow.rd_flow.rd, datamodule=flow.datamodule)
-        except KeyboardInterrupt as ker:
-            raise ker
-        else:
-            print(results)
-        finally:
-            # no matter what happens, always delete the local file
-            # which is completely unncessary.
+        except Exception as e:
+            # whatever exception occurs, make sure to delete the cash
             os.system("rm lr_find*")  # just remove the file
+            raise e
+        else:
+            lr_finder = results['lr_find']
+            # results is a dictionary, so logging it should work
+            run.log(lr_finder.results)
 
 
 if __name__ == '__main__':

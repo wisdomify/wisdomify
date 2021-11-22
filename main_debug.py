@@ -29,6 +29,7 @@ def main():
         flow = ExperimentFlow(run, model, ver)(mode="b", config=config)
         # a trainer should be within the context of wandb, so that the
         # data can be pulled from wandb on training
+        # there is nothing to log, as this is just for debugging
         trainer = pl.Trainer(fast_dev_run=True,
                              gpus=gpus,
                              profiler="simple")
