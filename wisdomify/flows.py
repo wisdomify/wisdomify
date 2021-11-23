@@ -570,7 +570,7 @@ class RDGammaFlow(RDFlow):
         self.rd <= RDSomething(...)
         """
         self.rd = RDGamma(self.config['k'], self.config['lr'], self.config['pooler_size'],
-                          self.config['mode'], self.bert_mlm, self.wisdom2subwords)
+                          self.config['loss_func'], self.bert_mlm, self.wisdom2subwords)
 
     def load_rd(self):
         self.rd = RDGamma.load_from_checkpoint(self.rd_ckpt_path,
