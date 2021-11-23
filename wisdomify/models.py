@@ -320,7 +320,6 @@ class RDGamma(RD):
         )
 
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
-        H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
         S_wisdom_figurative = self.S_wisdom_figurative(H_all)
         return S_wisdom_figurative
 
@@ -333,9 +332,11 @@ class RDGamma(RD):
         wisdom_embeddings_ = self.pooler(wisdom2subwords_embeddings)  # (W, H, K) * (K, 1) -> (W, H, 1)
         wisdom_embeddings = wisdom_embeddings_.squeeze()  # (W, H)
         # --- draw H_wisdom from H_desc with attention --- #
-        H_k_ = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
-        H_k = torch.einsum("nkh->nhk", H_k_)
-        H_wisdom = self.pooler(H_k).squeeze()  # (N, K, H) -pooling-> (N, H, 1) -> (N, H)
+        H_cls = H_all[:, 0]  # (N, H)
+        H_desc = self.H_desc(H_all)  # (N, D, H)
+        scores = torch.einsum("nh,ndh->nd", H_cls, H_desc)  # (N, D)
+        attentions = torch.softmax(scores, dim=1)  # over D
+        H_wisdom = torch.einsum("nd,ndh->nh", attentions, H_desc)  # -> (N, H)
         # --- now compare H_wisdom with all the wisdoms --- #
         S_wisdom_figurative = torch.einsum("nh,wh->nw", H_wisdom, wisdom_embeddings)  # (N, H) * (W, H) -> (N, W)
         return S_wisdom_figurative
