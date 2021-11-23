@@ -321,8 +321,8 @@ class RDGamma(RD):
 
     def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
         H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
-        S_wisdom_literal = self.S_wisdom_literal(H_k)
-        return S_wisdom_literal
+        S_wisdom_figurative = self.S_wisdom_figurative(H_all)
+        return S_wisdom_figurative
 
     def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
         # --- draw the embeddings for wisdoms from  the embeddings of wisdom2subwords -- #
@@ -344,12 +344,12 @@ class RDGamma(RD):
         X, y = batch
         H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
         S_wisdom = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
-        S_wisdom_figurative = self.S_wisdom_figurative(H_all)
+        S_wisdom_literal = self.S_wisdom_figurative(H_all)
         if self.hparams['loss_func'] == "cross_entropy":
             loss = F.cross_entropy(S_wisdom, y).sum()  # (N, |W|), (N,) -> (N,) -> (1,)
         elif self.hparams['loss_func'] == "cross_entropy_with_mtl":
             loss = F.cross_entropy(S_wisdom, y).sum()  # (N, |W|), (N,) -> (N,) -> (1,)
-            loss += F.cross_entropy(S_wisdom_figurative, y).sum()  # multi-task learning
+            loss += F.cross_entropy(S_wisdom_literal, y).sum()  # multi-task learning
             # S_wisdom_literal = torch.log_softmax(S_wisdom_literal, dim=1)
             # S_wisdom_figurative = torch.log_softmax(S_wisdom_figurative, dim=1)
             # # mse outperforms kl_div: https://arxiv.org/abs/2105.08919
