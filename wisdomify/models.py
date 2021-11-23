@@ -348,15 +348,17 @@ class RDGamma(RD):
         S_wisdom, S_wisdom_literal, S_wisdom_figurative = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
         if self.hparams['loss_func'] == "cross_entropy":
             loss = F.cross_entropy(S_wisdom, y).sum()  # (N, |W|), (N,) -> (N,) -> (1,)
-        elif self.hparams['loss_func'] == "cross_entropy_with_sync":
+        elif self.hparams['loss_func'] == "cross_entropy_with_mtl":
             loss = F.cross_entropy(S_wisdom, y).sum()  # (N, |W|), (N,) -> (N,) -> (1,)
-            S_wisdom_literal = torch.log_softmax(S_wisdom_literal, dim=1)
-            S_wisdom_figurative = torch.log_softmax(S_wisdom_figurative, dim=1)
-            # mse outperforms kl_div: https://arxiv.org/abs/2105.08919
-            # KD library gets use of MSE:
-            # https://github.com/SforAiDl/KD_Lib/blob/df4d9e5c0a494410cb2994e3a1d5902afdccf0d6/KD_Lib/KD/vision/vanilla/vanilla_kd.py#L69-L71
-            # you add this to the cross entropy loss
-            loss += F.mse_loss(S_wisdom_literal, S_wisdom_figurative)
+            loss += F.cross_entropy(S_wisdom_literal, y).sum()  # multi-task learning
+            loss += F.cross_entropy(S_wisdom_figurative, y).sum()  # multi-task learning
+            # S_wisdom_literal = torch.log_softmax(S_wisdom_literal, dim=1)
+            # S_wisdom_figurative = torch.log_softmax(S_wisdom_figurative, dim=1)
+            # # mse outperforms kl_div: https://arxiv.org/abs/2105.08919
+            # # KD library gets use of MSE:
+            # # https://github.com/SforAiDl/KD_Lib/blob/df4d9e5c0a494410cb2994e3a1d5902afdccf0d6/KD_Lib/KD/vision/vanilla/vanilla_kd.py#L69-L71
+            # # you add this to the cross entropy loss
+            # loss += F.mse_loss(S_wisdom_literal, S_wisdom_figurative)
         else:
             raise ValueError(f"Invalid loss_func: {self.hparams['loss_func']}")
         P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)

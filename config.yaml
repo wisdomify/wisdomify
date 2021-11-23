@@ -184,7 +184,7 @@ rd_gamma:
     k: 11
     lr: 0.00001
     pooler_size: 30
-    loss_func: cross_entropy_with_sync
+    loss_func: cross_entropy_with_mtl
     max_epochs: 200
     batch_size: 64
     num_workers: 4
@@ -244,7 +244,7 @@ rd_gamma:
     k: 11
     lr: 0.00001
     pooler_size: 30
-    loss_func: cross_entropy_with_sync
+    loss_func: cross_entropy_with_mtl
     max_epochs: 200
     batch_size: 64
     num_workers: 4
@@ -265,7 +265,7 @@ rd_gamma:
     # ten times bigger learning rate
     lr: 0.0001
     pooler_size: 30
-    loss_func: cross_entropy_with_sync
+    loss_func: cross_entropy_with_mtl
     max_epochs: 200
     batch_size: 64
     num_workers: 4
@@ -286,7 +286,7 @@ rd_gamma:
     # refer to: misty-bush-925
     lr: 0.000002089
     pooler_size: 30
-    loss_func: cross_entropy_with_sync
+    loss_func: cross_entropy_with_mtl
     max_epochs: 200
     batch_size: 64
     num_workers: 4
