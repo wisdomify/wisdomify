@@ -10,8 +10,8 @@ rd_alpha:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 50
-    batch_size: 128
+    max_epochs: 100
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 2
@@ -26,9 +26,10 @@ rd_alpha:
     wisdoms_ver: a
     val_test_ver: a
     k: 11
-    lr: 0.00001
-    max_epochs: 50
-    batch_size: 128
+    # this is an optimised value: refer to: magic-water-909 
+    lr: 0.000003631
+    max_epochs: 100
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -44,8 +45,8 @@ rd_alpha:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 50
-    batch_size: 128
+    max_epochs: 100
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -63,8 +64,8 @@ rd_beta:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 50
-    batch_size: 128
+    max_epochs: 100
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -79,9 +80,10 @@ rd_beta:
     wisdoms_ver: a
     val_test_ver: a
     k: 11
-    lr: 0.00001
-    max_epochs: 50
-    batch_size: 128
+    # refer to: apricot-galaxy-911
+    lr: 0.000001445
+    max_epochs: 100
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -101,8 +103,8 @@ rd_gamma:
     lr: 0.00001
     pooler_size: 30
     mode: attention
-    max_epochs: 50
-    batch_size: 128
+    max_epochs: 100
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -120,8 +122,8 @@ rd_gamma:
     lr: 0.00001
     pooler_size: 30
     mode: pooling
-    max_epochs: 50
-    batch_size: 128
+    max_epochs: 100
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -139,8 +141,8 @@ rd_gamma:
     lr: 0.00001
     pooler_size: 30
     mode: attention
-    max_epochs: 50
-    batch_size: 128
+    max_epochs: 100
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -158,8 +160,8 @@ rd_gamma:
     lr: 0.00001
     pooler_size: 30
     mode: pooling
-    max_epochs: 50
-    batch_size: 128
+    max_epochs: 100
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -178,7 +180,7 @@ rd_gamma:
     pooler_size: 768
     mode: attention
     max_epochs: 100
-    batch_size: 128
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -193,11 +195,12 @@ rd_gamma:
     wisdoms_ver: a
     val_test_ver: a
     k: 11
-    lr: 0.00001
+    # refer to: dainty-snow-910
+    lr: 0.000003631
     pooler_size: 768
     mode: pooling
     max_epochs: 100
-    batch_size: 128
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
@@ -216,7 +219,7 @@ rd_gamma:
     pooler_size: 768
     mode: both
     max_epochs: 100
-    batch_size: 128
+    batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
