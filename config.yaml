@@ -194,6 +194,26 @@ rd_gamma:
     enable_checkpointing: false
     num_sanity_val_steps: 1
     stochastic_weight_avg: true
+  b_optim_lr:
+    bert: beomi/kcbert-base
+    desc: ...
+    seed: 410
+    train_type: wisdom2def
+    train_ver: b
+    wisdoms_ver: a
+    val_test_ver: a
+    k: 11
+    lr: 0.000002089
+    pooler_size: 30
+    loss_func: cross_entropy
+    max_epochs: 200
+    batch_size: 64
+    num_workers: 4
+    shuffle: true
+    log_every_n_steps: 1
+    enable_checkpointing: false
+    num_sanity_val_steps: 1
+    stochastic_weight_avg: true
   b_sync:
     bert: beomi/kcbert-base
     desc: ...
@@ -244,7 +264,6 @@ rd_gamma:
     wisdoms_ver: a
     val_test_ver: a
     k: 11
-    # ten times bigger learning rate
     # refer to: misty-bush-925
     lr: 0.000002089
     pooler_size: 30
