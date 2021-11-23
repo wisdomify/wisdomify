@@ -134,7 +134,7 @@ rd_beta:
     stochastic_weight_avg: true
 rd_gamma:
   desc: The third version of RD. S_wisdom = S_wisdom_literal + S_wisdom_figurative (much simplified)
-  a_attention:
+  a:
     bert: beomi/kcbert-base
     desc: the first version of RDGamma - trained on `wisdom2def:a`
     seed: 410
@@ -145,18 +145,18 @@ rd_gamma:
     k: 11
     lr: 0.00001
     pooler_size: 30
-    mode: attention
+    loss_func: cross_entropy
     max_epochs: 200
     batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
     enable_checkpointing: false
-    num_sanity_val_steps: 0
+    num_sanity_val_steps: 1
     stochastic_weight_avg: true
-  a_pooling:
+  a_sync:
     bert: beomi/kcbert-base
-    desc: the first version of RDGamma - trained on `wisdom2def:a`
+    desc: ...
     seed: 410
     train_type: wisdom2def
     train_ver: a
@@ -165,18 +165,18 @@ rd_gamma:
     k: 11
     lr: 0.00001
     pooler_size: 30
-    mode: pooling
+    loss_func: cross_entropy_with_sync
     max_epochs: 200
     batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
     enable_checkpointing: false
-    num_sanity_val_steps: 0
+    num_sanity_val_steps: 1
     stochastic_weight_avg: true
-  b_attention:
+  b:
     bert: beomi/kcbert-base
-    desc: the second version of RDGamma - the same as version a, but with increased epochs
+    desc: ...
     seed: 410
     train_type: wisdom2def
     train_ver: b
@@ -185,18 +185,18 @@ rd_gamma:
     k: 11
     lr: 0.00001
     pooler_size: 30
-    mode: attention
+    loss_func: cross_entropy
     max_epochs: 200
     batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
     enable_checkpointing: false
-    num_sanity_val_steps: 0
+    num_sanity_val_steps: 1
     stochastic_weight_avg: true
-  b_pooling:
+  b_sync:
     bert: beomi/kcbert-base
-    desc: the second version of RDGamma - the same as version a, but with increased epochs
+    desc: ...
     seed: 410
     train_type: wisdom2def
     train_ver: b
@@ -205,73 +205,12 @@ rd_gamma:
     k: 11
     lr: 0.00001
     pooler_size: 30
-    mode: pooling
+    loss_func: cross_entropy_with_sync
     max_epochs: 200
     batch_size: 64
     num_workers: 4
     shuffle: true
     log_every_n_steps: 1
     enable_checkpointing: false
-    num_sanity_val_steps: 0
-    stochastic_weight_avg: true
-  c_attention:
-    bert: beomi/kcbert-base
-    desc: the same as b, but with max_epochs = 100 & pooler size = hidden_size
-    seed: 410
-    train_type: wisdom2def
-    train_ver: b
-    wisdoms_ver: a
-    val_test_ver: a
-    k: 11
-    lr: 0.00001
-    pooler_size: 768
-    mode: attention
-    max_epochs: 200
-    batch_size: 64
-    num_workers: 4
-    shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
-    stochastic_weight_avg: true
-  c_pooling:
-    bert: beomi/kcbert-base
-    desc: the same as b, but with max_epochs = 100 & pooler size = hidden_size
-    seed: 410
-    train_type: wisdom2def
-    train_ver: b
-    wisdoms_ver: a
-    val_test_ver: a
-    k: 11
-    # refer to: dainty-snow-910
-    lr: 0.000003631
-    pooler_size: 768
-    mode: pooling
-    max_epochs: 200
-    batch_size: 64
-    num_workers: 4
-    shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
-    stochastic_weight_avg: true
-  c_both:
-    bert: beomi/kcbert-base
-    desc: the same as b, but with max_epochs = 100 & pooler size = hidden_size
-    seed: 410
-    train_type: wisdom2def
-    train_ver: b
-    wisdoms_ver: a
-    val_test_ver: a
-    k: 11
-    lr: 0.00001
-    pooler_size: 768
-    mode: both
-    max_epochs: 200
-    batch_size: 64
-    num_workers: 4
-    shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
+    num_sanity_val_steps: 1
     stochastic_weight_avg: true

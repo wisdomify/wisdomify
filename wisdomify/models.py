@@ -305,12 +305,12 @@ class RDGamma(RD):
     but the way we get S_wisdom_figurative is much simplified, compared with RDBeta.
     """
 
-    def __init__(self, k: int, lr: float, pooler_size: int, mode: str,
+    def __init__(self, k: int, lr: float, pooler_size: int, loss_func: str,
                  bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor):
         super().__init__(k, lr, bert_mlm, wisdom2subwords)
         # (N, K, H) -> (N, H)
         # a linear pooler
-        self.save_hyperparameters(Namespace(pooler_size=pooler_size, mode=mode))
+        self.save_hyperparameters(Namespace(pooler_size=pooler_size, loss_func=loss_func))
         # a pooler is a multilayer perceptron that pools wisdom_embeddings from wisdom2subwords_embeddings
         self.pooler = torch.nn.Sequential(
             torch.nn.Linear(self.hparams['k'], pooler_size),
@@ -319,35 +319,12 @@ class RDGamma(RD):
             torch.nn.ReLU()  # for another non-linearity
         )
 
-    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
+    def S_wisdom(self, H_all: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
-        S_wisdom = self.S_wisdom_literal(H_k) + self.S_wisdom_figurative(H_all)  # (N, |W|) + (N, |W|) -> (N, |W|)
-        return S_wisdom
-
-    def H_wisdom(self, H_all: torch.Tensor, mode: str) -> torch.Tensor:
-        if mode == "attention":
-            H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
-            H_desc = self.H_desc(H_all)  # (N, L, H) -> (N, K, H)
-            sims = torch.einsum("nh,nkh->nk", H_cls, H_desc)  # (N, H) * (N, K, H) -> (N, K)  (reduce over H)
-            attentions = torch.softmax(sims, dim=1)  # (N, K) - normalise -> (N, K)
-            H_wisdom = torch.einsum("nk,nkh->nh", attentions, H_desc)  # (N, K) * (N, K, H) -> (N, H) (reduce over K)
-        elif mode == "pooling":
-            H_k_ = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
-            H_k = torch.einsum("nkh->nhk", H_k_)
-            H_wisdom = self.pooler(H_k).squeeze()  # (N, K, H)  -> (N, H, 1) -> (N, H)
-        elif mode == "both":
-            H_k_ = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
-            H_k = torch.einsum("nkh->nhk", H_k_)
-            H_wisdom_ = self.pooler(H_k).squeeze()  # (N, K, H)  -> (N, H, 1) -> (N, H)
-            # do not use H_cls, but use the one pooled from H_k
-            H_desc = self.H_desc(H_all)  # (N, L, H) -> (N, K, H)
-            sims = torch.einsum("nh,nkh->nk", H_wisdom_, H_desc)  # (N, H) * (N, K, H) -> (N, K)  (reduce over H)
-            attentions = torch.softmax(sims, dim=1)  # (N, K) - normalise -> (N, K)
-            H_wisdom = torch.einsum("nk,nkh->nh", attentions, H_desc)  # (N, K) * (N, K, H) -> (N, H) (reduce over K)
-        else:
-            raise ValueError(f"Invalid mode: {mode}")
-
-        return H_wisdom
+        S_wisdom_literal = self.S_wisdom_literal(H_k)
+        S_wisdom_figurative = self.S_wisdom_figurative(H_all)
+        S_wisdom = S_wisdom_literal + S_wisdom_figurative  # (N, |W|) + (N, |W|) -> (N, |W|)
+        return S_wisdom, S_wisdom_literal, S_wisdom_figurative
 
     def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
         # --- draw the embeddings for wisdoms from  the embeddings of wisdom2subwords -- #
@@ -357,9 +334,45 @@ class RDGamma(RD):
         wisdom2subwords_embeddings = torch.einsum('wkh->whk', wisdom2subwords_embeddings_)  # (W, K, H) -> (W, H, K)
         wisdom_embeddings_ = self.pooler(wisdom2subwords_embeddings)  # (W, H, K) * (K, 1) -> (W, H, 1)
         wisdom_embeddings = wisdom_embeddings_.squeeze()  # (W, H)
-
         # --- draw H_wisdom from H_desc with attention --- #
-        H_wisdom = self.H_wisdom(H_all, self.hparams['mode'])
+        H_k_ = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
+        H_k = torch.einsum("nkh->nhk", H_k_)
+        H_wisdom = self.pooler(H_k).squeeze()  # (N, K, H) -pooling-> (N, H, 1) -> (N, H)
         # --- now compare H_wisdom with all the wisdoms --- #
         S_wisdom_figurative = torch.einsum("nh,wh->nw", H_wisdom, wisdom_embeddings)  # (N, H) * (W, H) -> (N, W)
         return S_wisdom_figurative
+
+    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
+        X, y = batch
+        H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
+        S_wisdom, S_wisdom_literal, S_wisdom_figurative = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
+        if self.hparams['loss_func'] == "cross_entropy":
+            loss = F.cross_entropy(S_wisdom, y).sum()  # (N, |W|), (N,) -> (N,) -> (1,)
+        elif self.hparams['loss_func'] == "cross_entropy_with_sync":
+            loss = F.cross_entropy(S_wisdom, y).sum()  # (N, |W|), (N,) -> (N,) -> (1,)
+            S_wisdom_literal = torch.log_softmax(S_wisdom_literal, dim=1)
+            S_wisdom_figurative = torch.log_softmax(S_wisdom_figurative, dim=1)
+            # mse outperforms kl_div: https://arxiv.org/abs/2105.08919
+            # KD library gets use of MSE:
+            # https://github.com/SforAiDl/KD_Lib/blob/df4d9e5c0a494410cb2994e3a1d5902afdccf0d6/KD_Lib/KD/vision/vanilla/vanilla_kd.py#L69-L71
+            # you add this to the cross entropy loss
+            loss += F.mse_loss(S_wisdom_literal, S_wisdom_figurative)
+        else:
+            raise ValueError(f"Invalid loss_func: {self.hparams['loss_func']}")
+        P_wisdom = F.softmax(S_wisdom, dim=1)  # (N, |W|) -> (N, |W|)
+        return {
+            # you cannot change the keyword for the loss
+            "loss": loss,
+            "P_wisdom": P_wisdom.detach(),
+            "y": y.detach()
+        }
+
+    def P_wisdom(self, X: torch.Tensor) -> torch.Tensor:
+        """
+        :param X: (N, 3, L)
+        :return P_wisdom: (N, |W|), normalized over dim 1.
+        """
+        H_all = self.forward(X)
+        S_wisdom, _, _ = self.S_wisdom(H_all)
+        P_wisdom = F.softmax(S_wisdom, dim=1)
+        return P_wisdom
