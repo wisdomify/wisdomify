@@ -15,8 +15,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="rd_alpha")
     parser.add_argument("--ver", type=str, default="a")
-    parser.add_argument("--gpu", dest="g", action='store_true', default=False)
-    parser.add_argument("--upload", dest='u', action='store_true', default=False)
+    parser.add_argument("--gpu", dest="gpu", action='store_true', default=False)
+    parser.add_argument("--upload", dest='upload', action='store_true', default=False)
     args = parser.parse_args()
     config = load_config()[args.model][args.ver]
     config.update(vars(args))
