@@ -569,8 +569,8 @@ class RDGammaFlow(RDFlow):
         get use of these data to build your rd, and save to:
         self.rd <= RDSomething(...)
         """
-        self.rd = RDGamma(self.config['k'], self.config['lr'], self.config['pooler_size'],
-                          self.config['loss_func'], self.bert_mlm, self.wisdom2subwords)
+        self.rd = RDGamma(self.config['k'], self.config['lr'], self.config['pooler_type'],
+                          self.config['dropout'], self.bert_mlm, self.wisdom2subwords)
 
     def load_rd(self):
         self.rd = RDGamma.load_from_checkpoint(self.rd_ckpt_path,

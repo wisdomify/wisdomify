@@ -163,28 +163,9 @@ rd_gamma:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    pooler_size: 30
-    loss_func: cross_entropy
-    max_epochs: 200
-    batch_size: 64
-    num_workers: 4
-    shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 1
-    stochastic_weight_avg: true
-  a_mtl:
-    bert: beomi/kcbert-base
-    desc: ...
-    seed: 410
-    train_type: wisdom2def
-    train_ver: a
-    wisdoms_ver: a
-    val_test_ver: a
-    k: 11
-    lr: 0.00001
-    pooler_size: 30
-    loss_func: cross_entropy_with_mtl
+    pooler_type: bilstm
+    # to be applied to the pooler
+    drooput: 0.65
     max_epochs: 200
     batch_size: 64
     num_workers: 4
@@ -204,89 +185,8 @@ rd_gamma:
     k: 11
     lr: 0.00001
     pooler_size: 30
-    loss_func: cross_entropy
-    max_epochs: 200
-    batch_size: 64
-    num_workers: 4
-    shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 1
-    stochastic_weight_avg: true
-  b_optim_lr:
-    bert: beomi/kcbert-base
-    desc: ...
-    seed: 410
-    train_type: wisdom2def
-    train_ver: b
-    wisdoms_ver: a
-    val_test_ver: a
-    k: 11
-    lr: 0.000002089
-    pooler_size: 30
-    loss_func: cross_entropy
-    max_epochs: 200
-    batch_size: 64
-    num_workers: 4
-    shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 1
-    stochastic_weight_avg: true
-  b_mtl:
-    bert: beomi/kcbert-base
-    desc: ...
-    seed: 410
-    train_type: wisdom2def
-    train_ver: b
-    wisdoms_ver: a
-    val_test_ver: a
-    k: 11
-    lr: 0.00001
-    pooler_size: 30
-    loss_func: cross_entropy_with_mtl
-    max_epochs: 200
-    batch_size: 64
-    num_workers: 4
-    shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 1
-    stochastic_weight_avg: true
-  b_mtl_high_lr:
-    bert: beomi/kcbert-base
-    desc: ...
-    seed: 410
-    train_type: wisdom2def
-    train_ver: b
-    wisdoms_ver: a
-    val_test_ver: a
-    k: 11
-    # ten times bigger learning rate
-    lr: 0.0001
-    pooler_size: 30
-    loss_func: cross_entropy_with_mtl
-    max_epochs: 200
-    batch_size: 64
-    num_workers: 4
-    shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 1
-    stochastic_weight_avg: true
-  b_mtl_optim_lr:
-    bert: beomi/kcbert-base
-    desc: ...
-    seed: 410
-    train_type: wisdom2def
-    train_ver: b
-    wisdoms_ver: a
-    val_test_ver: a
-    k: 11
-    # refer to: misty-bush-925
-    lr: 0.000002089
-    pooler_size: 30
-    loss_func: cross_entropy_with_mtl
+    pooler_type: bilstm
+    dropout: 0.65
     max_epochs: 200
     batch_size: 64
     num_workers: 4
