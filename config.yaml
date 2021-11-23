@@ -173,7 +173,7 @@ rd_gamma:
     enable_checkpointing: false
     num_sanity_val_steps: 1
     stochastic_weight_avg: true
-  a_sync:
+  a_mtl:
     bert: beomi/kcbert-base
     desc: ...
     seed: 410
@@ -233,7 +233,7 @@ rd_gamma:
     enable_checkpointing: false
     num_sanity_val_steps: 1
     stochastic_weight_avg: true
-  b_sync:
+  b_mtl:
     bert: beomi/kcbert-base
     desc: ...
     seed: 410
@@ -253,7 +253,7 @@ rd_gamma:
     enable_checkpointing: false
     num_sanity_val_steps: 1
     stochastic_weight_avg: true
-  b_sync_high_lr:
+  b_mtl_high_lr:
     bert: beomi/kcbert-base
     desc: ...
     seed: 410
@@ -274,7 +274,7 @@ rd_gamma:
     enable_checkpointing: false
     num_sanity_val_steps: 1
     stochastic_weight_avg: true
-  b_sync_optim_lr:
+  b_mtl_optim_lr:
     bert: beomi/kcbert-base
     desc: ...
     seed: 410
