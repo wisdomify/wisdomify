@@ -319,12 +319,10 @@ class RDGamma(RD):
             torch.nn.ReLU()  # for another non-linearity
         )
 
-    def S_wisdom(self, H_all: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def S_wisdom(self, H_all: torch.Tensor) -> torch.Tensor:
         H_k = self.H_k(H_all)  # (N, L, H) -> (N, K, H)
         S_wisdom_literal = self.S_wisdom_literal(H_k)
-        S_wisdom_figurative = self.S_wisdom_figurative(H_all)
-        S_wisdom = S_wisdom_literal + S_wisdom_figurative  # (N, |W|) + (N, |W|) -> (N, |W|)
-        return S_wisdom, S_wisdom_literal, S_wisdom_figurative
+        return S_wisdom_literal
 
     def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
         # --- draw the embeddings for wisdoms from  the embeddings of wisdom2subwords -- #
@@ -345,12 +343,12 @@ class RDGamma(RD):
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> dict:
         X, y = batch
         H_all = self.forward(X)  # (N, 3, L) -> (N, L, H)
-        S_wisdom, S_wisdom_literal, S_wisdom_figurative = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
+        S_wisdom = self.S_wisdom(H_all)  # (N, L, H) -> (N, |W|)
+        S_wisdom_figurative = self.S_wisdom_figurative(H_all)
         if self.hparams['loss_func'] == "cross_entropy":
             loss = F.cross_entropy(S_wisdom, y).sum()  # (N, |W|), (N,) -> (N,) -> (1,)
         elif self.hparams['loss_func'] == "cross_entropy_with_mtl":
             loss = F.cross_entropy(S_wisdom, y).sum()  # (N, |W|), (N,) -> (N,) -> (1,)
-            loss += F.cross_entropy(S_wisdom_literal, y).sum()  # multi-task learning
             loss += F.cross_entropy(S_wisdom_figurative, y).sum()  # multi-task learning
             # S_wisdom_literal = torch.log_softmax(S_wisdom_literal, dim=1)
             # S_wisdom_figurative = torch.log_softmax(S_wisdom_figurative, dim=1)
@@ -368,13 +366,3 @@ class RDGamma(RD):
             "P_wisdom": P_wisdom.detach(),
             "y": y.detach()
         }
-
-    def P_wisdom(self, X: torch.Tensor) -> torch.Tensor:
-        """
-        :param X: (N, 3, L)
-        :return P_wisdom: (N, |W|), normalized over dim 1.
-        """
-        H_all = self.forward(X)
-        S_wisdom, _, _ = self.S_wisdom(H_all)
-        P_wisdom = F.softmax(S_wisdom, dim=1)
-        return P_wisdom
