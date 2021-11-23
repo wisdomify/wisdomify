@@ -15,13 +15,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--m", "--model", type=str, default="rd_alpha")
     parser.add_argument("--v", "--ver", type=str, default="a")
-    parser.add_argument("--g", "--gpu", dest="gpu", action='store_true', default=False)
-    parser.add_argument("--u", "--upload", dest='upload', action='store_true', default=False)
+    parser.add_argument("--g", "--gpu", dest="g", action='store_true', default=False)
+    parser.add_argument("--u", "--upload", dest='u', action='store_true', default=False)
     args = parser.parse_args()
-    model: str = args.model
-    ver: str = args.ver
-    gpu: bool = args.gpu
-    upload: bool = args.upload
+    model: str = args.m
+    ver: str = args.v
+    gpu: bool = args.g
+    upload: bool = args.u
     if not upload:
         print(colored("WARNING: YOU CHOSE NOT TO UPLOAD. NOTHING BUT LOGS WILL BE SAVED TO WANDB", color="red"))
     # --- set up the device to train the model with --- #
