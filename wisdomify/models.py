@@ -392,7 +392,7 @@ class RDGamma(RD):
         H_desc_attention_mask = self.H_desc_attention_mask(self.attention_mask)  # (N, L) -> (N, D)
         scores = torch.einsum("nh,ndh->nd", H_cls, H_desc)  # (N, D)
         # ignore the padding tokens
-        scores = torch.masked_fill(scores, H_desc_attention_mask.bool(), float("-inf"))  # (N, D)
+        scores = torch.masked_fill(scores, H_desc_attention_mask != 1, float("-inf"))  # (N, D)
         attentions = torch.softmax(scores, dim=1)  # over D
         H_wisdom = torch.einsum("nd,ndh->nh", attentions, H_desc)  # -> (N, H)
         # --- now compare H_wisdom with all the wisdoms --- #
