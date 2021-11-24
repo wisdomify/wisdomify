@@ -193,7 +193,7 @@ rd_gamma:
     pooler_size: 30
     pooler_type: bilstm
     dropout: 0.65
-    max_epochs: 200
+    max_epochs: 400
     batch_size: 64
     num_workers: 4
     shuffle: true
