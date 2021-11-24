@@ -6,7 +6,7 @@ import torch
 
 def main():
     conf = load_config()['versions']['0']
-    device = load_device(use_gpu=False)
+    device = load_device(gpu=False)
     bert_model = conf['bert_model']
     wisdoms = conf['wisdoms']
     tokenizer = AutoTokenizer.from_pretrained(bert_model)

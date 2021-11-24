@@ -6,7 +6,7 @@ from transformers import AutoTokenizer
 
 def main():
     conf = load_config()['versions']['0']
-    device = load_device(use_gpu=False)
+    device = load_device(gpu=False)
     bert_model = conf['bert_model']
     k = conf['k']
     wisdoms = conf['wisdoms']

@@ -455,6 +455,7 @@ class RDFlow(TwoWayFlow):
     def build_steps(self):
         return [
                 self.save_paths,
+                self.clear_artifact,
                 self.download_bert_mlm,
                 self.download_tokenizer,
                 self.download_wisdoms,
@@ -473,6 +474,13 @@ class RDFlow(TwoWayFlow):
         # and make directories as well, if they don't exist
         os.makedirs(self.artifact_path, exist_ok=True)
         os.makedirs(self.tok_dir_path, exist_ok=True)
+
+    def clear_artifact(self):
+        if os.path.exists(self.rd_ckpt_path):
+            os.remove(self.rd_ckpt_path)
+        for root, _, files in os.walk(self.tok_dir_path):
+            for file in files:
+                os.remove(path.join(root, file))
 
     def save_config(self):
         self.config = self.artifact.metadata
@@ -569,8 +577,8 @@ class RDGammaFlow(RDFlow):
         get use of these data to build your rd, and save to:
         self.rd <= RDSomething(...)
         """
-        self.rd = RDGamma(self.config['k'], self.config['lr'], self.config['pooler_size'],
-                          self.bert_mlm, self.wisdom2subwords)
+        self.rd = RDGamma(self.config['k'], self.config['lr'], self.config['pooler_type'],
+                          self.config['dropout'], self.bert_mlm, self.wisdom2subwords)
 
     def load_rd(self):
         self.rd = RDGamma.load_from_checkpoint(self.rd_ckpt_path,

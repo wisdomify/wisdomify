@@ -10,7 +10,7 @@ def main():
     with connect_to_wandb(job_type="explore", config={}) as run:
         flow = WisdomsFlow(run, ver="a")("d", {})
     wisdoms = [row[0] for row in flow.raw_table.data]
-    device = load_device(use_gpu=False)
+    device = load_device(gpu=False)
     bert_mlm = BertForMaskedLM.from_pretrained("beomi/kcbert-base")
     tokenizer = BertTokenizer.from_pretrained("beomi/kcbert-base")
     wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, 11, device)(wisdoms)

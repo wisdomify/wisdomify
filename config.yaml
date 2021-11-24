@@ -10,14 +10,28 @@ rd_alpha:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 50
-    batch_size: 128
+    max_epochs: 200
+    batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 2
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
-  b: 
+    stochastic_weight_avg: true
+  b:
+    bert: beomi/kcbert-base
+    desc: The second version RDAlpha - trained on `wisdom2def:b`
+    seed: 410
+    train_type: wisdom2def
+    train_ver: b
+    wisdoms_ver: a
+    val_test_ver: a
+    k: 11
+    # this is an optimised value: refer to: magic-water-909
+    lr: 0.00001
+    max_epochs: 200
+    batch_size: 64
+    num_workers: 4
+    shuffle: true
+    stochastic_weight_avg: true
+  b_best:
     bert: beomi/kcbert-base
     desc: The second version RDAlpha - trained on `wisdom2def:b`
     seed: 410
@@ -27,13 +41,43 @@ rd_alpha:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 50
-    batch_size: 128
+    max_epochs: 200
+    batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
+    stochastic_weight_avg: true
+  b_optim_lr:
+    bert: beomi/kcbert-base
+    desc: The second version RDAlpha - trained on `wisdom2def:b`
+    seed: 410
+    train_type: wisdom2def
+    train_ver: b
+    wisdoms_ver: a
+    val_test_ver: a
+    k: 11
+    # this is an optimised value: refer to: magic-water-909 
+    lr: 0.000003631
+    max_epochs: 200
+    batch_size: 64
+    num_workers: 4
+    shuffle: true
+    stochastic_weight_avg: true
+  b_high_lr:
+    bert: beomi/kcbert-base
+    desc: rd_alpha with high learning rate
+    seed: 410
+    train_type: wisdom2def
+    train_ver: b
+    wisdoms_ver: a
+    val_test_ver: a
+    k: 11
+    # this is an optimised value: refer to: magic-water-909
+    lr: 0.001
+    max_epochs: 200
+    batch_size: 64
+    num_workers: 4
+    shuffle: true
+    stochastic_weight_avg: true
   c: 
     bert: kykim/bert-kor-base
     desc: the second version of RDBeta - trained on `wisdom2def:b`
@@ -44,13 +88,11 @@ rd_alpha:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 50
-    batch_size: 128
+    max_epochs: 200
+    batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
+    stochastic_weight_avg: true
 rd_beta: 
   desc: The second version of RD. S_wisdom = S_wisdom_literal + S_wisdom_figurative.
   a: 
@@ -63,13 +105,11 @@ rd_beta:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    max_epochs: 50
-    batch_size: 128
+    max_epochs: 200
+    batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
+    stochastic_weight_avg: true
   b: 
     bert: beomi/kcbert-base
     desc: the second version of RDBeta - trained on `wisdom2def:b`
@@ -79,14 +119,29 @@ rd_beta:
     wisdoms_ver: a
     val_test_ver: a
     k: 11
-    lr: 0.00001
-    max_epochs: 50
-    batch_size: 128
+    # refer to: apricot-galaxy-911
+    lr: 0.000001445
+    max_epochs: 200
+    batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
+    stochastic_weight_avg: true
+  b_high_lr:
+    bert: beomi/kcbert-base
+    desc: rdbeta with high learning rate
+    seed: 410
+    train_type: wisdom2def
+    train_ver: b
+    wisdoms_ver: a
+    val_test_ver: a
+    k: 11
+    # this is an optimised value: refer to: magic-water-909
+    lr: 0.001
+    max_epochs: 200
+    batch_size: 64
+    num_workers: 4
+    shuffle: true
+    stochastic_weight_avg: true
 rd_gamma:
   desc: The third version of RD. S_wisdom = S_wisdom_literal + S_wisdom_figurative (much simplified)
   a:
@@ -99,17 +154,17 @@ rd_gamma:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    pooler_size: 30
-    max_epochs: 50
-    batch_size: 128
+    pooler_type: bilstm
+    # to be applied to the pooler
+    drooput: 0.65
+    max_epochs: 200
+    batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
+    stochastic_weight_avg: true
   b:
     bert: beomi/kcbert-base
-    desc: the second version of RDGamma - the same as version a, but with increased epochs
+    desc: ...
     seed: 410
     train_type: wisdom2def
     train_ver: b
@@ -118,16 +173,16 @@ rd_gamma:
     k: 11
     lr: 0.00001
     pooler_size: 30
-    max_epochs: 50
-    batch_size: 128
+    pooler_type: bilstm
+    dropout: 0.65
+    max_epochs: 200
+    batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
-  c:
+    stochastic_weight_avg: true
+  b_best:
     bert: beomi/kcbert-base
-    desc: the same as b, but with max_epochs = 100 & pooler size = hidden_size
+    desc: ...
     seed: 410
     train_type: wisdom2def
     train_ver: b
@@ -135,11 +190,11 @@ rd_gamma:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    pooler_size: 768
-    max_epochs: 100
-    batch_size: 128
+    pooler_size: 30
+    pooler_type: bilstm
+    dropout: 0.65
+    max_epochs: 400
+    batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
+    stochastic_weight_avg: true
