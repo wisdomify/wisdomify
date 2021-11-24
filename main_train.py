@@ -44,7 +44,7 @@ def main():
                                               save_top_k=1, mode="max", auto_insert_metric_name=False, every_n_epochs=1)
         # --- instantiate the trainer --- #
         # -- trainer는 flow로 만들지 않는다. 계속 옵션을 바꾸고 싶을때가 많을거라서, 그냥 이대로 두는게 좋다.
-        trainer = pl.Trainer(max_epochs=1,
+        trainer = pl.Trainer(max_epochs=config['max_epochs'],
                              # wisdomify now supports multi-gpu training! (hardware-agnostic)
                              gpus=gpus,
                              # stop training when the validation accuracy does not increase anymore
