@@ -317,7 +317,7 @@ class BiLSTMPooler(torch.nn.Module):
     def __init__(self, hidden_size: int, dropout: float):
         super().__init__()
         self.lstm = torch.nn.LSTM(input_size=hidden_size, hidden_size=hidden_size // 2, batch_first=True,
-                                  num_layers=1, dropout=dropout, bidirectional=True)
+                                  num_layers=1, bidirectional=True)
         self.dropout = torch.nn.Dropout(p=dropout)
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:
@@ -392,7 +392,7 @@ class RDGamma(RD):
         H_desc_attention_mask = self.H_desc_attention_mask(self.attention_mask)  # (N, L) -> (N, D)
         scores = torch.einsum("nh,ndh->nd", H_cls, H_desc)  # (N, D)
         # ignore the padding tokens
-        scores = torch.masked_fill(scores, H_desc_attention_mask, float("-inf"))  # (N, D)
+        scores = torch.masked_fill(scores, H_desc_attention_mask.bool(), float("-inf"))  # (N, D)
         attentions = torch.softmax(scores, dim=1)  # over D
         H_wisdom = torch.einsum("nd,ndh->nh", attentions, H_desc)  # -> (N, H)
         # --- now compare H_wisdom with all the wisdoms --- #
