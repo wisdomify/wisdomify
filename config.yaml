@@ -14,9 +14,8 @@ rd_alpha:
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 2
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
+    min_delta: 0.00
+    patience: 100
     stochastic_weight_avg: true
   b:
     bert: beomi/kcbert-base

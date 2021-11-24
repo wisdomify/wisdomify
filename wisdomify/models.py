@@ -347,6 +347,32 @@ class RDGamma(RD):
             self.pooler = BiLSTMPooler(hidden_size, dropout)
         else:
             raise ValueError(f"Invalid pooler_type: {pooler_type}")
+        # --- to be used to compute  attentions --- #
+        self.attention_mask: Optional[torch.Tensor] = None
+
+    def forward(self, X: torch.Tensor) -> torch.Tensor:
+        """
+        :param X: (N, 4, L);
+         (num samples, 0=input_ids/1=token_type_ids/2=attention_mask/3=wisdom_mask, the maximum length)
+        :return: (N, L, H); (num samples, k, the size of the vocabulary of subwords)
+        """
+        input_ids = X[:, 0]  # (N, 4, L) -> (N, L)
+        token_type_ids = X[:, 1]  # (N, 4, L) -> (N, L)
+        self.attention_mask = X[:, 2]  # (N, 4, L) -> (N, L)
+        self.wisdom_mask = X[:, 3]  # (N, 4, L) -> (N, L)
+        self.desc_mask = X[:, 4]  # (N, 4, L) -> (N, L)
+        H_all = self.bert_mlm.bert.forward(input_ids, self.attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, H)
+        return H_all
+
+    def H_desc_attention_mask(self, attention_mask: torch.Tensor) -> torch.Tensor:
+        """
+        this is needed mask the padding tokens
+        :param attention_mask: (N, L)
+        """
+        N, L = attention_mask.size()
+        H_desc_attention_mask = torch.masked_select(attention_mask, self.desc_mask.bool())
+        H_desc_attention_mask = H_desc_attention_mask.reshape(N, L - (self.hparams['k'] + 3))
+        return H_desc_attention_mask
 
     def S_wisdom(self, H_all: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         S_wisdom_literal = self.S_wisdom_literal(self.H_k(H_all))
@@ -363,7 +389,10 @@ class RDGamma(RD):
         # --- draw H_wisdom from H_desc with attention --- #
         H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
         H_desc = self.H_desc(H_all)  # (N, L, H) -> (N, D, H)
+        H_desc_attention_mask = self.H_desc_attention_mask(self.attention_mask)  # (N, L) -> (N, D)
         scores = torch.einsum("nh,ndh->nd", H_cls, H_desc)  # (N, D)
+        # ignore the padding tokens
+        scores = torch.masked_fill(scores, H_desc_attention_mask, float("-inf"))  # (N, D)
         attentions = torch.softmax(scores, dim=1)  # over D
         H_wisdom = torch.einsum("nd,ndh->nh", attentions, H_desc)  # -> (N, H)
         # --- now compare H_wisdom with all the wisdoms --- #
