@@ -14,8 +14,6 @@ rd_alpha:
     batch_size: 64
     num_workers: 4
     shuffle: true
-    min_delta: 0.00
-    patience: 100
     stochastic_weight_avg: true
   b:
     bert: beomi/kcbert-base
@@ -32,9 +30,6 @@ rd_alpha:
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
     stochastic_weight_avg: true
   b_best:
     bert: beomi/kcbert-base
@@ -46,14 +41,10 @@ rd_alpha:
     val_test_ver: a
     k: 11
     lr: 0.00001
-    # refer to: lunar-grass-946; should give; Validation/ Top 1 Acc: 42%
-    max_epochs: 89
+    max_epochs: 200
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
     stochastic_weight_avg: true
   b_optim_lr:
     bert: beomi/kcbert-base
@@ -70,9 +61,6 @@ rd_alpha:
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
     stochastic_weight_avg: true
   b_high_lr:
     bert: beomi/kcbert-base
@@ -89,9 +77,6 @@ rd_alpha:
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
     stochastic_weight_avg: true
   c: 
     bert: kykim/bert-kor-base
@@ -107,9 +92,6 @@ rd_alpha:
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
     stochastic_weight_avg: true
 rd_beta: 
   desc: The second version of RD. S_wisdom = S_wisdom_literal + S_wisdom_figurative.
@@ -127,9 +109,6 @@ rd_beta:
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
     stochastic_weight_avg: true
   b: 
     bert: beomi/kcbert-base
@@ -146,9 +125,6 @@ rd_beta:
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
     stochastic_weight_avg: true
   b_high_lr:
     bert: beomi/kcbert-base
@@ -165,9 +141,6 @@ rd_beta:
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 0
     stochastic_weight_avg: true
 rd_gamma:
   desc: The third version of RD. S_wisdom = S_wisdom_literal + S_wisdom_figurative (much simplified)
@@ -188,9 +161,6 @@ rd_gamma:
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 1
     stochastic_weight_avg: true
   b:
     bert: beomi/kcbert-base
@@ -209,9 +179,6 @@ rd_gamma:
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 1
     stochastic_weight_avg: true
   b_best:
     bert: beomi/kcbert-base
@@ -226,12 +193,8 @@ rd_gamma:
     pooler_size: 30
     pooler_type: bilstm
     dropout: 0.65
-    # refer to: divine-cosmos-945 -> should give Validation/ Top 1 Acc = 47% =
-    max_epochs: 156
+    max_epochs: 200
     batch_size: 64
     num_workers: 4
     shuffle: true
-    log_every_n_steps: 1
-    enable_checkpointing: false
-    num_sanity_val_steps: 1
     stochastic_weight_avg: true
