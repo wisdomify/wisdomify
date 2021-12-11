@@ -35,9 +35,10 @@ class WisdomifyView(FlaskView):
     model = args.model
 
     config = load_config()[model][ver]
-    with connect_to_wandb(job_type="infer", config=config) as run:
+    with connect_to_wandb(job_type="deploy", config=config) as run:
         # --- init a wisdomifier --- #
         flow = flows.ExperimentFlow(run, model, ver)("d", config)
+        flow.rd_flow.rd.eval()
     # --- wisdomifier is independent of wandb run  --- #
     wisdomifier = Wisdomifier(flow.rd_flow.rd, flow.datamodule)
 
