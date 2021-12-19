@@ -7,7 +7,7 @@ import pandas as pd
 from typing import Generator, List
 from elasticsearch_dsl import Document, Text, Keyword
 from wisdomify.constants import GK_DIR, SC_DIR, MR_DIR, BS_DIR, DS_DIR, SFC_DIR, KESS_DIR, KJ_DIR, KCSS_DIR, SFKE_DIR, \
-    KSNS_DIR, KC_DIR, KETS_DIR, KEPT_DIR, NEWS_DIR, KOREA_UNIV_DIR
+    KSNS_DIR, KC_DIR, KETS_DIR, KEPT_DIR, NEWS_DIR, KOREA_UNIV_DIR, WOONGJIN_DIR
 
 
 class Story(Document):
@@ -479,6 +479,40 @@ class KUNIV(Story):
             yield cls(sents=row['full'].replace('/n', ''),
                       eg_id=row['eg_id'])
 
+    class Index:
+        name = f"{__qualname__.split('.')[0].lower()}_story"
+        settings = Story.settings()
+
+class WOONGJIN(Story):
+    """
+    Woongjin Social Science 
+    """
+    # --- additional fields for WOONGJIN --- #
+    dataset_id = Keyword()
+    paragraph_id = Keyword()
+
+    @classmethod
+    def stream_from_corpus(cls) -> Generator['WOONGJIN', None, None]:
+        json_files = list()
+        for root, sub_dirs, files in os.walk(WOONGJIN_DIR):
+            if not sub_dirs and files:
+                file = files[0]
+                if file.endswith('.json'):
+                    file = os.path.join(WOONGJIN_DIR, os.path.join(root, file))
+                    json_files.append(file)
+
+        for json_file in json_files:
+            with open(json_file, 'r') as fh:
+                corpus_json = json.loads(fh.read())
+                dataset_id = corpus_json['id']
+                for paragraph in corpus_json['paragraphs']:
+                    paragraph_id = paragraph['id']
+                    sentences = paragraph['sentences']
+                    for sentence in sentences:
+                        yield cls(sents=sentence['text'],
+                                    dataset_id=dataset_id,
+                                    paragraph_id=paragraph_id)
+                        
     class Index:
         name = f"{__qualname__.split('.')[0].lower()}_story"
         settings = Story.settings()

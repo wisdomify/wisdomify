@@ -31,7 +31,7 @@ KETS_DIR = path.join(CORPORA_DIR, "kets")  # 한국어-영어 번역 말뭉치 (
 KEPT_DIR = path.join(CORPORA_DIR, "kept")  # 한국어-영어 번역(병렬) 말뭉치
 NEWS_DIR = path.join(CORPORA_DIR, "news")  # 뉴스데이터
 KOREA_UNIV_DIR = path.join(CORPORA_DIR, "korea_univ")  # 고려대 코퍼스
-
+WOONGJIN_DIR = path.join(CORPORA_DIR, "woongjin")  # 웅진 말뭉치 데이터셋   
 # --- url's --- #
 WISDOM2DEF_RAW_A = "https://docs.google.com/spreadsheets/d/1n550JrAYnyy2j1CQAeXPjeuw0zD5RYNbpR4wKFTq8DI/export?format=tsv&gid=0"  # noqa
 WISDOM2DEF_RAW_B = "https://docs.google.com/spreadsheets/d/1n550JrAYnyy2j1CQAeXPjeuw0zD5RYNbpR4wKFTq8DI/export?format=tsv&gid=1300142415"  # noqa
