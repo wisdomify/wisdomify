@@ -5,6 +5,8 @@ import argparse
 from wisdomify.connectors import connect_to_es
 from wisdomify.flows import IndexFlow
 
+def main2():
+    print(7)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -18,8 +20,10 @@ def main():
 
     # run indexing
     with connect_to_es() as es:
-        IndexFlow(es, index, batch_size)
+        indexFlow = IndexFlow(es, index, batch_size)
+        indexFlow()
 
 
 if __name__ == '__main__':
-    main()
+    print("fdasas")
+    main2()

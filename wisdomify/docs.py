@@ -485,7 +485,7 @@ class KUNIV(Story):
 
 class WOONGJIN(Story):
     """
-    Woongjin Social Science 
+    Woongjin dataset 
     """
     # --- additional fields for WOONGJIN --- #
     dataset_id = Keyword()
@@ -501,7 +501,8 @@ class WOONGJIN(Story):
                     file = os.path.join(WOONGJIN_DIR, os.path.join(root, file))
                     json_files.append(file)
 
-        for json_file in json_files:
+        for json_file in json_files[:1]:
+            print(json_file)
             with open(json_file, 'r') as fh:
                 corpus_json = json.loads(fh.read())
                 dataset_id = corpus_json['id']
@@ -510,8 +511,8 @@ class WOONGJIN(Story):
                     sentences = paragraph['sentences']
                     for sentence in sentences:
                         yield cls(sents=sentence['text'],
-                                    dataset_id=dataset_id,
-                                    paragraph_id=paragraph_id)
+                                  dataset_id=dataset_id,
+                                  paragraph_id=paragraph_id)
                         
     class Index:
         name = f"{__qualname__.split('.')[0].lower()}_story"

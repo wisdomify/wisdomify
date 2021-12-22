@@ -47,7 +47,7 @@ from wisdomify.docs import (
     Story, GK, SC, MR, BS, DS,
     SFC, KESS, KJ, KCSS,
     SFKE, KSNS, KC, KETS,
-    KEPT, News, KUNIV
+    KEPT, News, KUNIV, WOONGJIN
 )   # noqa
 
 
@@ -107,7 +107,7 @@ class IndexFlow(Flow):
         self.batch_size = batch_size
         self.name2story: Optional[Dict[str, Story]] = None
         self.stories: Optional[Generator[Story, None, None]] = None
-
+        
     def steps(self) -> List[Callable]:
         # skip the steps
         return [
@@ -146,8 +146,10 @@ class IndexFlow(Flow):
             KEPT.Index.name: KEPT,
             News.Index.name: News,
             KUNIV.Index.name: KUNIV,
+            WOONGJIN.Index.name: WOONGJIN
         }
         try:
+            print(self.index_name)
             self.stories = self.name2story[self.index_name].stream_from_corpus()
         except KeyError:
             raise KeyError(f"Invalid index: {self.index_name}")
@@ -157,7 +159,8 @@ class IndexFlow(Flow):
         Index Stories.
         """
         for batch in tqdm(chunked(self.stories, self.batch_size),
-                          desc=f"indexing {self.index}..."):
+                          desc=f"indexing {self.index_name}..."):
+            print(batch)
             batch: List[Document]  # a batch is a list of Document
             # must make sure include_meta is set to true, otherwise the helper won't be
             # aware of the name of the index that= we are indexing the corpus into
