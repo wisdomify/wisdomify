@@ -3,7 +3,7 @@ index a pre-downloaded corpus into elasticsearch.
 """
 import argparse
 from wisdomify.connectors import connect_to_es
-from wisdomify.flows import IndexFlow
+from wisdomify.elastic.indexer import Indexer
 
 
 def main():
@@ -15,10 +15,10 @@ def main():
     args = parser.parse_args()
     index: str = args.index
     batch_size: int = args.batch_size
-
     # run indexing
     with connect_to_es() as es:
-        IndexFlow(es, index, batch_size)
+        indexer = Indexer(es, batch_size)
+        indexer(index)
 
 
 if __name__ == '__main__':

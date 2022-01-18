@@ -1,17 +1,14 @@
 import argparse
 import re
-
 from flask import jsonify, request
 from flask_classful import FlaskView
 from flask_cors import cross_origin
-
 from wisdomify import flows
-from wisdomify.connectors import connect_to_wandb, connect_to_es
-
 from wisdomify.docs import Story
 from wisdomify.flows import SearchFlow, Wisdom2DefFlow
-from wisdomify.loaders import load_config
+from wisdomify.fetchers import fetch_config
 from wisdomify.wisdomifier import Wisdomifier
+from wisdomify.connectors import connect_to_wandb, connect_to_es
 
 
 class WisdomifyView(FlaskView):
@@ -33,8 +30,7 @@ class WisdomifyView(FlaskView):
     args = parser.parse_args()
     ver = args.ver
     model = args.model
-
-    config = load_config()[model][ver]
+    config = fetch_config()[model][ver]
     with connect_to_wandb(job_type="infer", config=config) as run:
         # --- init a wisdomifier --- #
         flow = flows.ExperimentFlow(run, model, ver)("d", config)

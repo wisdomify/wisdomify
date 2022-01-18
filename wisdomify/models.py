@@ -1,15 +1,16 @@
 """
 The reverse dictionary models below are based off of: https://github.com/yhcc/BertForRD/blob/master/mono/model/bert.py
 """
-from argparse import Namespace
-from typing import Tuple, List, Optional
 import torch
-import torch.nn as nn
+from torch.nn import functional as F
+from typing import Tuple, List, Optional, cast
 import pytorch_lightning as pl
 from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
+from transformers import AutoModelForMaskedLM, AutoConfig, BertTokenizer
 from transformers.models.bert.modeling_bert import BertForMaskedLM
-from torch.nn import functional as F
+from wisdomify.fetchers import fetch_wisdoms, fetch_experiment
 from wisdomify.metrics import RDMetric
+from wisdomify import tensors as T
 
 
 class RD(pl.LightningModule):
@@ -18,9 +19,7 @@ class RD(pl.LightningModule):
     The superclass of all the reverse-dictionaries. This class houses any methods that are required by
     whatever reverse-dictionaries we define.
     """
-
-    # --- boilerplate; the loaders are defined in datamodules, so we don't define them here
-    # passing them to avoid warnings ---  #
+    # boilerplate; just ignore these
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         pass
 
@@ -33,31 +32,25 @@ class RD(pl.LightningModule):
     def predict_dataloader(self) -> EVAL_DATALOADERS:
         pass
 
-    def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM,
-                 wisdom2subwords: torch.Tensor):
+    def __init__(self, mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor, k: int, lr: float):  # noqa
         """
-        :param bert_mlm: a bert model for masked language modeling
-        :param wisdom2subwords: (|W|, K)
+        :param: a pre-trained bert 
+        :param: wisdom2subwords: (|W|, K)
         :return: (N, K, |V|); (num samples, k, the size of the vocabulary of subwords)
         """
         super().__init__()
-        # -- hyper params --- #
-        # should be saved to self.hparams
         # https://github.com/PyTorchLightning/pytorch-lightning/issues/4390#issue-730493746
-        self.save_hyperparameters(Namespace(k=k, lr=lr))
-        # -- the only neural network we need -- #
-        self.bert_mlm = bert_mlm
-        # -- to be used to compute S_wisdom -- #
-        self.register_buffer("wisdom2subwords", wisdom2subwords)  # (|W|, K)
-        # --- to be used for getting H_k --- #
+        self.save_hyperparameters(ignore=["mlm", "wisdom2subwords"])
+        self.mlm = mlm
+        # masks for selecting H_k & H_desc
         self.wisdom_mask: Optional[torch.Tensor] = None  # (N, L)
-        # --- to be used for getting H_desc --- #
         self.desc_mask: Optional[torch.Tensor] = None  # (N, L)
-        # --- to be used to evaluate the model --- #
-        # have different metric objects for each phase
+        # metrics
         self.metric_train = RDMetric()
         self.metric_val = RDMetric()
         self.metric_test = RDMetric()
+        # constant tensors
+        self.register_buffer("wisdom2subwords", wisdom2subwords)  # (|W|, K)
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:
         """
@@ -70,7 +63,7 @@ class RD(pl.LightningModule):
         attention_mask = X[:, 2]  # (N, 4, L) -> (N, L)
         self.wisdom_mask = X[:, 3]  # (N, 4, L) -> (N, L)
         self.desc_mask = X[:, 4]  # (N, 4, L) -> (N, L)
-        H_all = self.bert_mlm.bert.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, H)
+        H_all = self.mlm.forward(input_ids, attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, H)
         return H_all
 
     def H_k(self, H_all: torch.Tensor) -> torch.Tensor:
@@ -103,7 +96,7 @@ class RD(pl.LightningModule):
         :param H_k: (N, K, H)
         :return: S_wisdom_literal (N, |W|)
         """
-        S_vocab = self.bert_mlm.cls(H_k)  # bmm; (N, K, H) * (H, |V|) ->  (N, K, |V|)
+        S_vocab = self.mlm.cls(H_k)  # bmm; (N, K, H) * (H, |V|) ->  (N, K, |V|)
         indices = self.wisdom2subwords.T.repeat(S_vocab.shape[0], 1, 1)  # (|W|, K) -> (N, K, |W|)
         S_wisdom_literal = S_vocab.gather(dim=-1, index=indices)  # (N, K, |V|) -> (N, K, |W|)
         S_wisdom_literal = S_wisdom_literal.sum(dim=1)  # (N, K, |W|) -> (N, |W|)
@@ -213,8 +206,12 @@ class RD(pl.LightningModule):
         # The authors used Adam, so we might as well use it as well.
         return torch.optim.AdamW(self.parameters(), lr=self.hparams['lr'])
 
+    @classmethod
+    def name(cls) -> str:
+        return cls.__name__.lower()
 
-class RDAlpha(RD):
+
+class Alpha(RD):
     """
     @eubinecto
     The first prototype.
@@ -228,7 +225,7 @@ class RDAlpha(RD):
         return S_wisdom
 
 
-class FCLayer(nn.Module):
+class FCLayer(torch.nn.Module):
     """
     Reference:
     https://github.com/monologg/R-BERT
@@ -237,9 +234,9 @@ class FCLayer(nn.Module):
     def __init__(self, input_dim, output_dim, dropout_rate=0.0, use_activation=True):
         super(FCLayer, self).__init__()
         self.use_activation = use_activation
-        self.dropout = nn.Dropout(dropout_rate)
-        self.linear = nn.Linear(input_dim, output_dim)
-        self.tanh = nn.Tanh()
+        self.dropout = torch.nn.Dropout(dropout_rate)
+        self.linear = torch.nn.Linear(input_dim, output_dim)
+        self.tanh = torch.nn.Tanh()
 
         torch.nn.init.xavier_uniform_(self.linear.weight)
 
@@ -250,7 +247,7 @@ class FCLayer(nn.Module):
         return self.linear(x)
 
 
-class RDBeta(RD):
+class Beta(RD):
     """
     @ohsuz
     The second prototype.
@@ -258,11 +255,11 @@ class RDBeta(RD):
     trained on: wisdom2def only.
     """
 
-    def __init__(self, k: int, lr: float, bert_mlm: BertForMaskedLM,
+    def __init__(self, k: int, lr: float, mlm: BertForMaskedLM,
                  wisdom2subwords: torch.Tensor, wiskeys: torch.Tensor):
-        super().__init__(k, lr, bert_mlm, wisdom2subwords)
+        super().__init__(mlm, wisdom2subwords, k, lr)
         self.register_buffer("wiskeys", wiskeys)  # (|W|,)
-        self.hidden_size = bert_mlm.config.hidden_size
+        self.hidden_size = mlm.config.hidden_size
         self.dr_rate = 0.0
         # fully- connected layers
         self.cls_fc = FCLayer(self.hidden_size, self.hidden_size // 3, self.dr_rate)
@@ -280,7 +277,7 @@ class RDBeta(RD):
         param: H_all (N, L, H)
         return: S_wisdom_figurative (N, |W|)
         """
-        W_embed = self.bert_mlm.bert.embeddings.word_embeddings(self.wiskeys)  # (|W|,) -> (|W|, H)
+        W_embed = self.mlm.bert.embeddings.word_embeddings(self.wiskeys)  # (|W|,) -> (|W|, H)
 
         H_cls = H_all[:, 0]  # (N, L, H) -> (N, H)
         H_wisdom = torch.mean(self.H_k(H_all), dim=1)  # (N, L, H) -> (N, K, H) -> (N, H)
@@ -321,26 +318,25 @@ class BiLSTMPooler(torch.nn.Module):
         self.dropout = torch.nn.Dropout(p=dropout)
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:
-        hidden_states, _ = self.lstm(X)
-        last_hidden = hidden_states[:, -1]
-        return self.dropout(last_hidden)
+        hiddens, _ = self.lstm(X)
+        return self.dropout(hiddens[:, -1])
 
 
-class RDGamma(RD):
+class Gamma(RD):
     """
     @eubinecto
     S_wisdom  = S_wisdom_literal + S_wisdom_figurative
     but the way we get S_wisdom_figurative is much simplified, compared with RDBeta.
     """
 
-    def __init__(self, k: int, lr: float, pooler_type: str,
-                 dropout: float, bert_mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor):
-        super().__init__(k, lr, bert_mlm, wisdom2subwords)
+    def __init__(self, mlm: BertForMaskedLM, wisdom2subwords: torch.Tensor,
+                 k: int, lr: float, pooler_type: str, dropout: float):
+        super().__init__(mlm, wisdom2subwords, k, lr)
         # (N, K, H) -> (N, H)
         # a linear pooler
-        self.save_hyperparameters(Namespace(pooler_type=pooler_type, dropout=dropout))
+        self.save_hyperparameters(ignore=["mlm", "wisdom2subwords"])
         # a pooler is a multilayer perceptron that pools wisdom_embeddings from wisdom2subwords_embeddings
-        hidden_size = self.bert_mlm.config.hidden_size
+        hidden_size = self.mlm.config.hidden_size
         if pooler_type == "fc":
             self.pooler = FCPooler(k, hidden_size, dropout)
         elif pooler_type == "bilstm":
@@ -361,7 +357,7 @@ class RDGamma(RD):
         self.attention_mask = X[:, 2]  # (N, 4, L) -> (N, L)
         self.wisdom_mask = X[:, 3]  # (N, 4, L) -> (N, L)
         self.desc_mask = X[:, 4]  # (N, 4, L) -> (N, L)
-        H_all = self.bert_mlm.bert.forward(input_ids, self.attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, H)
+        H_all = self.mlm.bert.forward(input_ids, self.attention_mask, token_type_ids)[0]  # (N, 3, L) -> (N, L, H)
         return H_all
 
     def H_desc_attention_mask(self, attention_mask: torch.Tensor) -> torch.Tensor:
@@ -383,7 +379,7 @@ class RDGamma(RD):
     def S_wisdom_figurative(self, H_all: torch.Tensor) -> torch.Tensor:
         # --- draw the embeddings for wisdoms from  the embeddings of wisdom2subwords -- #
         # this is to use as less of newly initialised weights as possible
-        wisdom2subwords_embeddings = self.bert_mlm.bert \
+        wisdom2subwords_embeddings = self.mlm.bert \
             .embeddings.word_embeddings(self.wisdom2subwords)  # (W, K)  -> (W, K, H)
         wisdom_embeddings = self.pooler(wisdom2subwords_embeddings).squeeze()  # (W, H, K) -> (W, H, 1) -> (W, H)
         # --- draw H_wisdom from H_desc with attention --- #

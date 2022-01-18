@@ -16,8 +16,7 @@ from more_itertools import chunked
 from tqdm import tqdm
 from transformers import BertTokenizerFast, AutoConfig, AutoModelForMaskedLM, BertForMaskedLM, AutoTokenizer
 from wandb.sdk.wandb_run import Run
-from wisdomify.models import RD, RDAlpha, RDBeta, RDGamma
-from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder
+from wisdomify.models import RD, Alpha, Beta, Gamma
 from wisdomify.connectors import connect_to_es
 from wisdomify.constants import WISDOMS_A, WISDOMS_B, WISDOM2QUERY_RAW_A, WISDOM2DEF_RAW_A, WISDOM2DEF_RAW_B, \
     ARTIFACTS_DIR
@@ -40,130 +39,6 @@ class Flow:
         you might want to do some formatting later...
         """
         return "\n".join([step.__name__ for step in self.steps()])
-
-
-# === elastic flows === #
-from wisdomify.docs import (
-    Story, GK, SC, MR, BS, DS,
-    SFC, KESS, KJ, KCSS,
-    SFKE, KSNS, KC, KETS,
-    KEPT, News, KUNIV
-)   # noqa
-
-
-class SearchFlow(Flow):
-
-    def __init__(self, es: Elasticsearch, index_name: str, size: int):
-        self.es = es
-        self.index_name = index_name
-        self.size = size
-        # to be built
-        self.query: Optional[dict] = None
-        self.highlight: Optional[dict] = None
-        self.res: Optional[dict] = None
-
-    def steps(self):
-        return [
-            self.build,
-            self.search
-        ]
-
-    def __call__(self, wisdom: str):
-        self.wisdom = wisdom
-        super(SearchFlow, self).__call__()
-        return self
-
-    def build(self):
-        self.query = {
-            'match_phrase': {
-                'sents': {
-                    'query': self.wisdom
-                }
-             }
-         }
-        self.highlight = {
-            'fields': {
-                'sents': {
-                    'type': 'plain',
-                    'fragment_size': 100,
-                    'number_of_fragments': 2,
-                    'fragmenter': 'span'
-                }
-            }
-         }
-
-    def search(self):
-        self.res = self.es.search(index=self.index_name,
-                                  query=self.query,
-                                  highlight=self.highlight,
-                                  size=self.size)
-
-
-class IndexFlow(Flow):
-
-    def __init__(self, es: Elasticsearch, index_name: str, batch_size: int):
-        self.es = es
-        self.index_name = index_name
-        self.batch_size = batch_size
-        self.name2story: Optional[Dict[str, Story]] = None
-        self.stories: Optional[Generator[Story, None, None]] = None
-
-    def steps(self) -> List[Callable]:
-        # skip the steps
-        return [
-            self.update,
-            self.validate,
-            self.index
-        ]
-
-    def update(self):
-        """
-        check if an index with given name already exists.
-        If it does exists, delete it so that we overwrite the index in the following steps
-        """
-        if self.es.indices.exists(index=self.index_name):
-            r = self.es.indices.delete(index=self.index_name)
-            print(f"Deleted {self.index_name} - {r}")
-
-    def validate(self):
-        """
-        validate index_name
-        """
-        self.name2story = {
-            GK.Index.name: GK,
-            SC.Index.name: SC,
-            MR.Index.name: MR,
-            BS.Index.name: BS,
-            DS.Index.name: DS,
-            SFC.Index.name: SFC,
-            KESS.Index.name: KESS,
-            KJ.Index.name: KJ,
-            KCSS.Index.name: KCSS,
-            SFKE.Index.name: SFKE,
-            KSNS.Index.name: KSNS,
-            KC.Index.name: KC,
-            KETS.Index.name: KETS,
-            KEPT.Index.name: KEPT,
-            News.Index.name: News,
-            KUNIV.Index.name: KUNIV,
-        }
-        try:
-            self.stories = self.name2story[self.index_name].stream_from_corpus()
-        except KeyError:
-            raise KeyError(f"Invalid index: {self.index_name}")
-
-    def index(self):
-        """
-        Index Stories.
-        """
-        for batch in tqdm(chunked(self.stories, self.batch_size),
-                          desc=f"indexing {self.index}..."):
-            batch: List[Document]  # a batch is a list of Document
-            # must make sure include_meta is set to true, otherwise the helper won't be
-            # aware of the name of the index that= we are indexing the corpus into
-            actions = (doc.to_dict(include_meta=True) for doc in batch)
-            r = bulk(self.es, actions)
-            print(f"successful count: {r[0]}, error messages: {r[1]}")
 
 
 class TwoWayFlow(Flow):
@@ -496,7 +371,7 @@ class RDFlow(TwoWayFlow):
         self.tokenizer = AutoTokenizer.from_pretrained(self.config['bert'])
 
     def build_wisdom2subwords(self):
-        self.wisdom2subwords = Wisdom2SubwordsBuilder(self.tokenizer, self.config['k'])(self.wisdoms)
+        self.wisdom2subwords = wisdom2subwords(self.tokenizer, self.wisdoms,  self.config['k'])
 
     def build_rd(self):
         raise NotImplementedError
@@ -524,13 +399,13 @@ class RDFlow(TwoWayFlow):
 class RDAlphaFlow(RDFlow):
 
     def build_rd(self):
-        self.rd = RDAlpha(self.config['k'], self.config['lr'],
-                          self.bert_mlm, self.wisdom2subwords)
+        self.rd = Alpha(self.config['k'], self.config['lr'],
+                        self.bert_mlm, self.wisdom2subwords)
 
     def load_rd(self):
-        self.rd = RDAlpha.load_from_checkpoint(self.rd_ckpt_path,
-                                               wisdom2subwords=self.wisdom2subwords,
-                                               bert_mlm=self.bert_mlm)
+        self.rd = Alpha.load_from_checkpoint(self.rd_ckpt_path,
+                                             wisdom2subwords=self.wisdom2subwords,
+                                             bert_mlm=self.bert_mlm)
 
     @property
     def name(self):
@@ -546,16 +421,15 @@ class RDBetaFlow(RDFlow):
         self.tokenizer.add_tokens(self.wisdoms)
         self.bert_mlm.resize_token_embeddings(len(self.tokenizer))
         wiskeys = WiskeysBuilder(self.tokenizer)(self.wisdoms)
-        self.rd = RDBeta(self.config['k'], self.config['lr'],
-                         self.bert_mlm, self.wisdom2subwords, wiskeys)
+        self.rd = Beta(self.config['k'], self.config['lr'],
+                       self.bert_mlm, self.wisdom2subwords, wiskeys)
 
     def load_rd(self):
-        self.bert_mlm.resize_token_embeddings(len(self.tokenizer))
         wiskeys = WiskeysBuilder(self.tokenizer)(self.wisdoms)
-        self.rd = RDBeta.load_from_checkpoint(self.rd_ckpt_path,
-                                              bert_mlm=self.bert_mlm,
-                                              wisdom2subwords=self.wisdom2subwords,
-                                              wiskeys=wiskeys)
+        self.rd = Beta.load_from_checkpoint(self.rd_ckpt_path,
+                                            bert_mlm=self.bert_mlm,
+                                            wisdom2subwords=self.wisdom2subwords,
+                                            wiskeys=wiskeys)
 
     @property
     def name(self):
@@ -577,13 +451,13 @@ class RDGammaFlow(RDFlow):
         get use of these data to build your rd, and save to:
         self.rd <= RDSomething(...)
         """
-        self.rd = RDGamma(self.config['k'], self.config['lr'], self.config['pooler_type'],
-                          self.config['dropout'], self.bert_mlm, self.wisdom2subwords)
+        self.rd = Gamma(self.config['k'], self.config['lr'], self.config['pooler_type'],
+                        self.config['dropout'], self.bert_mlm, self.wisdom2subwords)
 
     def load_rd(self):
-        self.rd = RDGamma.load_from_checkpoint(self.rd_ckpt_path,
-                                               bert_mlm=self.bert_mlm,
-                                               wisdom2subwords=self.wisdom2subwords)
+        self.rd = Gamma.load_from_checkpoint(self.rd_ckpt_path,
+                                             bert_mlm=self.bert_mlm,
+                                             wisdom2subwords=self.wisdom2subwords)
 
     @property
     def name(self):

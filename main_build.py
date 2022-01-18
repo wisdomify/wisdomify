@@ -25,7 +25,7 @@ def main():
     upload: bool = args.upload
     config = vars(args)
     if not upload:
-        print("########## WARNING: YOU CHOSE NOT TO UPLOAD. NOTHING BUT LOGS WILL BE SAVED TO WANDB #################")
+        print("### WARNING: YOU CHOSE NOT TO UPLOAD. NOTHING BUT LOGS WILL BE SAVED TO WANDB ###")
     # flows, flows, oh I love flows
     with connect_to_wandb(job_type="build", config=config) as run:
         if data == "wisdoms":

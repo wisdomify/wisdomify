@@ -3,8 +3,8 @@ from typing import List
 from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoConfig
 from wisdomify.models import (
     RD,
-    RDAlpha,
-    RDBeta
+    Alpha,
+    Beta
 )
 from wisdomify.loaders import load_config
 from wisdomify.tensors import Wisdom2SubwordsBuilder, WiskeysBuilder, InputsBuilder,\
@@ -92,7 +92,7 @@ class RDCommonTest:
 
 
 class RDAlphaTest(RDCommonTest.Test):
-    rd: RDAlpha
+    rd: Alpha
 
     @classmethod
     def setUpClass(cls):
@@ -105,7 +105,7 @@ class RDAlphaTest(RDCommonTest.Test):
         bert_mlm = AutoModelForMaskedLM.from_config(AutoConfig.from_pretrained(bert))
         tokenizer = AutoTokenizer.from_pretrained(bert)
         wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k)(wisdoms)
-        cls.rd = RDAlpha(k, lr, bert_mlm, wisdom2subwords)
+        cls.rd = Alpha(k, lr, bert_mlm, wisdom2subwords)
         cls.initialize(Wisdom2DefInputsBuilder(tokenizer, k), TargetsBuilder(),
                        wisdoms, bert_mlm.config.hidden_size, len(wisdoms), k)
 
@@ -126,7 +126,7 @@ class RDAlphaTest(RDCommonTest.Test):
 
 
 class RDBetaTest(RDCommonTest.Test):
-    rd: RDBeta
+    rd: Beta
 
     @classmethod
     def setUpClass(cls):
@@ -143,7 +143,7 @@ class RDBetaTest(RDCommonTest.Test):
         bert_mlm.resize_token_embeddings(len(tokenizer))
         wisdom2subwords = Wisdom2SubwordsBuilder(tokenizer, k)(wisdoms)
         wiskeys = WiskeysBuilder(tokenizer)(wisdoms)
-        cls.rd = RDBeta(k, lr, bert_mlm, wisdom2subwords, wiskeys)
+        cls.rd = Beta(k, lr, bert_mlm, wisdom2subwords, wiskeys)
         cls.initialize(Wisdom2DefInputsBuilder(tokenizer, k), TargetsBuilder(),
                        wisdoms, bert_mlm.config.hidden_size, len(wisdoms), k)
 
