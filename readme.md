@@ -236,19 +236,6 @@ Wisdomify는 우리말 속담 역사전(Reverse-Dictionary of Korean Proverbs)�
 9: ('서당개 삼 년이면 풍월을 읊는다', 4.33282611178587e-11)
 ```
 
-## Milestones
-1. 빈도수 TOP 10 한국어 → 한국어 속담 검색
-2. 빈도수 TOP 100 한국어 → 한국어 속담 검색
-3. 빈도수 TOP 100 한국어 → 영어 속담 검색 (한국어 속담 - 영어 속담 병렬 말뭉치 활용)
-4. 빈도수 TOP 100 한국어 → 한국어 & 영어 동시 검색 (병렬 말뭉치로 bilingual BERT 개발)
-5. 모델링 & 데이터 수집을 통해, Test/Top 3 Accuracy를 90%까지 끌어올리기
-6. 그 과정 속에서, 다음의 가설 3개를 검증하기 (가설은 Applied Lingusitics의 Literature Review를 기반으로 세움)
-    1. BERT또한 사람처럼 속담을 이해하기 위해 말 그대로의 의미와 비유적인 의미를 전부 고려해야할 것이다. 어떻게? - `S_wisdom = S_wisdom_literal` 의 성능과 `S_wisdom = S_wisdom_literal + S_wisdom_figurative`의 성능을 비교.
-    2. BERT또한 사람처럼 속담을 이해하기 위해 말 그대로의 의미로부터 비유적인 의미를 도출해야할 것이다. 어떻게? - `loss = cross_entropy(S_wisdom, y)` 의 성능과 `loss = cross_entropy(S_wisdom, y) + KLDivergence(S_wisdom_figurative, S_wisdom_literal)`의 성능을 비교
-    3. BERT또한 제 2외국어 학습자처럼 외국어 속담과 모국어 속담을 동시에 학습할 때 속담을 더 깊게 이해할 것이다. 어떻게? - 4번 모델을  2번, 3번 모델과 비교.
-7. 그리고, 마지막으로는 어휘학습을 위해서 Wisdomify를 어떻게 효과적으로 활용할 수 있는지, 그 가치를 제안하고, 시험을 바탕으로 입증하고 비판적 분석하기. (e.g. 설단현상 문제 (아.... 이거 단어가 뭐였더라?)의 효과적인 해결책!)
-8. 6번과 7번의 결론을 정리해서 석사 disseration을 쓰고, 자연어처리 & SLA 학회에 동시 제출 (프로젝트 참여자 = 공동저자)
-
 ## References
 - Devlin,  J. Cheng, M. Lee, K. Toutanova, K. (2018). *: Pre-training of Deep Bidirectional Transformers for Language Understanding*. 
 - Gururangan, S. Marasović, A. Swayamdipta, S. Lo, K. Beltagy, I. Downey, D. Smith, N. (2020). *Don't Stop Pretraining: Adapt Language Models to Domains and Tasks*
@@ -257,13 +244,7 @@ Wisdomify는 우리말 속담 역사전(Reverse-Dictionary of Korean Proverbs)�
 - Yan, H. Li, X. Qiu, X. Deng, B. (2020). *BERT for Monolingual and Cross-Lingual Reverse Dictionary*
 
 
-## Contributors
-contributor | roles | what have I done?
---- | --- | --- 
-김유빈 | ... | [MVP 구현하기](https://github.com/wisdomify/wisdomify/issues/2) / [Collab 데모 구현하기](https://github.com/wisdomify/wisdomify/issues/12) / [테스트 지표 정의 및 구현하기](https://github.com/wisdomify/wisdomify/issues/16) / [리팩토링: `Wisdomifier` 구현하기](https://github.com/wisdomify/wisdomify/issues/39) / [리팩토링 및 `RDBeta`        구현](https://github.com/wisdomify/wisdomify/issues/68)
-김민성 | ... | ...
-김종윤 | ... | ...
-오수지 | ... | ...
+
 임용택 | ... | ...
 최유라 | ... | ...
 
