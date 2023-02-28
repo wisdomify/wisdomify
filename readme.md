@@ -243,8 +243,3 @@ Wisdomify는 우리말 속담 역사전(Reverse-Dictionary of Korean Proverbs)�
 - Junbum, L. (2020). *KcBERT: Korean Comments BERT*
 - Yan, H. Li, X. Qiu, X. Deng, B. (2020). *BERT for Monolingual and Cross-Lingual Reverse Dictionary*
 
-
-
-임용택 | ... | ...
-최유라 | ... | ...
-
